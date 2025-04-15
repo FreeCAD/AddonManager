@@ -23,16 +23,9 @@
 
 """Defines a QWidget-derived class for displaying the cache load status."""
 
-try:
-    import FreeCAD
+import addonmanager_freecad_interface as fci
 
-    translate = FreeCAD.Qt.translate
-except ImportError:
-    FreeCAD = None
-
-    def translate(_: str, text: str):
-        return text
-
+translate = fci.translate
 
 # Get whatever version of PySide we can
 try:
@@ -42,8 +35,6 @@ except ImportError:
         from PySide6 import QtCore, QtGui, QtWidgets  # Outside FreeCAD, try Qt6 first
     except ImportError:
         from PySide2 import QtCore, QtGui, QtWidgets  # Fall back to Qt5
-
-from dataclasses import dataclass
 
 _TOTAL_INCREMENTS = 1000
 

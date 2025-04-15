@@ -26,9 +26,13 @@ import unittest
 import os
 import tempfile
 
-import FreeCAD
-
-from PySide import QtCore
+try:
+    from PySide import QtCore
+except ImportError:
+    try:
+        from PySide6 import QtCore
+    except ImportError:
+        from PySide2 import QtCore
 
 import NetworkManager
 from Addon import Addon
@@ -37,6 +41,8 @@ from addonmanager_workers_startup import (
     LoadPackagesFromCacheWorker,
     LoadMacrosFromCacheWorker,
 )
+
+import addonmanager_freecad_interface as fci
 
 run_slow_tests = False
 
@@ -48,9 +54,7 @@ class TestWorkersStartup(unittest.TestCase):
     @unittest.skipUnless(run_slow_tests, "This integration test is slow and uses the network")
     def setUp(self):
         """Set up the test"""
-        self.test_dir = os.path.join(
-            FreeCAD.getHomePath(), "Mod", "AddonManager", "AddonManagerTest", "data"
-        )
+        self.test_dir = os.path.join(os.path.dirname(__file__), "..", "data")
 
         self.saved_mod_directory = Addon.mod_directory
         self.saved_cache_directory = Addon.cache_directory
@@ -80,15 +84,13 @@ class TestWorkersStartup(unittest.TestCase):
         self.macro_cache_filename = os.path.join(Addon.cache_directory, "macros.json")
 
         # Store the user's preference for whether git is enabled or disabled
-        pref = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
-        self.saved_git_disabled_status = pref.GetBool("disableGit", False)
+        self.saved_git_disabled_status = fci.Preferences().get("disableGit")
 
     def tearDown(self):
         """Tear down the test"""
         Addon.mod_directory = self.saved_mod_directory
         Addon.cache_directory = self.saved_cache_directory
-        pref = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
-        pref.SetBool("disableGit", self.saved_git_disabled_status)
+        fci.Preferences().set("disableGit", self.saved_git_disabled_status)
 
     def test_create_addon_list_worker(self):
         """Test whether any addons are added: runs the full query, so this potentially is a SLOW
@@ -177,8 +179,7 @@ class TestWorkersStartup(unittest.TestCase):
         if self.saved_git_disabled_status:
             self.skipTest("Git is disabled, this test is redundant")
 
-        pref = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
-        pref.SetBool("disableGit", True)
+        fci.Preferences().set("disableGit", True)
 
         self.test_create_addon_list_worker()
 

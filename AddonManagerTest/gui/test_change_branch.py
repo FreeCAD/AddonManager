@@ -29,9 +29,6 @@ import sys
 import unittest
 from unittest.mock import patch, Mock, MagicMock
 
-# So that when run standalone, the Addon Manager classes imported below are available
-sys.path.append("../..")
-
 from AddonManagerTest.gui.gui_mocks import DialogWatcher, AsynchronousMonitor
 
 from change_branch import ChangeBranchDialog

@@ -27,16 +27,22 @@ from enum import IntEnum, auto
 import os
 from typing import List
 
-import FreeCAD
-import FreeCADGui
+import addonmanager_freecad_interface as fci
 
-from PySide import QtCore, QtWidgets
+# Get whatever version of PySide we can
+try:
+    from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
+except ImportError:
+    try:
+        from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
+    except ImportError:
+        from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
 
 from Addon import Addon
 
 from addonmanager_installer import AddonInstaller, MacroInstaller
 
-translate = FreeCAD.Qt.translate
+translate = fci.translate
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 
@@ -90,9 +96,7 @@ class UpdateAllGUI(QtCore.QObject):
     def __init__(self, addons: List[Addon]):
         super().__init__()
         self.addons = addons
-        self.dialog = FreeCADGui.PySideUic.loadUi(
-            os.path.join(os.path.dirname(__file__), "update_all.ui")
-        )
+        self.dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "update_all.ui"))
         self.row_map = {}
         self.in_process_row = None
         self.active_installer = None

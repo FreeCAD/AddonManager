@@ -41,9 +41,9 @@ SET(AddonManager_SRCS
     addonmanager_metadata.py
     addonmanager_package_details_controller.py
     addonmanager_preferences_defaults.json
-    addonmanager_pyside_interface.py
     addonmanager_python_deps_gui.py
     addonmanager_readme_controller.py
+    addonmanager_toolbar_adapter.py
     addonmanager_uninstaller.py
     addonmanager_uninstaller_gui.py
     addonmanager_update_all_gui.py
@@ -71,7 +71,6 @@ SET(AddonManager_SRCS
     developer_mode_tags.ui
     expanded_view.py
     first_run.ui
-    install_to_toolbar.py
     loading.html
     package_list.py
     select_toolbar_dialog.ui
@@ -111,6 +110,7 @@ SET(AddonManagerTestsGui_SRCS
     AddonManagerTest/gui/test_gui.py
     AddonManagerTest/gui/test_installer_gui.py
     AddonManagerTest/gui/test_python_deps_gui.py
+    AddonManagerTest/gui/test_toolbar_adapter.py
     AddonManagerTest/gui/test_uninstaller_gui.py
     AddonManagerTest/gui/test_update_all_gui.py
     AddonManagerTest/gui/test_widget_progress_bar.py

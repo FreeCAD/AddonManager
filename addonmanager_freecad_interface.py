@@ -39,6 +39,9 @@ import tempfile
 try:
     import FreeCAD
 
+    if not hasattr(FreeCAD, "Console"):
+        raise ImportError("Unrecognized FreeCAD version")
+
     Console = FreeCAD.Console
     ParamGet = FreeCAD.ParamGet
     Version = FreeCAD.Version
@@ -47,8 +50,9 @@ try:
     getUserCachePath = FreeCAD.getUserCachePath
     translate = FreeCAD.Qt.translate
     loadUi = None
+    GuiUp = FreeCAD.GuiUp
 
-    if FreeCAD.GuiUp:
+    if GuiUp:
         import FreeCADGui
 
         if hasattr(FreeCADGui, "PySideUic"):
@@ -62,6 +66,31 @@ except ImportError:
     getUserAppDataDir = None
     getUserCachePath = None
     getUserMacroDir = None
+    loadUi = None
+
+    try:
+        from PySide6 import QtCore, QtWidgets
+
+        GuiUp = True if QtWidgets.QApplication.instance() else False
+        from PySide6.QtUiTools import QUiLoader
+    except ImportError:
+        try:
+            from PySide2 import QtCore, QtWidgets
+
+            GuiUp = True if QtWidgets.QApplication.instance() else False
+            from PySide2.QtUiTools import QUiLoader
+        except ImportError:
+            GuiUp = False
+
+    if GuiUp:
+
+        def loadUi(path: str):
+            loader = QUiLoader()
+            file = QtCore.QFile(path)
+            file.open(QtCore.QFile.ReadOnly)
+            window = loader.load(file)
+            file.close()
+            return window
 
     def translate(_context: str, string: str, _desc: str = "") -> str:
         return string

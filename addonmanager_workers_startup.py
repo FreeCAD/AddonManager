@@ -35,9 +35,14 @@ import time
 from typing import List, Optional
 import xml.etree.ElementTree
 
-from PySide import QtCore
+try:
+    from PySide import QtCore
+except ImportError:
+    try:
+        from PySide6 import QtCore
+    except ImportError:
+        from PySide2 import QtCore
 
-import FreeCAD
 import addonmanager_utilities as utils
 from addonmanager_macro import Macro
 from Addon import Addon
@@ -47,7 +52,7 @@ from addonmanager_git import initialize_git, GitFailed
 from addonmanager_metadata import MetadataReader, get_branch_from_metadata
 import addonmanager_freecad_interface as fci
 
-translate = FreeCAD.Qt.translate
+translate = fci.translate
 
 # Workers only have one public method by design
 # pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
@@ -73,8 +78,7 @@ class CreateAddonListWorker(QtCore.QThread):
         # These addons will print an additional message informing the user Python2 only
         self.py2only = []
 
-        self.package_names = []
-        self.moddir = os.path.join(FreeCAD.getUserAppDataDir(), "Mod")
+        self.package_names = fci.DataPaths().mod_dir
         self.current_thread = None
 
         self.git_manager = initialize_git()
@@ -120,14 +124,14 @@ class CreateAddonListWorker(QtCore.QThread):
                 "AddonsInstaller",
                 "Failed to connect to GitHub. Check your connection and proxy settings.",
             )
-            FreeCAD.Console.PrintError(message + "\n")
+            fci.Console.PrintError(message + "\n")
             raise ConnectionError
 
     def _process_deprecated(self, deprecated_addons):
         """Parse the section on deprecated addons"""
 
-        fc_major = int(FreeCAD.Version()[0])
-        fc_minor = int(FreeCAD.Version()[1])
+        fc_major = int(fci.Version()[0])
+        fc_minor = int(fci.Version()[1])
         for item in deprecated_addons:
             if "as_of" in item and "name" in item:
                 try:
@@ -143,22 +147,18 @@ class CreateAddonListWorker(QtCore.QThread):
                         elif item["kind"] == "macro":
                             self.macros_reject_list.append(item["name"])
                         else:
-                            FreeCAD.Console.PrintMessage(
+                            fci.Console.PrintMessage(
                                 f'Unrecognized Addon kind {item["kind"]} in deprecation list.'
                             )
                 except ValueError:
-                    FreeCAD.Console.PrintMessage(
+                    fci.Console.PrintMessage(
                         f"Failed to parse version from {item['name']}, version {item['as_of']}"
                     )
 
     def _get_custom_addons(self):
 
         # querying custom addons first
-        addon_list = (
-            FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Addons")
-            .GetString("CustomRepositories", "")
-            .split("\n")
-        )
+        addon_list = fci.Preferences().get("CustomRepositories").split("\n")
         custom_addons = []
         for addon in addon_list:
             if " " in addon:
@@ -176,13 +176,13 @@ class CreateAddonListWorker(QtCore.QThread):
                 name = addon["url"].split("/")[-1]
                 if name in self.package_names:
                     # We already have something with this name, skip this one
-                    FreeCAD.Console.PrintWarning(
+                    fci.Console.PrintWarning(
                         translate("AddonsInstaller", "WARNING: Duplicate addon {} ignored").format(
                             name
                         )
                     )
                     continue
-                FreeCAD.Console.PrintLog(
+                fci.Console.PrintLog(
                     f"Adding custom location {addon['url']} with branch {addon['branch']}\n"
                 )
                 self.package_names.append(name)
@@ -278,7 +278,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 "AddonsInstaller",
                 "Git is disabled, skipping Git macros",
             )
-            FreeCAD.Console.PrintWarning(message + "\n")
+            fci.Console.PrintWarning(message + "\n")
             return
 
         update_succeeded = self._update_local_git_repo()
@@ -301,7 +301,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 if filename.lower().endswith(".fcmacro"):
                     macro = Macro(filename[:-8])  # Remove ".FCMacro".
                     if macro.name in self.package_names:
-                        FreeCAD.Console.PrintLog(
+                        fci.Console.PrintLog(
                             f"Ignoring second macro named {macro.name} (found on git)\n"
                         )
                         continue  # We already have a macro with this name
@@ -310,7 +310,7 @@ class CreateAddonListWorker(QtCore.QThread):
                     macro.src_filename = os.path.join(dirpath, filename)
                     macro.fill_details_from_file(macro.src_filename)
                     repo = Addon.from_macro(macro)
-                    FreeCAD.Console.PrintLog(f"Found macro {repo.name}\n")
+                    fci.Console.PrintLog(f"Found macro {repo.name}\n")
                     repo.url = "https://github.com/FreeCAD/FreeCAD-macros.git"
                     utils.update_macro_installation_details(repo)
                     self.addon_repo.emit(repo)
@@ -320,7 +320,7 @@ class CreateAddonListWorker(QtCore.QThread):
         try:
             if os.path.exists(macro_cache_location):
                 if not os.path.exists(os.path.join(macro_cache_location, ".git")):
-                    FreeCAD.Console.PrintWarning(
+                    fci.Console.PrintWarning(
                         translate(
                             "AddonsInstaller",
                             "Attempting to change non-Git Macro setup to use Git\n",
@@ -337,15 +337,15 @@ class CreateAddonListWorker(QtCore.QThread):
                     macro_cache_location,
                 )
         except GitFailed as e:
-            FreeCAD.Console.PrintMessage(
+            fci.Console.PrintMessage(
                 translate(
                     "AddonsInstaller",
                     "An error occurred updating macros from GitHub, trying clean checkout...",
                 )
                 + f":\n{e}\n"
             )
-            FreeCAD.Console.PrintMessage(f"{macro_cache_location}\n")
-            FreeCAD.Console.PrintMessage(
+            fci.Console.PrintMessage(f"{macro_cache_location}\n")
+            fci.Console.PrintMessage(
                 translate("AddonsInstaller", "Attempting to do a clean checkout...") + "\n"
             )
             try:
@@ -357,13 +357,13 @@ class CreateAddonListWorker(QtCore.QThread):
                     "https://github.com/FreeCAD/FreeCAD-macros.git",
                     macro_cache_location,
                 )
-                FreeCAD.Console.PrintMessage(
+                fci.Console.PrintMessage(
                     translate("AddonsInstaller", "Clean checkout succeeded") + "\n"
                 )
             except GitFailed as e2:
                 # The Qt Python translation extractor doesn't support splitting this string (yet)
                 # pylint: disable=line-too-long
-                FreeCAD.Console.PrintWarning(
+                fci.Console.PrintWarning(
                     translate(
                         "AddonsInstaller",
                         "Failed to update macros from GitHub -- try clearing the Addon Manager's cache.",
@@ -386,7 +386,7 @@ class CreateAddonListWorker(QtCore.QThread):
         if not p:
             # The Qt Python translation extractor doesn't support splitting this string (yet)
             # pylint: disable=line-too-long
-            FreeCAD.Console.PrintWarning(
+            fci.Console.PrintWarning(
                 translate(
                     "AddonsInstaller",
                     "Error connecting to the Wiki, FreeCAD cannot retrieve the Wiki macro list at this time",
@@ -413,7 +413,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 macro_names.append(macname)
                 macro = Macro(macname)
                 if macro.name in self.package_names:
-                    FreeCAD.Console.PrintLog(
+                    fci.Console.PrintLog(
                         f"Ignoring second macro named {macro.name} (found on wiki)\n"
                     )
                     continue  # We already have a macro with this name
@@ -441,7 +441,7 @@ class LoadPackagesFromCacheWorker(QtCore.QThread):
         QtCore.QThread.__init__(self)
         self.cache_file = cache_file
         self.metadata_cache_path = os.path.join(
-            FreeCAD.getUserCachePath(), "AddonManager", "PackageMetadata"
+            fci.DataPaths().cache_dir, "AddonManager", "PackageMetadata"
         )
 
     def override_metadata_cache_path(self, path):
@@ -466,8 +466,8 @@ class LoadPackagesFromCacheWorker(QtCore.QThread):
                         try:
                             repo.load_metadata_file(repo_metadata_cache_path)
                         except RuntimeError as e:
-                            FreeCAD.Console.PrintLog(f"Failed loading {repo_metadata_cache_path}\n")
-                            FreeCAD.Console.PrintLog(str(e) + "\n")
+                            fci.Console.PrintLog(f"Failed loading {repo_metadata_cache_path}\n")
+                            fci.Console.PrintLog(str(e) + "\n")
                     self.addon_repo.emit(repo)
 
 
@@ -532,8 +532,7 @@ class CheckWorkbenchesForUpdatesWorker(QtCore.QThread):
         QtCore.QThread.__init__(self)
         self.repos = repos
         self.current_thread = None
-        self.basedir = FreeCAD.getUserAppDataDir()
-        self.moddir = os.path.join(self.basedir, "Mod")
+        self.moddir = fci.DataPaths().mod_dir
 
     def run(self):
         """Rarely called directly: create an instance and call start() on it instead to
@@ -568,8 +567,7 @@ class UpdateChecker:
     update status."""
 
     def __init__(self):
-        self.basedir = FreeCAD.getUserAppDataDir()
-        self.moddir = os.path.join(self.basedir, "Mod")
+        self.moddir = fci.DataPaths().mod_dir
         self.git_manager = initialize_git()
 
     def override_mod_directory(self, moddir):
@@ -598,7 +596,7 @@ class UpdateChecker:
                         wb.branch = self.git_manager.current_branch(clonedir)
                         return
                 except GitFailed as e:
-                    FreeCAD.Console.PrintWarning(
+                    fci.Console.PrintWarning(
                         "AddonManager: "
                         + translate(
                             "AddonsInstaller",
@@ -606,7 +604,7 @@ class UpdateChecker:
                         ).format(wb.name)
                         + "\n"
                     )
-                    FreeCAD.Console.PrintWarning(str(e) + "\n")
+                    fci.Console.PrintWarning(str(e) + "\n")
                     wb.set_status(Addon.Status.CANNOT_CHECK)
                 else:
                     try:
@@ -615,7 +613,7 @@ class UpdateChecker:
                         else:
                             wb.set_status(Addon.Status.NO_UPDATE_AVAILABLE)
                     except GitFailed:
-                        FreeCAD.Console.PrintWarning(
+                        fci.Console.PrintWarning(
                             translate("AddonsInstaller", "Git status failed for {}").format(wb.name)
                             + "\n"
                         )
@@ -680,7 +678,7 @@ class UpdateChecker:
                 else:
                     package.set_status(Addon.Status.NO_UPDATE_AVAILABLE)
             except RuntimeError:
-                FreeCAD.Console.PrintWarning(
+                fci.Console.PrintWarning(
                     translate(
                         "AddonsInstaller",
                         "Failed to read metadata from {name}",
@@ -703,7 +701,7 @@ class UpdateChecker:
                 url = "https://wiki.freecad.org/Macro_" + mac
                 macro_wrapper.macro.fill_details_from_wiki(url)
         except RuntimeError:
-            FreeCAD.Console.PrintWarning(
+            fci.Console.PrintWarning(
                 translate(
                     "AddonsInstaller",
                     "Failed to fetch code for macro '{name}'",
@@ -717,9 +715,9 @@ class UpdateChecker:
         hasher2 = hashlib.sha1()
         hasher1.update(macro_wrapper.macro.code.encode("utf-8"))
         new_sha1 = hasher1.hexdigest()
-        test_file_one = os.path.join(FreeCAD.getUserMacroDir(True), macro_wrapper.macro.filename)
+        test_file_one = os.path.join(fci.DataPaths().macro_dir, macro_wrapper.macro.filename)
         test_file_two = os.path.join(
-            FreeCAD.getUserMacroDir(True), "Macro_" + macro_wrapper.macro.filename
+            fci.DataPaths().macro_dir, "Macro_" + macro_wrapper.macro.filename
         )
         if os.path.exists(test_file_one):
             with open(test_file_one, "rb") as f:
@@ -776,7 +774,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
             if not worker.isFinished():
                 # The Qt Python translation extractor doesn't support splitting this string (yet)
                 # pylint: disable=line-too-long
-                FreeCAD.Console.PrintError(
+                fci.Console.PrintError(
                     translate(
                         "AddonsInstaller",
                         "Addon Manager: a worker process failed to complete while fetching {name}",
@@ -791,7 +789,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
 
         if len(self.failed) > 0:
             num_failed = len(self.failed)
-            FreeCAD.Console.PrintWarning(
+            fci.Console.PrintWarning(
                 translate(
                     "AddonsInstaller",
                     "Out of {num_macros} macros, {num_failed} timed out while processing",
@@ -814,7 +812,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
                     worker.blockSignals(True)
                     worker.requestInterruption()
                     if not worker.wait(100):
-                        FreeCAD.Console.PrintWarning(
+                        fci.Console.PrintWarning(
                             translate(
                                 "AddonsInstaller",
                                 "Addon Manager: a worker process failed to halt ({name})",
@@ -865,7 +863,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
         """Shut down all running workers and exit the thread"""
         if not worker.isFinished():
             macro_name = worker.macro.name
-            FreeCAD.Console.PrintWarning(
+            fci.Console.PrintWarning(
                 translate(
                     "AddonsInstaller",
                     "Timeout while fetching metadata for macro {}",
@@ -876,7 +874,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
             worker.requestInterruption()
             worker.wait(100)
             if worker.isRunning():
-                FreeCAD.Console.PrintError(
+                fci.Console.PrintError(
                     translate(
                         "AddonsInstaller",
                         "Failed to kill process for macro {}!\n",
@@ -939,7 +937,7 @@ class GetBasicAddonStatsWorker(QtCore.QThread):
 
         fetch_result = NetworkManager.AM_NETWORK_MANAGER.blocking_get(self.url, 5000)
         if fetch_result is None:
-            FreeCAD.Console.PrintError(
+            fci.Console.PrintError(
                 translate(
                     "AddonsInstaller",
                     "Failed to get Addon statistics from {} -- only sorting alphabetically will"
@@ -972,7 +970,7 @@ class GetAddonScoreWorker(QtCore.QThread):
         if self.url != "TEST":
             fetch_result = NetworkManager.AM_NETWORK_MANAGER.blocking_get(self.url, 5000)
             if fetch_result is None:
-                FreeCAD.Console.PrintError(
+                fci.Console.PrintError(
                     translate(
                         "AddonsInstaller",
                         "Failed to get Addon score from '{}' -- sorting by score will fail\n",
@@ -982,7 +980,7 @@ class GetAddonScoreWorker(QtCore.QThread):
             text_result = fetch_result.data().decode("utf8")
             json_result = json.loads(text_result)
         else:
-            FreeCAD.Console.PrintWarning("Running score generation in TEST mode...\n")
+            fci.Console.PrintWarning("Running score generation in TEST mode...\n")
             json_result = {}
             for addon in self.addons:
                 if addon.macro:
@@ -1001,6 +999,6 @@ class GetAddonScoreWorker(QtCore.QThread):
                     addon.score = int(score)
                     self.update_addon_score.emit(addon)
                 except (ValueError, OverflowError):
-                    FreeCAD.Console.PrintLog(
+                    fci.Console.PrintLog(
                         f"Failed to convert score value '{score}' to an integer for {addon.name}"
                     )

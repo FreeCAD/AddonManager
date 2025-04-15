@@ -23,9 +23,15 @@
 
 import unittest
 import os
-import FreeCAD
 from addonmanager_workers_utility import ConnectionChecker
-from PySide import QtCore
+
+try:
+    from PySide import QtCore
+except ImportError:
+    try:
+        from PySide6 import QtCore
+    except ImportError:
+        from PySide2 import QtCore
 
 import NetworkManager
 
@@ -36,9 +42,7 @@ class TestWorkersUtility(unittest.TestCase):
 
     @unittest.skip("Test is slow and uses the network: refactor!")
     def setUp(self):
-        self.test_dir = os.path.join(
-            FreeCAD.getHomePath(), "Mod", "AddonManager", "AddonManagerTest", "data"
-        )
+        self.test_dir = os.path.join(os.path.dirname(__file__), "..", "data")
         self.last_result = None
 
         url = "https://api.github.com/zen"

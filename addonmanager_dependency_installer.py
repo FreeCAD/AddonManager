@@ -28,7 +28,15 @@ import subprocess
 from typing import List
 
 import addonmanager_freecad_interface as fci
-from addonmanager_pyside_interface import QObject, Signal, is_interruption_requested
+
+# Get whatever version of PySide we can
+try:
+    from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
+except ImportError:
+    try:
+        from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
+    except ImportError:
+        from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
 
 import addonmanager_utilities as utils
 from addonmanager_installer import AddonInstaller, MacroInstaller
@@ -37,14 +45,14 @@ from Addon import Addon
 translate = fci.translate
 
 
-class DependencyInstaller(QObject):
+class DependencyInstaller(QtCore.QObject):
     """Install Python dependencies using pip. Intended to be instantiated and then moved into a
     QThread: connect the run() function to the QThread's started() signal."""
 
-    no_python_exe = Signal()
-    no_pip = Signal(str)  # Attempted command
-    failure = Signal(str, str)  # Short message, detailed message
-    finished = Signal(bool)  # True if everything completed normally, otherwise false
+    no_python_exe = QtCore.Signal()
+    no_pip = QtCore.Signal(str)  # Attempted command
+    failure = QtCore.Signal(str, str)  # Short message, detailed message
+    finished = QtCore.Signal(bool)  # True if everything completed normally, otherwise false
 
     def __init__(
         self,
@@ -72,11 +80,11 @@ class DependencyInstaller(QObject):
         try:
             if self.python_requires or self.python_optional:
                 if self._verify_pip():
-                    if not is_interruption_requested():
+                    if not QtCore.QThread.currentThread().isInterruptionRequested():
                         self._install_python_packages()
             else:
                 self.required_succeeded = True
-            if not is_interruption_requested():
+            if not QtCore.QThread.currentThread().isInterruptionRequested():
                 self._install_addons()
                 self.finished_successfully = self.required_succeeded
         except RuntimeError:
@@ -117,7 +125,7 @@ class DependencyInstaller(QObject):
         for pymod in self.python_requires:
             if pymod.lower().startswith("pyside"):
                 continue  # Do not attempt to install PySide, which must be part of FreeCAD already
-            if is_interruption_requested():
+            if not QtCore.QThread.currentThread().isInterruptionRequested():
                 return False
             try:
                 proc = self._run_pip(
@@ -145,7 +153,7 @@ class DependencyInstaller(QObject):
         """Install the optional Python package dependencies. If any fail a message is printed to
         the console, but installation of the others continues."""
         for pymod in self.python_optional:
-            if is_interruption_requested():
+            if QtCore.QThread.currentThread().isInterruptionRequested():
                 return
             try:
                 proc = self._run_pip(
@@ -176,7 +184,7 @@ class DependencyInstaller(QObject):
 
     def _install_addons(self):
         for addon in self.addons:
-            if is_interruption_requested():
+            if QtCore.QThread.currentThread().isInterruptionRequested():
                 return
             fci.Console.PrintMessage(
                 translate("AddonsInstaller", "Installing required dependency {}").format(addon.name)

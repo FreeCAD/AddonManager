@@ -23,14 +23,20 @@
 
 """Misc. worker thread classes for the FreeCAD Addon Manager."""
 
-from typing import Optional
+try:
+    from PySide import QtCore
+except ImportError:
+    try:
+        from PySide6 import QtCore
+    except ImportError:
+        from PySide2 import QtCore
 
-import FreeCAD
-from PySide import QtCore
 import NetworkManager
 import time
 
-translate = FreeCAD.Qt.translate
+import addonmanager_freecad_interface as fci
+
+translate = fci.translate
 
 
 class ConnectionChecker(QtCore.QThread):
@@ -51,7 +57,7 @@ class ConnectionChecker(QtCore.QThread):
         """Not generally called directly: create a new ConnectionChecker object and call start()
         on it to spawn a child thread."""
 
-        FreeCAD.Console.PrintLog("Checking network connection...\n")
+        fci.Console.PrintLog("Checking network connection...\n")
         url = "https://api.github.com/zen"
         self.done = False
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self.connection_data_received)
@@ -60,7 +66,7 @@ class ConnectionChecker(QtCore.QThread):
         )
         while not self.done:
             if QtCore.QThread.currentThread().isInterruptionRequested():
-                FreeCAD.Console.PrintLog("Connection check cancelled\n")
+                fci.Console.PrintLog("Connection check cancelled\n")
                 NetworkManager.AM_NETWORK_MANAGER.abort(self.request_id)
                 self.disconnect_network_manager()
                 return
@@ -76,7 +82,7 @@ class ConnectionChecker(QtCore.QThread):
             )
             self.disconnect_network_manager()
             return
-        FreeCAD.Console.PrintLog(f"GitHub's zen message response: {self.data.decode('utf-8')}\n")
+        fci.Console.PrintLog(f"GitHub's zen message response: {self.data.decode('utf-8')}\n")
         self.disconnect_network_manager()
         self.success.emit()
 
@@ -85,7 +91,7 @@ class ConnectionChecker(QtCore.QThread):
             if status == 200:
                 self.data = data.data()
             else:
-                FreeCAD.Console.PrintWarning(f"No data received: status returned was {status}\n")
+                fci.Console.PrintWarning(f"No data received: status returned was {status}\n")
                 self.data = None
             self.done = True
 
