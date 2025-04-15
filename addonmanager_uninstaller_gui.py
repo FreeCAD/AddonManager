@@ -23,15 +23,21 @@
 
 """GUI functions for uninstalling an Addon or Macro."""
 
-import FreeCAD
-import FreeCADGui
+import addonmanager_freecad_interface as fci
 
-from PySide import QtCore, QtWidgets
+# Get whatever version of PySide we can
+try:
+    from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
+except ImportError:
+    try:
+        from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
+    except ImportError:
+        from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
 
 from addonmanager_uninstaller import AddonUninstaller, MacroUninstaller
 import addonmanager_utilities as utils
 
-translate = FreeCAD.Qt.translate
+translate = fci.translate
 
 
 class AddonUninstallerGUI(QtCore.QObject):

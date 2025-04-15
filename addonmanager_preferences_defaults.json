@@ -13,6 +13,7 @@
     "CustomToolbarName": "Auto-Created Macro Toolbar",
     "DaysBetweenUpdates": -1,
     "DownloadMacros": false,
+    "FirstTimeAskingForToolbar": true,
     "GitExecutable": "Not set",
     "HideNewerFreeCADRequired": true,
     "HideObsolete": true,

@@ -548,7 +548,7 @@ def get_main_am_window():
     for widget in windows:
         if widget.objectName() == "AddonManager_Main_Window":
             return widget
-    # If there is no main AM window, we may be running unit tests: see if the Test Runner window
+    # If there is no main AM window, we may be running the internal unit tests: see if the Test Runner window
     # exists:
     for widget in windows:
         if widget.objectName() == "TestGui__UnitTest":
@@ -557,8 +557,12 @@ def get_main_am_window():
     for widget in windows:
         if hasattr(widget, "centralWidget"):
             return widget.centralWidget()
-    # Why is this code even getting called?
-    return None
+    # We are probably running in an external unit test framework, with no top-level window at all.
+    if len(windows) == 0:
+        return None
+    raise RuntimeError(
+        "Windows exist, but none of them can be identified as the primary top-level window."
+    )
 
 
 def remove_options_and_arg(call_args: List[str], deny_args: List[str]) -> List[str]:

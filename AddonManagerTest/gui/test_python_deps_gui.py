@@ -13,6 +13,7 @@ except ImportError:
     except ImportError:
         from PySide2 import QtCore, QtWidgets
 
+
 sys.path.append(
     "../.."
 )  # So that when run standalone, the Addon Manager classes imported below are available
@@ -46,8 +47,10 @@ class TestPythonPackageManager(unittest.TestCase):
 
 class TestPythonDepsStandaloneFunctions(unittest.TestCase):
 
-    @patch("addonmanager_utilities.run_interruptable_subprocess")
+    @patch("addonmanager_python_deps_gui.utils.run_interruptable_subprocess")
     def test_call_pip(self, mock_run_subprocess: MagicMock):
+        mock_run_subprocess.return_value = MagicMock()
+        mock_run_subprocess.return_value.returncode = 0
         call_pip(["arg1", "arg2", "arg3"])
         mock_run_subprocess.assert_called()
         args = mock_run_subprocess.call_args[0][0]
@@ -59,7 +62,7 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         with self.assertRaises(PipFailed):
             call_pip(["arg1", "arg2", "arg3"])
 
-    @patch("addonmanager_utilities.run_interruptable_subprocess")
+    @patch("addonmanager_python_deps_gui.utils.run_interruptable_subprocess")
     def test_call_pip_exception_raised(self, mock_run_subprocess: MagicMock):
         mock_run_subprocess.side_effect = subprocess.CalledProcessError(
             -1, "dummy_command", "Fake contents of stdout", "Fake contents of stderr"
@@ -67,10 +70,11 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         with self.assertRaises(PipFailed):
             call_pip(["arg1", "arg2", "arg3"])
 
-    @patch("addonmanager_utilities.run_interruptable_subprocess")
+    @patch("addonmanager_python_deps_gui.utils.run_interruptable_subprocess")
     def test_call_pip_splits_results(self, mock_run_subprocess: MagicMock):
         result_mock = MagicMock()
         result_mock.stdout = "\n".join(["Value 1", "Value 2", "Value 3"])
+        result_mock.returncode = 0
         mock_run_subprocess.return_value = result_mock
         result = call_pip(["arg1", "arg2", "arg3"])
         self.assertEqual(len(result), 3)
