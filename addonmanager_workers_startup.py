@@ -78,7 +78,8 @@ class CreateAddonListWorker(QtCore.QThread):
         # These addons will print an additional message informing the user Python2 only
         self.py2only = []
 
-        self.package_names = fci.DataPaths().mod_dir
+        self.package_names = []
+        self.moddir = fci.DataPaths().mod_dir
         self.current_thread = None
 
         self.git_manager = initialize_git()
