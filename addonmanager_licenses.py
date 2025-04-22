@@ -40,7 +40,11 @@ class SPDXLicenseManager:
         self._load_license_data()
 
     def _load_license_data(self):
-        spdx_path = ":/licenses/spdx.json"
+        if not __file__:
+            raise RuntimeError(
+                "The SPDXLicenseManager must be run in an environment where __file__ is known"
+            )
+        spdx_path = f"{os.path.dirname(__file__)}/Resources/licenses/spdx.json"
         if os.path.exists(spdx_path):
             with open(spdx_path, "r", encoding="utf-8") as f:
                 string_data = f.read()
