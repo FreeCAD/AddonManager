@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+exclude: |
+    (?x)^(
+        AddonManager_rc.py
+    )
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b # frozen: v5.0.0
