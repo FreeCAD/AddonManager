@@ -125,7 +125,7 @@ class DependencyInstaller(QtCore.QObject):
         for pymod in self.python_requires:
             if pymod.lower().startswith("pyside"):
                 continue  # Do not attempt to install PySide, which must be part of FreeCAD already
-            if not QtCore.QThread.currentThread().isInterruptionRequested():
+            if QtCore.QThread.currentThread().isInterruptionRequested():
                 return False
             try:
                 proc = self._run_pip(
