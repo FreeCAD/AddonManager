@@ -33,6 +33,9 @@ from datetime import date
 from typing import Dict
 
 from PySide import QtGui, QtCore, QtWidgets
+from PySide.QtGui import QDesktopServices
+from PySide.QtCore import QUrl
+
 import FreeCAD
 import FreeCADGui
 
@@ -310,6 +313,7 @@ class CommandAddonManager(QtCore.QObject):
             lambda: self.force_check_updates(standalone=True)
         )
         self.button_bar.python_dependencies.clicked.connect(self.show_python_updates_dialog)
+        self.button_bar.addons_folder.clicked.connect(self.open_addons_folder)
         self.button_bar.developer_tools.clicked.connect(self.show_developer_tools)
         self.composite_view.package_list.stop_loading.connect(self.stop_update)
         self.composite_view.package_list.setEnabled(False)
@@ -947,5 +951,9 @@ class CommandAddonManager(QtCore.QObject):
         )
         self.installer_gui.run()  # Does not block
 
+    def open_addons_folder(self):
+        addons_folder = fci.DataPaths().mod_dir
+        QDesktopServices.openUrl(QUrl.fromLocalFile(addons_folder))
+        return
 
 # @}

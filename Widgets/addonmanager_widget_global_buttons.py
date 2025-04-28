@@ -63,6 +63,7 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.update_all_addons = None
         self.check_for_updates = None
         self.python_dependencies = None
+        self.addons_folder = None
         self.developer_tools = None
         self.close = None
         self._update_ui()
@@ -76,11 +77,13 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.check_for_updates = QtWidgets.QPushButton(self)
         self.python_dependencies = QtWidgets.QPushButton(self)
         self.developer_tools = QtWidgets.QPushButton(self)
+        self.addons_folder= QtWidgets.QPushButton(self)
         self.close = QtWidgets.QPushButton(self)
         self.horizontal_layout.addWidget(self.refresh_local_cache)
         self.horizontal_layout.addWidget(self.update_all_addons)
         self.horizontal_layout.addWidget(self.check_for_updates)
         self.horizontal_layout.addWidget(self.python_dependencies)
+        self.horizontal_layout.addWidget(self.addons_folder)
         self.horizontal_layout.addWidget(self.developer_tools)
         self.horizontal_layout.addStretch()
         self.horizontal_layout.addWidget(self.close)
@@ -96,6 +99,7 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.update_all_addons.setText(translate("AddonsInstaller", "Update all addons"))
         self.check_for_updates.setText(translate("AddonsInstaller", "Check for updates"))
         self.python_dependencies.setText(translate("AddonsInstaller", "Python dependencies..."))
+        self.addons_folder.setText(translate("AddonsFolder", "Open Addons folder"))
         self.developer_tools.setText(translate("AddonsInstaller", "Developer tools..."))
         self.close.setText(translate("AddonsInstaller", "Close"))
 
