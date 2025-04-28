@@ -77,7 +77,7 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.check_for_updates = QtWidgets.QPushButton(self)
         self.python_dependencies = QtWidgets.QPushButton(self)
         self.developer_tools = QtWidgets.QPushButton(self)
-        self.addons_folder= QtWidgets.QPushButton(self)
+        self.addons_folder = QtWidgets.QPushButton(self)
         self.close = QtWidgets.QPushButton(self)
         self.horizontal_layout.addWidget(self.refresh_local_cache)
         self.horizontal_layout.addWidget(self.update_all_addons)

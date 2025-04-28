@@ -956,4 +956,5 @@ class CommandAddonManager(QtCore.QObject):
         QDesktopServices.openUrl(QUrl.fromLocalFile(addons_folder))
         return
 
+
 # @}
