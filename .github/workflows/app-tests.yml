@@ -46,6 +46,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt || true
 
-      - name: Run tests
+      - name: Run App tests
         run: |
           python AddonManagerTest/run_app_tests.py
+
+      - name: Run GUI tests
+        run: |
+          python AddonManagerTest/run_gui_tests.py
