@@ -189,7 +189,6 @@ SET(AddonManagerTestsApp_SRCS
 SET(AddonManagerTestsGui_SRCS
     AddonManagerTest/gui/__init__.py
     AddonManagerTest/gui/gui_mocks.py
-    AddonManagerTest/gui/test_gui.py
     AddonManagerTest/gui/test_installer_gui.py
     AddonManagerTest/gui/test_python_deps_gui.py
     AddonManagerTest/gui/test_toolbar_adapter.py

@@ -56,7 +56,7 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         args = mock_run_subprocess.call_args[0][0]
         self.assertTrue("pip" in args)
 
-    @patch("addonmanager_python_deps_gui.get_python_exe")
+    @patch("addonmanager_python_deps_gui.utils.fci.get_python_exe")
     def test_call_pip_no_python(self, mock_get_python_exe: MagicMock):
         mock_get_python_exe.return_value = None
         with self.assertRaises(PipFailed):

@@ -25,12 +25,17 @@ import sys
 
 # Check if PySide6 is used
 QApplication = None
+pyside_version = 0
 try:
     from PySide6 import QtCore, QtWidgets
     from PySide6.QtWidgets import QApplication, QWidget
+
+    pyside_version = 6
 except ImportError:
     from PySide2 import QtCore, QtWidgets
     from PySide2.QtWidgets import QApplication, QWidget
+
+    pyside_version = 2
 
 app = None
 if QApplication:
@@ -64,4 +69,7 @@ if __name__ == "__main__":
     QtCore.QTimer.singleShot(0, run_addon_manager)
     app.setQuitOnLastWindowClosed(False)
     setup_translations()
-    app.exec()
+    if pyside_version == 6:
+        app.exec()
+    else:
+        app.exec_()

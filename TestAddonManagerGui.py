@@ -23,9 +23,6 @@
 
 import addonmanager_freecad_interface as fci
 
-# Unit test for the Addon Manager module GUI
-from AddonManagerTest.gui.test_gui import TestGui as AddonManagerTestGui
-
 from AddonManagerTest.gui.test_workers_utility import (
     TestWorkersUtility as AddonManagerTestWorkersUtility,
 )

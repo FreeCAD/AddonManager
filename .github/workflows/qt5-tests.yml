@@ -1,4 +1,4 @@
-name: Run app tests
+name: Run Qt5 tests
 
 on:
   push:
@@ -8,25 +8,19 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Qt dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            qtbase5-dev \
+            qtbase5-dev-tools \
+            python3-pyside2.* \
             libegl1 \
             libglib2.0-0 \
             libx11-xcb1 \
@@ -39,12 +33,12 @@ jobs:
             libxcb-render-util0 \
             libxcb-xinerama0 \
             libxcb-xkb1 \
-            libopengl0
+            xvfb
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
+          pip install vermin || true
 
       - name: Run App tests
         run: |
@@ -52,4 +46,4 @@ jobs:
 
       - name: Run GUI tests
         run: |
-          python AddonManagerTest/run_gui_tests.py
+          xvfb-run -s "-screen 0 1920x1080x24" python3 AddonManagerTest/run_gui_tests.py

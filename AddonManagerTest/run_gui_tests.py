@@ -12,9 +12,13 @@ QApplication = None
 try:
     from PySide6 import QtCore, QtWidgets
     from PySide6.QtWidgets import QApplication, QWidget
+
+    pyside_version = 6
 except ImportError:
     from PySide2 import QtCore, QtWidgets
     from PySide2.QtWidgets import QApplication
+
+    pyside_version = 2
 
 app = None
 if QApplication:
@@ -49,5 +53,8 @@ if __name__ == "__main__":
     s = loader.discover(start_dir="gui", pattern="test_*.py")
     r = unittest.TextTestRunner(verbosity=2)
     QtCore.QTimer.singleShot(0, lambda: run_suite(r, s))
-    app.exec()
+    if pyside_version == 6:
+        app.exec()
+    else:
+        app.exec_()
     sys.exit(not suite_result)
