@@ -14,6 +14,7 @@ SET(AddonManager_SRCS
     Init.py
     InitGui.py
     NetworkManager.py
+    PySideWrapper.py
     PythonDependencyUpdateDialog.ui
     TestAddonManagerApp.py
     add_toolbar_button_dialog.ui
