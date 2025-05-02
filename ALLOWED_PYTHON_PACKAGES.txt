@@ -1,35 +1,90 @@
-# This file lists the Python packages that the Addon Manager allows to be installed
-# automatically via pip. To request that a package be added to this list, submit a
-# pull request to the FreeCAD git repository with the requested package added. Only
-# packages in this list will be processed from the metadata.txt and requirements.txt
-# files specified by an Addon. Note that this is NOT a requirements.txt-format file,
-# no version information may be specified, and no wildcards are supported.
+# This file is a backup copy of the allow-list for python packages. The primary copy is downloaded on each run of the
+# Addon Manager from https://github.com/FreeCAD/FreeCAD-Addons. This copy is only used in the event that the online
+# version is not available.
+
+# Note that this is NOT a requirements.txt-format file, no version information may be
+# specified, and no wildcards are supported.
 
 # Allow these packages to be installed:
+PyOpenGL
+PyYAML
 aiofiles
+asyncua
+atomicwrites
 autobahn
+awkward
+backoff
+beautifulsoup4
+blinker
+capytaine
+certifi
+certify
+charset-normalizer
+comtypes
+distro
+docutils
+etabs-api
 ezdxf
+geomdl
 gmsh
 gmsh-dev
+hausdorff
+idna
+ifcopenshell
 lxml
 markdown
 matplotlib
+meshio
+monotonic
 msgpack
+networkx
+nine
+nodeeditor
+numba
 numpy
 ocp
 olefile
+openexr
 openpyxl
 pandas
 pillow
 ply
+posthog
+protobuf
 py-slvs
 pycollada
+pydocx
+pyg4ometry
 pygit2
+pyjwt
 pynastran
+pyopenxr
+pyoptools
+pypresence
+python-dateutil
+python-docx
+python-dotenv
+pyvista
+qtpy
+qtrangeslider
 requests
 rhino3dm
+scikit-image
+scikit-learn
+scikit-sparse
 scipy
+sentry-sdk
+shapely
+six
+streamdeck
+trimesh
+triangle
+tzlocal
+urllib3
+vedo
+vermin
+wakatime-cli
+xgbxml
 xlrd
 xlutils
 xlwt
-PyYAML
