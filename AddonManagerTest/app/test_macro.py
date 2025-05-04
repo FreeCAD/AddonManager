@@ -28,8 +28,6 @@ from typing import Dict
 import unittest
 from unittest.mock import MagicMock
 
-sys.path.append("../../")  # So the IDE can find the
-
 from addonmanager_macro import Macro
 
 

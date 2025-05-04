@@ -31,8 +31,6 @@ import tempfile
 from zipfile import ZipFile
 import sys
 
-sys.path.append("../../")  # So the IDE can find the imports below
-
 from addonmanager_installer import InstallationMethod, AddonInstaller, MacroInstaller
 from addonmanager_git import GitManager, initialize_git
 from addonmanager_metadata import MetadataReader

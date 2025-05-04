@@ -14,10 +14,6 @@ except ImportError:
         from PySide2 import QtCore, QtWidgets
 
 
-sys.path.append(
-    "../.."
-)  # So that when run standalone, the Addon Manager classes imported below are available
-
 from addonmanager_python_deps_gui import (
     PythonPackageManager,
     call_pip,
