@@ -28,8 +28,6 @@ import unittest.mock as mock
 
 Mock = mock.MagicMock
 
-sys.path.append("../../")
-
 
 class TestVersion(unittest.TestCase):
     def setUp(self) -> None:

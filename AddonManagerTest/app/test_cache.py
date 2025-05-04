@@ -27,8 +27,6 @@ from datetime import date
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-sys.path.append("../..")
-
 import addonmanager_cache as cache
 from AddonManagerTest.app.mocks import MockPref, MockExists
 
