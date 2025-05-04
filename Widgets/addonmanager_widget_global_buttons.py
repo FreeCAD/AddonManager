@@ -28,7 +28,7 @@ Manager main window."""
 import os
 
 from addonmanager_freecad_interface import translate
-from PySideWrapper import QtGui, QtWidgets
+from PySideWrapper import QtCore, QtGui, QtWidgets
 
 
 class WidgetGlobalButtonBar(QtWidgets.QWidget):
@@ -57,7 +57,11 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.close = QtWidgets.QPushButton(self)
 
         self.gear_tools = QtWidgets.QToolButton()
-        self.gear_tools.setPopupMode(QtWidgets.QToolButton.ToolButtonPopupMode.InstantPopup)
+        icon_path = os.path.join(os.path.dirname(__file__), "..", "Resources", "icons")
+        self.gear_tools.setIcon(QtGui.QIcon(os.path.join(icon_path, "gear.svg")))
+        self.gear_tools.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        self.gear_tools.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self.gear_tools.setStyleSheet("QToolButton::menu-indicator { image: none; }")
 
         self.addons_folder = QtGui.QAction()
         self.python_dependencies = QtGui.QAction()
