@@ -95,6 +95,8 @@ SET(AddonManagerResourceFilesIcons
     Resources/icons/document-python.svg
     Resources/icons/expanded_view.svg
     Resources/icons/process-stop.svg
+    Resources/icons/regex_bad.svg
+    Resources/icons/regex_ok.svg
     Resources/icons/sort_ascending.svg
     Resources/icons/sort_descending.svg
     Resources/icons/view-refresh.svg
@@ -196,7 +198,15 @@ SET(AddonManagerTestsGui_SRCS
     AddonManagerTest/gui/test_toolbar_adapter.py
     AddonManagerTest/gui/test_uninstaller_gui.py
     AddonManagerTest/gui/test_update_all_gui.py
+    AddonManagerTest/gui/test_widget_addon_buttons.py
+    AddonManagerTest/gui/test_widget_filter_selector.py
+    AddonManagerTest/gui/test_widget_global_buttons.py
+    AddonManagerTest/gui/test_widget_package_details_view.py
     AddonManagerTest/gui/test_widget_progress_bar.py
+    AddonManagerTest/gui/test_widget_readme_browser.py
+    AddonManagerTest/gui/test_widget_search.py
+    AddonManagerTest/gui/test_widget_view_control_bar.py
+    AddonManagerTest/gui/test_widget_view_selector.py
     AddonManagerTest/gui/test_workers_startup.py
     AddonManagerTest/gui/test_workers_utility.py
 )

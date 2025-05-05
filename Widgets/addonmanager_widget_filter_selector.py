@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # ***************************************************************************
 # *                                                                         *
-# *   Copyright (c) 2022-2024 FreeCAD Project Association                   *
+# *   Copyright (c) 2022-2025 The FreeCAD project association AISBL         *
 # *                                                                         *
-# *   This file is part of FreeCAD.                                         *
+# *   This file is part of the FreeCAD Addon Manager.                       *
 # *                                                                         *
 # *   FreeCAD is free software: you can redistribute it and/or modify it    *
 # *   under the terms of the GNU Lesser General Public License as           *
@@ -25,25 +25,9 @@
 
 from enum import IntEnum
 
-try:
-    import FreeCAD
+from addonmanager_freecad_interface import translate
 
-    translate = FreeCAD.Qt.translate
-except ImportError:
-    FreeCAD = None
-
-    def translate(_: str, text: str):
-        return text
-
-
-# Get whatever version of PySide we can
-try:
-    from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
-    except ImportError:
-        from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
+from PySideWrapper import QtCore, QtWidgets
 
 
 class FilterType(IntEnum):

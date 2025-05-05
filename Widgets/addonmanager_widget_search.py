@@ -24,18 +24,9 @@
 """Defines a QWidget-derived class for displaying the view selection buttons."""
 
 import os
+from typing import Optional
 
-try:
-    import FreeCAD
-
-    translate = FreeCAD.Qt.translate
-except ImportError:
-    FreeCAD = None
-
-    def translate(_: str, text: str):
-        return text
-
-
+from addonmanager_freecad_interface import translate
 from PySideWrapper import QtCore, QtGui, QtWidgets
 
 
@@ -64,7 +55,7 @@ class WidgetSearch(QtWidgets.QWidget):
     def _setup_connections(self):
         self.filter_line_edit.textChanged.connect(self.set_text_filter)
 
-    def set_text_filter(self, text_filter: str) -> None:
+    def set_text_filter(self, text_filter: Optional[str]) -> None:
         """Set the current filter. If the filter is valid, this will emit a filter_changed
         signal. text_filter may be regular expression."""
 
@@ -76,21 +67,22 @@ class WidgetSearch(QtWidgets.QWidget):
                     translate("AddonsInstaller", "Filter is valid")
                 )
                 icon = QtGui.QIcon.fromTheme(
-                    "ok", QtGui.QIcon(os.path.join(icon_path, "edit_OK.svg"))
+                    "ok", QtGui.QIcon(os.path.join(icon_path, "regex_ok.svg"))
                 )
                 self.filter_validity_label.setPixmap(icon.pixmap(16, 16))
+                self.search_changed.emit(text_filter)
             else:
                 self.filter_validity_label.setToolTip(
                     translate("AddonsInstaller", "Filter regular expression is invalid")
                 )
                 icon = QtGui.QIcon.fromTheme(
-                    "ok", QtGui.QIcon(os.path.join(icon_path, "edit_Cancel.svg"))
+                    "cancel", QtGui.QIcon(os.path.join(icon_path, "regex_bad.svg"))
                 )
                 self.filter_validity_label.setPixmap(icon.pixmap(16, 16))
             self.filter_validity_label.show()
         else:
             self.filter_validity_label.hide()
-        self.search_changed.emit(text_filter)
+            self.search_changed.emit(text_filter)
 
     def retranslateUi(self, _):
         self.filter_line_edit.setPlaceholderText(

@@ -26,16 +26,7 @@
 from enum import Enum, auto
 import os
 
-try:
-    import FreeCAD
-
-    translate = FreeCAD.Qt.translate
-except ImportError:
-    FreeCAD = None
-
-    def translate(_: str, text: str):
-        return text
-
+from addonmanager_freecad_interface import translate
 
 from PySideWrapper import QtGui, QtWidgets
 

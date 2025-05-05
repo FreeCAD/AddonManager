@@ -26,22 +26,17 @@ from enum import Enum, auto
 import os
 from typing import Optional
 
-try:
-    import FreeCAD
-
-    translate = FreeCAD.Qt.translate
-except ImportError:
-    FreeCAD = None
-
-    def translate(_: str, text: str):
-        return text
-
+from addonmanager_freecad_interface import translate
 
 from PySideWrapper import QtCore, QtWidgets
 
 from .addonmanager_widget_addon_buttons import WidgetAddonButtons
 from .addonmanager_widget_readme_browser import WidgetReadmeBrowser
-from .addonmanager_colors import warning_color_string, attention_color_string, bright_color_string
+from .addonmanager_colors import (
+    warning_color_string,
+    attention_color_string,
+    bright_color_string,
+)
 
 
 class MessageType(Enum):
@@ -66,8 +61,8 @@ class WarningFlags:
     obsolete: bool = False
     python2: bool = False
     required_freecad_version: Optional[str] = None
-    non_osi_approved = False
-    non_fsf_libre = False
+    non_osi_approved: bool = False
+    non_fsf_libre: bool = False
 
 
 class PackageDetailsView(QtWidgets.QWidget):
@@ -136,7 +131,7 @@ class PackageDetailsView(QtWidgets.QWidget):
     def set_installed(
         self,
         installed: bool,
-        on_date: Optional[str] = None,
+        on_date: float = None,
         version: Optional[str] = None,
         branch: Optional[str] = None,
     ):
@@ -174,11 +169,13 @@ class PackageDetailsView(QtWidgets.QWidget):
 
         if disabled:
             message = translate(
-                "AddonsInstaller", "This Addon will be disabled next time you restart FreeCAD."
+                "AddonsInstaller",
+                "This Addon will be disabled next time you restart FreeCAD.",
             )
         else:
             message = translate(
-                "AddonsInstaller", "This Addon will be enabled next time you restart FreeCAD."
+                "AddonsInstaller",
+                "This Addon will be enabled next time you restart FreeCAD.",
             )
         self.message_label.setText(f"<h3>{message}</h3>")
         self.message_label.setStyleSheet("color:" + attention_color_string())
@@ -198,7 +195,8 @@ class PackageDetailsView(QtWidgets.QWidget):
         """If the user has just updated the addon but not yet restarted, show an indication that
         we are awaiting a restart."""
         message = translate(
-            "AddonsInstaller", "This Addon has been updated. Restart FreeCAD to see changes."
+            "AddonsInstaller",
+            "This Addon has been updated. Restart FreeCAD to see changes.",
         )
         self.message_label.setText(f"<h3>{message}</h3>")
         self.message_label.setStyleSheet("color:" + attention_color_string())
@@ -296,7 +294,8 @@ class PackageDetailsView(QtWidgets.QWidget):
                 if self.installed_branch != self.update_info.branch:
                     return (
                         translate(
-                            "AddonsInstaller", "Currently on branch {}, name changed to {}"
+                            "AddonsInstaller",
+                            "Currently on branch {}, name changed to {}",
                         ).format(self.installed_branch, self.update_info.branch)
                         + "."
                     )
