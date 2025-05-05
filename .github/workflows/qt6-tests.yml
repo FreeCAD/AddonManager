@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Qt6 Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
 
     strategy:

@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    name: Qt5 Test
     runs-on: ubuntu-22.04
 
     steps:
