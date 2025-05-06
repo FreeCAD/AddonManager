@@ -83,7 +83,7 @@ class AddonCatalog:
 
     def __init__(self, data: Dict[str, Any]):
         self._original_data = data
-        self._dictionary = {}
+        self._dictionary: Dict[str, List[AddonCatalogEntry]] = {}
         self._parse_raw_data()
 
     def _parse_raw_data(self):
@@ -117,6 +117,16 @@ class AddonCatalog:
                     break
         return id_list
 
+    def get_all_addon_ids(self) -> List[str]:
+        """Get a list of all Addon IDs, even those that have no compatible versions for the current
+        version of FreeCAD."""
+        id_list = []
+        for key, value in self._dictionary.items():
+            if len(value) == 0:
+                continue
+            id_list.append(key)
+        return id_list
+
     def get_available_branches(self, addon_id: str) -> List[Tuple[str, str]]:
         """For a given ID, get the list of available branches compatible with this version of
         FreeCAD along with the branch display name. Either field may be empty, but not both. The
@@ -128,6 +138,10 @@ class AddonCatalog:
             if entry.is_compatible():
                 result.append((entry.git_ref, entry.branch_display_name))
         return result
+
+    def get_catalog(self) -> Dict[str, List[AddonCatalogEntry]]:
+        """Get access to the entire catalog, without any filtering applied."""
+        return self._dictionary
 
     def get_addon_from_id(self, addon_id: str, branch: Optional[Tuple[str, str]] = None) -> Addon:
         """Get the instantiated Addon object for the given ID and optionally branch. If no
