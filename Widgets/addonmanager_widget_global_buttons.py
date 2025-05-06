@@ -63,9 +63,16 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.gear_tools.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self.gear_tools.setStyleSheet("QToolButton::menu-indicator { image: none; }")
 
-        self.addons_folder = QtGui.QAction()
-        self.python_dependencies = QtGui.QAction()
-        self.refresh_local_cache = QtGui.QAction()
+        if hasattr(QtGui, "QAction"):
+            # Qt6
+            self.addons_folder = QtGui.QAction()
+            self.python_dependencies = QtGui.QAction()
+            self.refresh_local_cache = QtGui.QAction()
+        else:
+            # Qt5
+            self.addons_folder = QtWidgets.QAction()
+            self.python_dependencies = QtWidgets.QAction()
+            self.refresh_local_cache = QtWidgets.QAction()
         self.gear_menu = QtWidgets.QMenu(self.gear_tools)
         self.gear_menu.addAction(self.addons_folder)
         self.gear_menu.addAction(self.python_dependencies)
