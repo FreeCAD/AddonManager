@@ -419,6 +419,7 @@ class NetworkManager(QtCore.QObject):
             # whereas in Qt 6, the function seems to only accept an
             # integer.
             request.setTransferTimeout(timeout_ms)
+        request.setRawHeader(b"User-Agent", b"FreeCAD AddonManager/1.0")
         return request
 
     def abort_all(self):
