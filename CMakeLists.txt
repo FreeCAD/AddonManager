@@ -71,7 +71,6 @@ SET(AddonManager_SRCS
     developer_mode_tags.ui
     expanded_view.py
     first_run.ui
-    loading.html
     package.xml
     package_list.py
     select_toolbar_dialog.ui
