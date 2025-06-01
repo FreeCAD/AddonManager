@@ -281,9 +281,7 @@ def get_desc_regex(repo):
     if parsed_url.netloc in ["codeberg.org"]:
         return r'<meta property="og:description" content="(.*?)"'
     fci.Console.PrintLog(
-        "Debug: addonmanager_utilities.get_desc_regex: Unknown git host:",
-        repo.url,
-        "\n",
+        f"Debug: addonmanager_utilities.get_desc_regex: Unknown git host: {repo.url}\n"
     )
     return r'<meta.*?content="(.*?)".*?og:description.*?>'
 
