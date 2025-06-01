@@ -87,8 +87,8 @@ class DependencyInstaller(QtCore.QObject):
             if not QtCore.QThread.currentThread().isInterruptionRequested():
                 self._install_addons()
                 self.finished_successfully = self.required_succeeded
-        except RuntimeError:
-            pass
+        except RuntimeError as e:
+            fci.Console.PrintError(str(e) + "\n")
         self.finished.emit(self.finished_successfully)
 
     def _install_python_packages(self):

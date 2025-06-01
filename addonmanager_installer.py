@@ -164,6 +164,9 @@ class AddonInstaller(QtCore.QObject):
             ):
                 self.addon_to_install.enable_workbench()
         except utils.ProcessInterrupted:
+            # This isn't really an "exception" per se, it's that the user cancelled the operation,
+            # so internally we just act like nothing bad happened, but still return false (as in,
+            # the addon was not installed).
             pass
         except Exception as e:
             fci.Console.PrintLog(str(e) + "\n")

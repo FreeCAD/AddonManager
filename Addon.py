@@ -669,6 +669,7 @@ class Addon:
         try:
             os.unlink(stopfile)
         except FileNotFoundError:
+            # If the file disappeared on us, there's no need to do anything, it's gone already
             pass
 
         if self.contains_workbench():
@@ -771,6 +772,7 @@ class Addon:
                 if search_result:
                     return search_result.group(1)
         except OSError:
+            # Fall through to the classname-not-found case (if we couldn't read the file, etc.)
             pass
         return ""
 

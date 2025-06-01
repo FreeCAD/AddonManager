@@ -43,10 +43,8 @@ class TestUtilities(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        try:
+        if os.path.exists("AM_INSTALLATION_DIGEST.txt"):
             os.remove("AM_INSTALLATION_DIGEST.txt")
-        except FileNotFoundError:
-            pass
 
     def test_recognized_git_location(self):
         recognized_urls = [

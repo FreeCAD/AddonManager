@@ -444,10 +444,8 @@ def blocking_get(url: str, method=None) -> bytes:
         NetworkManager.InitializeNetworkManager()
         p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(url, 10000)  # 10 second timeout
         if p:
-            try:
+            if hasattr(p, "data"):
                 p = p.data()
-            except AttributeError:
-                pass
     elif requests and method is None or method == "requests":
         response = requests.get(url)
         if response.status_code == 200:
@@ -564,11 +562,9 @@ def remove_options_and_arg(call_args: List[str], deny_args: List[str]) -> List[s
     as --target and --path. We then have to remove e.g. target --path and
     its argument, if present."""
     for deny_arg in deny_args:
-        try:
+        if deny_arg in call_args:
             index = call_args.index(deny_arg)
             del call_args[index : index + 2]  # The option and its argument
-        except ValueError:
-            pass
     return call_args
 
 

@@ -266,10 +266,8 @@ class DataPaths:
         if not FreeCAD and self.reference_count <= 0:
             paths = [self.data_dir, self.mod_dir, self.cache_dir, self.macro_dir, self.mod_dir]
             for path in paths:
-                try:
+                if os.path.isdir(path):
                     os.rmdir(path)
-                except FileNotFoundError:
-                    pass
             self.data_dir = None
             self.mod_dir = None
             self.cache_dir = None

@@ -292,6 +292,7 @@ class NetworkManager(QtCore.QObject):
                     self.monitored_connections.append(item.index)
                 self.__launch_request(item.index, item.request)
         except queue.Empty:
+            # Once the queue is empty, there's nothing left to do for now
             pass
 
     def __launch_request(self, index: int, request: QtNetwork.QNetworkRequest) -> None:

@@ -476,5 +476,7 @@ def initialize_git() -> Optional[GitManager]:
         try:
             git_manager = GitManager()
         except NoGitFound:
+            # If git wasn't found, we call just fall through to returning the None that is already
+            # assigned to git_manager
             pass
     return git_manager

@@ -863,6 +863,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
                 )
             worker.start()
         except queue.Empty:
+            # If the queue is empty it's not actually an error, it's an expected end condition
             pass
 
     def terminate(self, worker) -> None:
