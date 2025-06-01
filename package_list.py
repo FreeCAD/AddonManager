@@ -230,6 +230,9 @@ class PackageListItemModel(QtCore.QAbstractListModel):
         if role == SortOptions.Score:
             return self.repos[row].score
 
+        # Anything else:
+        return None
+
     def headerData(self, _unused1, _unused2, _role=QtCore.Qt.DisplayRole):
         """No header in this implementation: always returns None."""
         return None
