@@ -31,12 +31,12 @@ import addonmanager_freecad_interface as fci
 
 # Get whatever version of PySide we can
 try:
-    from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
+    from PySide import QtCore  # Use the FreeCAD wrapper
 except ImportError:
     try:
-        from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
+        from PySide6 import QtCore  # Outside FreeCAD, try Qt6 first
     except ImportError:
-        from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
+        from PySide2 import QtCore  # Fall back to Qt5
 
 import addonmanager_utilities as utils
 from addonmanager_installer import AddonInstaller, MacroInstaller

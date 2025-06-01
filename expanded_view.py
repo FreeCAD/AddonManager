@@ -8,7 +8,7 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySideWrapper import QtCore, QtGui, QtWidgets
+from PySideWrapper import QtCore, QtWidgets
 
 
 class Ui_ExpandedView(object):

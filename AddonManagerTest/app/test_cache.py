@@ -21,7 +21,6 @@
 # *                                                                         *
 # ***************************************************************************
 import datetime
-import sys
 import unittest
 from datetime import date
 from unittest import TestCase

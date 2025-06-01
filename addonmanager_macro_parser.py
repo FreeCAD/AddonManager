@@ -22,7 +22,6 @@
 # ***************************************************************************
 
 """Contains the parser class for extracting metadata from a FreeCAD macro"""
-import datetime
 
 # pylint: disable=too-few-public-methods
 
@@ -38,10 +37,8 @@ except ImportError:
     QtCore = None
 
 try:
-    import FreeCAD
     from addonmanager_licenses import get_license_manager
 except ImportError:
-    FreeCAD = None
     get_license_manager = None
 
 

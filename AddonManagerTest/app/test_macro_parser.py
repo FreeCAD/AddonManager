@@ -25,7 +25,6 @@
 
 import io
 import os
-import sys
 import unittest
 
 from addonmanager_macro_parser import MacroParser

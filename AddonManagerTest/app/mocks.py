@@ -26,8 +26,7 @@
 # pylint: disable=too-few-public-methods,too-many-instance-attributes,missing-function-docstring
 
 import os
-from typing import Union, List
-import xml.etree.ElementTree as ElemTree
+from typing import List
 
 
 class GitFailed(RuntimeError):

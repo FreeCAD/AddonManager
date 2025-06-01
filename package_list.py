@@ -22,7 +22,6 @@
 # ***************************************************************************
 
 """Defines the PackageList QWidget for displaying a list of Addons."""
-import datetime
 import threading
 
 import addonmanager_freecad_interface as fci

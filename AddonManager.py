@@ -63,7 +63,7 @@ from addonmanager_firstrun import FirstRunDialog
 from addonmanager_connection_checker import ConnectionCheckerGUI
 from addonmanager_devmode_metadata_checker import MetadataValidators
 
-from addonmanager_metadata import Metadata, MetadataReader
+from addonmanager_metadata import MetadataReader
 
 import NetworkManager
 

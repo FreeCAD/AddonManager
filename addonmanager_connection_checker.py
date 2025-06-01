@@ -26,7 +26,6 @@
 import addonmanager_freecad_interface as fci
 from PySideWrapper import QtCore, QtWidgets
 
-import NetworkManager
 from addonmanager_workers_utility import ConnectionChecker
 
 translate = fci.translate

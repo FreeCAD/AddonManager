@@ -31,7 +31,6 @@ from enum import IntEnum, auto
 from typing import Tuple, Dict, List, Optional
 
 from addonmanager_licenses import get_license_manager
-import addonmanager_freecad_interface as fci
 
 try:
     # If this system provides a secure parser, use that:

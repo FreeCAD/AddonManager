@@ -23,7 +23,6 @@
 
 
 import unittest
-from unittest.mock import patch
 
 from PySideWrapper import QtWidgets
 

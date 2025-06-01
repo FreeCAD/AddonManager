@@ -21,8 +21,6 @@
 # *                                                                         *
 # ***************************************************************************
 
-from enum import Enum, auto
-
 import addonmanager_freecad_interface as fci
 from PySideWrapper import QtGui
 

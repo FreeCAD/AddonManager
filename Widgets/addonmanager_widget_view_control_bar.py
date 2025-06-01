@@ -26,11 +26,6 @@
 from enum import IntEnum
 import os
 
-try:
-    import FreeCAD
-except ImportError:
-    FreeCAD = None
-
 from PySideWrapper import QtCore, QtGui, QtWidgets
 from .addonmanager_widget_view_selector import WidgetViewSelector
 from .addonmanager_widget_filter_selector import WidgetFilterSelector

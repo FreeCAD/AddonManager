@@ -35,14 +35,11 @@ from addonmanager_toolbar_adapter import ToolbarAdapter
 # Get whatever version of PySide we can
 try:
     from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
-    from PySide.QtCore import QT_TRANSLATE_NOOP
 except ImportError:
     try:
         from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
-        from PySide6.QtCore import QT_TRANSLATE_NOOP
     except ImportError:
         from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
-        from PySide2.QtCore import QT_TRANSLATE_NOOP
 
 from addonmanager_installer import AddonInstaller, MacroInstaller
 from addonmanager_dependency_installer import DependencyInstaller

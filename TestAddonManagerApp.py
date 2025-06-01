@@ -70,10 +70,6 @@ class TestListTerminator:
 
 
 # Basic usage mostly to get static analyzers to stop complaining about unused imports
-try:
-    import FreeCAD
-except ImportError:
-    FreeCAD = None
 loaded_gui_tests = [
     AddonManagerTestUtilities,
     AddonManagerTestAddon,

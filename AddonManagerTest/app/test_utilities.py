@@ -25,7 +25,6 @@ from datetime import datetime
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import os
-import sys
 import subprocess
 
 try:

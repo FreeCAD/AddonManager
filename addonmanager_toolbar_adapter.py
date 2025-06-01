@@ -3,14 +3,11 @@
 import addonmanager_freecad_interface as fci
 
 try:
-    from PySide import QtCore, QtWidgets  # Use the FreeCAD wrapper
     from PySide.QtCore import QT_TRANSLATE_NOOP
 except ImportError:
     try:
-        from PySide6 import QtCore, QtWidgets  # Outside FreeCAD, try Qt6 first
         from PySide6.QtCore import QT_TRANSLATE_NOOP
     except ImportError:
-        from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
         from PySide2.QtCore import QT_TRANSLATE_NOOP
 
 

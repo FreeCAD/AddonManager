@@ -49,7 +49,6 @@ class TestListTerminator:
 
 # Basic usage mostly to get static analyzers to stop complaining about unused imports
 loaded_gui_tests = [
-    AddonManagerTestGui,
     AddonManagerTestWorkersUtility,
     AddonManagerTestWorkersStartup,
     AddonManagerTestInstallerGui,

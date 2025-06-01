@@ -29,10 +29,9 @@ import os
 import shutil
 import tempfile
 from zipfile import ZipFile
-import sys
 
 from addonmanager_installer import InstallationMethod, AddonInstaller, MacroInstaller
-from addonmanager_git import GitManager, initialize_git
+from addonmanager_git import initialize_git
 from addonmanager_metadata import MetadataReader
 from Addon import Addon
 from AddonManagerTest.app.mocks import MockAddon, MockMacro
