@@ -107,7 +107,11 @@ except ImportError:
     try:
         from PySide6 import QtCore, QtWidgets
 
-        GuiUp = True if QtWidgets.QApplication.instance() else False
+        GuiUp = (
+            True
+            if hasattr(QtWidgets, "QApplication") and QtWidgets.QApplication.instance()
+            else False
+        )
         from PySide6.QtUiTools import QUiLoader
     except ImportError:
         try:
