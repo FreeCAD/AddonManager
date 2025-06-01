@@ -43,6 +43,11 @@ try:
 
     try:
         from freecad.utils import get_python_exe
+
+        try:
+            _ = get_python_exe()
+        except AttributeError as e:
+            raise RuntimeError("Could not get the FreeCAD python executable") from e
     except ImportError:
         # This was only added in FreeCAD 1.0 -- to support FreeCAD 0.21 a backup strategy must be
         # used. This code is borrowed from FreeCAD 1.1dev.

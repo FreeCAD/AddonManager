@@ -27,11 +27,6 @@ from unittest.mock import MagicMock, patch, mock_open
 import os
 import subprocess
 
-try:
-    import FreeCAD
-except ImportError:
-    FreeCAD = None
-
 from AddonManagerTest.app.mocks import MockAddon as Addon
 
 from addonmanager_utilities import (

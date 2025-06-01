@@ -4,14 +4,7 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
-try:
-    import FreeCAD
-    import FreeCADGui
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtWidgets
-    except ImportError:
-        from PySide2 import QtCore, QtWidgets
+from PySideWrapper import QtCore, QtWidgets
 
 
 from addonmanager_python_deps_gui import (
@@ -21,7 +14,7 @@ from addonmanager_python_deps_gui import (
     python_package_updates_are_available,
     parse_pip_list_output,
 )
-from AddonManagerTest.gui.gui_mocks import DialogInteractor, DialogWatcher
+from AddonManagerTest.gui.gui_mocks import DialogWatcher
 
 
 class TestPythonPackageManager(unittest.TestCase):

@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 QApplication = None
 try:
     from PySide6 import QtCore, QtWidgets
-    from PySide6.QtWidgets import QApplication, QWidget
+    from PySide6.QtWidgets import QApplication
 
     pyside_version = 6
 except ImportError:

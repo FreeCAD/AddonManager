@@ -25,7 +25,6 @@
 
 import os
 import re
-from datetime import datetime
 from urllib.parse import urlparse
 from typing import Dict, Set, List, Optional
 from threading import Lock
