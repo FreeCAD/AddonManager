@@ -36,7 +36,7 @@ class TestVersion(unittest.TestCase):
         pass
 
     def test_instantiate_license_manager(self):
-        manager = addonmanager_licenses.SPDXLicenseManager()
+        _ = addonmanager_licenses.SPDXLicenseManager()
         # Should not raise an exception...
 
     def test_is_osi_approved(self):

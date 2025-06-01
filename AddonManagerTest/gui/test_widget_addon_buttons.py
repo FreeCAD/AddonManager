@@ -33,4 +33,4 @@ class TestWidgetAddonButtons(unittest.TestCase):
     def test_instantiation(self):
         window = QtWidgets.QDialog()
         window.setObjectName("Test Widget Addon Buttons")
-        _buttons = WidgetAddonButtons(window)
+        _ = WidgetAddonButtons(window)

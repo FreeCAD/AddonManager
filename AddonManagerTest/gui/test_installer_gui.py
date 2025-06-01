@@ -392,11 +392,13 @@ class TestMacroInstallerGui(unittest.TestCase):
         self.skipTest("Test not updated to handle running outside FreeCAD")
         preferences_settings = {
             "alwaysAskForToolbar": False,
+            "FirstTimeAskingForToolbar": True,
             "CustomToolbarName": "UnitTestCustomToolbar",
         }
         preferences_replacement = fci.Preferences(preferences_settings)
-        with patch("addonmanager_installer_gui.fci.Preferences") as preferences:
-            preferences = lambda: preferences_replacement
+        with patch(
+            "addonmanager_installer_gui.fci.Preferences", return_value=preferences_replacement
+        ):
             result = self.installer._ask_for_toolbar([])
         self.assertIsNotNone(result)
         self.assertTrue(hasattr(result, "get"))
@@ -405,10 +407,14 @@ class TestMacroInstallerGui(unittest.TestCase):
 
     def test_ask_for_toolbar_with_dialog_cancelled(self):
         """If the user cancels the dialog no toolbar is created"""
-        preferences_settings = {"alwaysAskForToolbar": True}
+        preferences_settings = {
+            "alwaysAskForToolbar": True,
+            "FirstTimeAskingForToolbar": True,
+        }
         preferences_replacement = fci.Preferences(preferences_settings)
-        with patch("addonmanager_installer_gui.fci.Preferences") as preferences:
-            preferences = lambda: preferences_replacement
+        with patch(
+            "addonmanager_installer_gui.fci.Preferences", return_value=preferences_replacement
+        ):
             _ = DialogWatcher(
                 translate("select_toolbar_dialog", "Select Toolbar"),
                 QtWidgets.QDialogButtonBox.Cancel,
@@ -445,7 +451,7 @@ class TestMacroInstallerGui(unittest.TestCase):
         # Third test: the user selects a custom toolbar in the dialog, and checks the box to always
         # ask.
         self.skipTest("Test not updated to handle running outside FreeCAD")
-        dialog_interactor = DialogInteractor(
+        _ = DialogInteractor(
             translate("select_toolbar_dialog", "Select Toolbar"),
             self.interactor_selection_option_and_checkbox,
         )

@@ -634,7 +634,7 @@ class MacroInstallerGUI(QtCore.QObject):
         toolbar = self.toolbar_adapter.get_toolbar_with_name(custom_toolbar_name)
         if not toolbar:
             # They told us not to ask, but then the toolbar got deleted... ask anyway!
-            ask = fci.Preferences().rem("alwaysAskForToolbar")
+            fci.Preferences().rem("alwaysAskForToolbar")
             return self._ask_for_toolbar(custom_toolbars)
         return toolbar
 

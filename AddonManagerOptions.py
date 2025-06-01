@@ -97,7 +97,7 @@ class AddonManagerOptions:
                     pref.SetString(str(pref_entry, "utf-8"), text)
                 elif widget.metaObject().className() == "Gui::PrefFileChooser":
                     filename = str(widget.property("fileName"))
-                    filename = pref.SetString(str(pref_entry, "utf-8"), filename)
+                    pref.SetString(str(pref_entry, "utf-8"), filename)
 
         # Recurse over children
         if isinstance(widget, QtCore.QObject):
