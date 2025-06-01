@@ -536,6 +536,9 @@ class MacroInstallerGUI(QtCore.QObject):
         self.macro_dir = fci.DataPaths().macro_dir
 
     def __del__(self):
+        quit()
+
+    def quit(self):
         if self.worker_thread and hasattr(self.worker_thread, "quit"):
             self.worker_thread.quit()
             self.worker_thread.wait(500)

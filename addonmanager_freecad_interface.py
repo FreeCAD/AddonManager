@@ -264,14 +264,19 @@ class DataPaths:
     def __del__(self):
         self.reference_count -= 1
         if not FreeCAD and self.reference_count <= 0:
-            paths = [self.data_dir, self.mod_dir, self.cache_dir, self.macro_dir, self.mod_dir]
-            for path in paths:
-                if os.path.isdir(path):
-                    os.rmdir(path)
-            self.data_dir = None
-            self.mod_dir = None
-            self.cache_dir = None
-            self.macro_dir = None
+            self._delete_paths()
+
+    def _delete_paths(self):
+        if FreeCAD:
+            return
+        paths = [self.data_dir, self.mod_dir, self.cache_dir, self.macro_dir, self.mod_dir]
+        for path in paths:
+            if os.path.isdir(path):
+                os.rmdir(path)
+        self.data_dir = None
+        self.mod_dir = None
+        self.cache_dir = None
+        self.macro_dir = None
 
 
 class Preferences:
