@@ -225,9 +225,9 @@ class TestInstallerGui(unittest.TestCase):
         missing = MissingDependenciesMock()
         self.installer_gui.installer.allowed_packages = set(allowed_packages)
         self.installer_gui._clean_up_optional(missing)
-        self.assertTrue("allowed_packages_1" in missing.python_optional)
-        self.assertTrue("allowed_packages_2" in missing.python_optional)
-        self.assertFalse("disallowed_package" in missing.python_optional)
+        self.assertIn("allowed_packages_1", missing.python_optional)
+        self.assertIn("allowed_packages_2", missing.python_optional)
+        self.assertNotIn("disallowed_package", missing.python_optional)
 
     def intercept_run_dependency_installer(self, addons, python_requires, python_optional):
         self.assertEqual(python_requires, ["py_req_1", "py_req_2"])
@@ -515,7 +515,7 @@ class TestMacroInstallerGui(unittest.TestCase):
         self.installer._install_toolbar_button()
         self.assertTrue(tbi.install_macro_to_toolbar_called)
         self.assertFalse(tbi.ask_for_toolbar_called)
-        self.assertTrue("Custom_1" in self.installer.toolbar_params.GetGroups())
+        self.assertIn("Custom_1", self.installer.toolbar_params.GetGroups())
 
     def test_install_toolbar_button_existing_custom_toolbar_1(self):
         self.skipTest("Migration from toolbar_params is not reflected in the test yet")

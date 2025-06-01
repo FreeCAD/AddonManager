@@ -50,7 +50,7 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         call_pip(["arg1", "arg2", "arg3"])
         mock_run_subprocess.assert_called()
         args = mock_run_subprocess.call_args[0][0]
-        self.assertTrue("pip" in args)
+        self.assertIn("pip", args)
 
     @patch("addonmanager_python_deps_gui.utils.fci.get_python_exe")
     def test_call_pip_no_python(self, mock_get_python_exe: MagicMock):
@@ -107,8 +107,8 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
             [],
         )
         self.assertEqual(len(results_dict), 2)
-        self.assertTrue("gitdb" in results_dict)
-        self.assertTrue("setuptools" in results_dict)
+        self.assertIn("gitdb", results_dict)
+        self.assertIn("setuptools", results_dict)
         self.assertEqual(results_dict["gitdb"]["installed_version"], "4.0.9")
         self.assertEqual(results_dict["gitdb"]["available_version"], "")
         self.assertEqual(results_dict["setuptools"]["installed_version"], "41.2.0")
@@ -125,8 +125,8 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
             ],
         )
         self.assertEqual(len(results_dict), 2)
-        self.assertTrue("pip" in results_dict)
-        self.assertTrue("setuptools" in results_dict)
+        self.assertIn("pip", results_dict)
+        self.assertIn("setuptools", results_dict)
         self.assertEqual(results_dict["pip"]["installed_version"], "21.0.1")
         self.assertEqual(results_dict["pip"]["available_version"], "22.1.2")
         self.assertEqual(results_dict["setuptools"]["installed_version"], "41.2.0")
