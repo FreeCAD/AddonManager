@@ -606,14 +606,6 @@ class PackageListFilter(QtCore.QSortFilterProxyModel):
         self.hide_newer_freecad_required = hide_nfr
         self.invalidateFilter()
 
-    # def lessThan(self, left_in, right_in) -> bool:
-    #    """Enable sorting of display name (not case-sensitive)."""
-    #
-    #    left = self.sourceModel().data(left_in, self.sortRole)
-    #    right = self.sourceModel().data(right_in, self.sortRole)
-    #
-    #    return left.display_name.lower() < right.display_name.lower()
-
     def filterAcceptsRow(self, row, _parent=QtCore.QModelIndex()):
         """Do the actual filtering (called automatically by Qt when drawing the list)"""
 
