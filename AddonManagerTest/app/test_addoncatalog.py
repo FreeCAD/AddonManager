@@ -8,9 +8,9 @@ import unittest
 from unittest import mock
 from unittest.mock import patch
 
-global AddonCatalogEntry
-global AddonCatalog
-global Version
+AddonCatalogEntry = None
+AddonCatalog = None
+Version = None
 
 
 class TestAddonCatalogEntry(unittest.TestCase):
@@ -18,13 +18,14 @@ class TestAddonCatalogEntry(unittest.TestCase):
 
     def setUp(self):
         """Start mock for addonmanager_licenses class."""
-        global AddonCatalogEntry
-        global AddonCatalog
-        global Version
         self.addon_patch = mock.patch.dict("sys.modules", {"addonmanager_licenses": mock.Mock()})
         self.mock_addon_module = self.addon_patch.start()
         from AddonCatalog import AddonCatalogEntry, AddonCatalog
         from addonmanager_metadata import Version
+
+        self.AddonCatalogEntry = AddonCatalogEntry
+        self.AddonCatalog = AddonCatalog
+        self.Version = Version
 
     def tearDown(self):
         """Stop patching the addonmanager_licenses class"""
@@ -34,28 +35,28 @@ class TestAddonCatalogEntry(unittest.TestCase):
         """Given an AddonCatalogEntry that has no version restrictions, a fixed version matches."""
         with patch("AddonCatalog.fci.Version") as mock_freecad:
             mock_freecad.Version = lambda: (1, 2, 3, "dev")
-            ac = AddonCatalogEntry({})
+            ac = self.AddonCatalogEntry({})
             self.assertTrue(ac.is_compatible())
 
     def test_version_match_with_min_no_max_good_match(self):
         """Given an AddonCatalogEntry with a minimum FreeCAD version, a version smaller than that
         does not match."""
         with patch("AddonCatalog.fci.Version", return_value=(1, 2, 3, "dev")):
-            ac = AddonCatalogEntry({"freecad_min": "1.2"})
+            ac = self.AddonCatalogEntry({"freecad_min": "1.2"})
             self.assertTrue(ac.is_compatible())
 
     def test_version_match_with_max_no_min_good_match(self):
         """Given an AddonCatalogEntry with a maximum FreeCAD version, a version larger than that
         does not match."""
         with patch("AddonCatalog.fci.Version", return_value=(1, 2, 3, "dev")):
-            ac = AddonCatalogEntry({"freecad_max": "1.3"})
+            ac = self.AddonCatalogEntry({"freecad_max": "1.3"})
             self.assertTrue(ac.is_compatible())
 
     def test_version_match_with_min_and_max_good_match(self):
         """Given an AddonCatalogEntry with both a minimum and maximum FreeCAD version, a version
         between the two matches."""
         with patch("AddonCatalog.fci.Version", return_value=(1, 2, 3, "dev")):
-            ac = AddonCatalogEntry(
+            ac = self.AddonCatalogEntry(
                 {
                     "freecad_min": "1.1",
                     "freecad_max": "1.3",
@@ -66,7 +67,7 @@ class TestAddonCatalogEntry(unittest.TestCase):
     def test_version_match_with_min_and_max_bad_match_high(self):
         """Given an AddonCatalogEntry with both a minimum and maximum FreeCAD version, a version
         higher than the maximum does not match."""
-        ac = AddonCatalogEntry(
+        ac = self.AddonCatalogEntry(
             {
                 "freecad_min": "1.1",
                 "freecad_max": "1.3",
@@ -79,7 +80,7 @@ class TestAddonCatalogEntry(unittest.TestCase):
         """Given an AddonCatalogEntry with both a minimum and maximum FreeCAD version, a version
         lower than the minimum does not match."""
         with patch("AddonCatalog.fci.Version", return_value=(1, 0, 3, "dev")):
-            ac = AddonCatalogEntry(
+            ac = self.AddonCatalogEntry(
                 {
                     "freecad_min": "1.1",
                     "freecad_max": "1.3",
@@ -93,12 +94,13 @@ class TestAddonCatalog(unittest.TestCase):
 
     def setUp(self):
         """Start mock for addonmanager_licenses class."""
-        global AddonCatalog
-        global Version
         self.addon_patch = mock.patch.dict("sys.modules", {"addonmanager_licenses": mock.Mock()})
         self.mock_addon_module = self.addon_patch.start()
         from AddonCatalog import AddonCatalog
         from addonmanager_metadata import Version
+
+        self.AddonCatalog = AddonCatalog
+        self.Version = Version
 
     def tearDown(self):
         """Stop patching the addonmanager_licenses class"""
@@ -108,7 +110,7 @@ class TestAddonCatalog(unittest.TestCase):
         """Test that an addon entry for an addon with only a git ref is accepted and added, and
         appears as an available addon."""
         data = {"AnAddon": [{"git_ref": "main"}]}
-        catalog = AddonCatalog(data)
+        catalog = self.AddonCatalog(data)
         ids = catalog.get_available_addon_ids()
         self.assertEqual(len(ids), 1)
         self.assertIn("AnAddon", ids)
@@ -128,7 +130,7 @@ class TestAddonCatalog(unittest.TestCase):
                 }
             ]
         }
-        catalog = AddonCatalog(data)
+        catalog = self.AddonCatalog(data)
         ids = catalog.get_available_addon_ids()
         self.assertEqual(len(ids), 1)
         self.assertIn("AnAddon", ids)
@@ -152,7 +154,7 @@ class TestAddonCatalog(unittest.TestCase):
                 },
             ]
         }
-        catalog = AddonCatalog(data)
+        catalog = self.AddonCatalog(data)
         ids = catalog.get_available_addon_ids()
         self.assertEqual(len(ids), 1)
         self.assertIn("AnAddon", ids)
@@ -164,7 +166,7 @@ class TestAddonCatalog(unittest.TestCase):
             "AnotherAddon": [{"git_ref": "main"}],
             "YetAnotherAddon": [{"git_ref": "main"}],
         }
-        catalog = AddonCatalog(data)
+        catalog = self.AddonCatalog(data)
         ids = catalog.get_available_addon_ids()
         self.assertEqual(len(ids), 3)
         self.assertIn("AnAddon", ids)
@@ -198,14 +200,14 @@ class TestAddonCatalog(unittest.TestCase):
             ]
         }
         with patch("addonmanager_freecad_interface.Version", return_value=(1, 0, 3, "dev")):
-            catalog = AddonCatalog(data)
+            catalog = self.AddonCatalog(data)
             branches = catalog.get_available_branches("AnAddon")
             self.assertEqual(len(branches), 1)
 
     def test_load_metadata_cache(self):
         """Test that an addon with a known hash is correctly loaded (e.g. no exception is raised)"""
         data = {"AnAddon": [{"git_ref": "main"}]}
-        catalog = AddonCatalog(data)
+        catalog = self.AddonCatalog(data)
         sha = "cbce6737d7d058dca2b5ae3f2fdb8cc45b0c02bf711e75bdf5f12fb71ce87790"
         cache = {sha: "CacheData"}
         with patch("addonmanager_freecad_interface.Version", return_value=cache):
@@ -219,7 +221,7 @@ class TestAddonCatalog(unittest.TestCase):
             "_meta": {"description": "Meta", "schema_version": "1.0.0"},
             "AnAddon": [{"git_ref": "main"}],
         }
-        catalog = AddonCatalog(data)
+        catalog = self.AddonCatalog(data)
         ids = catalog.get_available_addon_ids()
         self.assertNotIn("_meta", ids)
         self.assertNotIn("$schema", ids)
