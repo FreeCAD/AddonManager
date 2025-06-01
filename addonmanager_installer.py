@@ -148,10 +148,10 @@ class AddonInstaller(QtCore.QObject):
     def run(self, install_method: InstallationMethod = InstallationMethod.ANY) -> bool:
         """Install an addon. Returns True if the addon was installed, or False if not. Emits
         either success or failure prior to returning."""
+        success = False
         try:
             addon_url = self.addon_to_install.url.replace(os.path.sep, "/")
             method_to_use = self._determine_install_method(addon_url, install_method)
-            success = False
             if method_to_use == InstallationMethod.ZIP:
                 success = self._install_by_zip()
             elif method_to_use == InstallationMethod.GIT:
@@ -166,7 +166,7 @@ class AddonInstaller(QtCore.QObject):
         except utils.ProcessInterrupted:
             pass
         except Exception as e:
-            fci.Console.PrintLog(e + "\n")
+            fci.Console.PrintLog(str(e) + "\n")
             success = False
         if success:
             if (
