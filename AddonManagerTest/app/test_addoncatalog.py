@@ -1,11 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# pylint: disable=global-at-module-level,global-statement,import-outside-toplevel,
+# pylint: import-outside-toplevel,
 
 """Tests for the AddonCatalog and AddonCatalogEntry classes."""
 
-import unittest
-from unittest import mock
+from unittest import mock, main, TestCase
 from unittest.mock import patch
 
 AddonCatalogEntry = None
@@ -13,7 +12,7 @@ AddonCatalog = None
 Version = None
 
 
-class TestAddonCatalogEntry(unittest.TestCase):
+class TestAddonCatalogEntry(TestCase):
     """Tests for the AddonCatalogEntry class."""
 
     def setUp(self):
@@ -89,7 +88,7 @@ class TestAddonCatalogEntry(unittest.TestCase):
             self.assertFalse(ac.is_compatible())
 
 
-class TestAddonCatalog(unittest.TestCase):
+class TestAddonCatalog(TestCase):
     """Tests for the AddonCatalog class."""
 
     def setUp(self):
@@ -226,3 +225,7 @@ class TestAddonCatalog(unittest.TestCase):
         self.assertNotIn("_meta", ids)
         self.assertNotIn("$schema", ids)
         self.assertIn("AnAddon", ids)
+
+
+if __name__ == "__main__":
+    main()

@@ -20,10 +20,8 @@
 # *   <https://www.gnu.org/licenses/>.                                      *
 # *                                                                         *
 # ***************************************************************************
-import datetime
-import unittest
-from datetime import date
-from unittest import TestCase
+from datetime import date, timedelta
+from unittest import TestCase, main
 from unittest.mock import MagicMock, patch
 
 import addonmanager_cache as cache
@@ -45,7 +43,7 @@ class TestCache(TestCase):
             "CustomRepositories": "",
         }
         today = date.today().isoformat()
-        yesterday = (date.today() - datetime.timedelta(1)).isoformat()
+        yesterday = (date.today() - timedelta(1)).isoformat()
 
         # Organize these as subtests because of all the patching that has to be done: once we are in this function,
         # the patch is complete, and we can just modify the return values of the fakes one by one
@@ -120,4 +118,4 @@ class TestCache(TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()

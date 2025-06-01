@@ -33,38 +33,16 @@ import subprocess
 import sys
 from functools import partial
 from typing import Dict, Iterable, List, Tuple, TypedDict
-from addonmanager_utilities import create_pip_call
+from addonmanager_utilities import (
+    create_pip_call,
+    run_interruptable_subprocess,
+    get_pip_target_directory,
+)
 
 import addonmanager_freecad_interface as fci
 
-try:
-    from PySide import QtCore, QtGui, QtWidgets
-except ImportError:
-    try:
-        from PySide6 import QtCore, QtGui, QtWidgets
-    except ImportError:
-        from PySide2 import QtCore, QtGui, QtWidgets
+from PySideWrapper import QtCore, QtGui, QtWidgets
 
-# Make sure this can run inside and outside FreeCAD, and don't require that (when run inside FreeCAD) the user has the
-# python QtUiTools installed, because FreeCAD wraps it for us.
-try:
-    import FreeCADGui
-
-    loadUi = FreeCADGui.PySideUic.loadUi
-except ImportError:
-    try:
-        from PySide6.QtUiTools import QUiLoader
-    except ImportError:
-        from PySide2.QtUiTools import QUiLoader
-
-    def loadUi(ui_file: str) -> QtWidgets.QWidget:
-        q_ui_file = QtCore.QFile(ui_file)
-        q_ui_file.open(QtCore.QFile.OpenModeFlag.ReadOnly)
-        loader = QUiLoader()
-        return loader.load(ui_file)
-
-
-import addonmanager_utilities as utils
 
 translate = fci.translate
 
@@ -123,7 +101,7 @@ def call_pip(args: List[str]) -> List[str]:
         raise PipFailed() from exception
 
     try:
-        proc = utils.run_interruptable_subprocess(call_args)
+        proc = run_interruptable_subprocess(call_args)
     except subprocess.CalledProcessError as exception:
         raise PipFailed("pip timed out") from exception
 
@@ -215,12 +193,12 @@ class PythonPackageManager:
         optional: bool
 
     def __init__(self, addons):
-        self.dlg = loadUi(
+        self.dlg = fci.loadUi(
             os.path.join(os.path.dirname(__file__), "PythonDependencyUpdateDialog.ui")
         )
 
         self.addons = addons
-        self.vendor_path = utils.get_pip_target_directory()
+        self.vendor_path = get_pip_target_directory()
         self.worker_thread = None
         self.worker_object = None
         self.package_list = []
@@ -405,7 +383,7 @@ class PythonPackageManager:
 
         old_directory = os.path.join(fci.DataPaths().data_dir, "AdditionalPythonPackages")
 
-        new_directory = utils.get_pip_target_directory()
+        new_directory = get_pip_target_directory()
         new_directory_name = new_directory.rsplit(os.path.sep, 1)[1]
 
         if not os.path.exists(old_directory) or os.path.exists(

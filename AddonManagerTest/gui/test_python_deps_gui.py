@@ -36,7 +36,7 @@ class TestPythonPackageManager(unittest.TestCase):
 
 class TestPythonDepsStandaloneFunctions(unittest.TestCase):
 
-    @patch("addonmanager_python_deps_gui.utils.run_interruptable_subprocess")
+    @patch("addonmanager_python_deps_gui.run_interruptable_subprocess")
     def test_call_pip(self, mock_run_subprocess: MagicMock):
         mock_run_subprocess.return_value = MagicMock()
         mock_run_subprocess.return_value.returncode = 0
@@ -45,13 +45,13 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         args = mock_run_subprocess.call_args[0][0]
         self.assertIn("pip", args)
 
-    @patch("addonmanager_python_deps_gui.utils.fci.get_python_exe")
+    @patch("addonmanager_python_deps_gui.fci.get_python_exe")
     def test_call_pip_no_python(self, mock_get_python_exe: MagicMock):
         mock_get_python_exe.return_value = None
         with self.assertRaises(PipFailed):
             call_pip(["arg1", "arg2", "arg3"])
 
-    @patch("addonmanager_python_deps_gui.utils.run_interruptable_subprocess")
+    @patch("addonmanager_python_deps_gui.run_interruptable_subprocess")
     def test_call_pip_exception_raised(self, mock_run_subprocess: MagicMock):
         mock_run_subprocess.side_effect = subprocess.CalledProcessError(
             -1, "dummy_command", "Fake contents of stdout", "Fake contents of stderr"
@@ -59,7 +59,7 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         with self.assertRaises(PipFailed):
             call_pip(["arg1", "arg2", "arg3"])
 
-    @patch("addonmanager_python_deps_gui.utils.run_interruptable_subprocess")
+    @patch("addonmanager_python_deps_gui.run_interruptable_subprocess")
     def test_call_pip_splits_results(self, mock_run_subprocess: MagicMock):
         result_mock = MagicMock()
         result_mock.stdout = "\n".join(["Value 1", "Value 2", "Value 3"])

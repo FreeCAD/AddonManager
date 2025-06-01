@@ -34,7 +34,6 @@ import xml.etree.ElementTree
 import addonmanager_freecad_interface as fci
 from addonmanager_macro import Macro
 import addonmanager_utilities as utils
-from addonmanager_utilities import construct_git_url, process_date_string_to_python_datetime
 from addonmanager_metadata import (
     Metadata,
     MetadataReader,
@@ -189,7 +188,7 @@ class Addon:
         self._clean_url()
 
         if utils.recognized_git_location(self):
-            self.metadata_url = construct_git_url(self, "package.xml")
+            self.metadata_url = utils.construct_git_url(self, "package.xml")
         else:
             self.metadata_url = None
         self.metadata: Optional[Metadata] = None
@@ -258,7 +257,7 @@ class Addon:
             elif self.macro and self.macro.date:
                 # Try to parse the date:
                 try:
-                    self._cached_update_date = process_date_string_to_python_datetime(
+                    self._cached_update_date = utils.process_date_string_to_python_datetime(
                         self.macro.date
                     )
                 except ValueError as e:
