@@ -6,7 +6,7 @@
 import os
 import AddonManager
 
-FreeCADGui.addLanguagePath(
-    os.path.join(os.path.dirname(AddonManager.__file__), "Resources", "translations")
-)
+cwd = os.path.dirname(AddonManager.__file__)
+FreeCADGui.addLanguagePath(os.path.join(cwd, "Resources", "translations"))
+FreeCADGui.addIconPath(os.path.join(cwd, "Resources", "icons"))
 FreeCADGui.addCommand("Std_AddonMgr", AddonManager.CommandAddonManager())
