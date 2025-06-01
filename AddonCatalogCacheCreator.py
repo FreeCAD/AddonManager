@@ -108,10 +108,14 @@ class CacheWriter:
         os.makedirs(self.cwd, exist_ok=True)
         os.chdir(self.cwd)
         self.create_local_copy_of_addons()
-        with open("addon_catalog_cache.json", "w", encoding="utf-8") as f:
-            f.write(json.dumps(self._cache, indent="  "))
+
+        with zipfile.ZipFile(
+            os.path.join(self.cwd, "addon_catalog_cache.zip"), "w", zipfile.ZIP_DEFLATED
+        ) as zipf:
+            zipf.writestr("cache.json", json.dumps(self._cache, indent="  "))
+
         os.chdir(original_working_directory)
-        print(f"Wrote cache to {os.path.join(self.cwd, 'addon_catalog_cache.json')}")
+        print(f"Wrote cache to {os.path.join(self.cwd, 'addon_catalog_cache.zip')}")
 
     def create_local_copy_of_addons(self):
         self.catalog = CatalogFetcher().catalog
