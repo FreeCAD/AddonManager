@@ -459,6 +459,11 @@ class GitManager:
                 + f"Called with: {' '.join(final_args)}\n\n"
                 + f"Returned stderr:\n{e.stderr}"
             ) from e
+        except utils.ProcessInterrupted as e:
+            raise GitFailed(
+                "The git process was interrupted due to a network timeout (or explicit user cancellation)\n"
+                + f"Called with: {' '.join(final_args)}\n"
+            ) from e
 
         return proc.stdout
 
