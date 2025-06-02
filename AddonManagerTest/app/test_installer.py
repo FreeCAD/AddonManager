@@ -166,19 +166,28 @@ class TestAddonInstaller(unittest.TestCase):
 
     def test_move_code_out_of_subdirectory(self):
         """All files are moved out and the subdirectory is deleted"""
-        self.mock_addon.url = "https://something.com/something_else/something"
-        installer = AddonInstaller(self.mock_addon, [])
-        with tempfile.TemporaryDirectory() as temp_dir:
-            subdir = os.path.join(temp_dir, f"something-{self.mock_addon.branch}")
-            os.mkdir(subdir)
-            with open(os.path.join(subdir, "README.txt"), "w", encoding="utf-8") as f:
-                f.write("# Test file for unit testing")
-            with open(os.path.join(subdir, "AnotherFile.txt"), "w", encoding="utf-8") as f:
-                f.write("# Test file for unit testing")
-            installer._move_code_out_of_subdirectory(temp_dir)
-            self.assertTrue(os.path.isfile(os.path.join(temp_dir, "README.txt")))
-            self.assertTrue(os.path.isfile(os.path.join(temp_dir, "AnotherFile.txt")))
-            self.assertFalse(os.path.isdir(subdir))
+        test_urls = [
+            "https://something.com/something_else/something",
+            "https://something.com/something_else/something.git",
+            "https://something.com/something_else/something/",
+            "https://something.com/something_else/something.git/",
+        ]
+        for url in test_urls:
+            with self.subTest(url=url):
+                self.mock_addon.url = url
+                installer = AddonInstaller(self.mock_addon, [])
+                # TODO: Someday use a mock filesystem instead of a temp dir
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    subdir = os.path.join(temp_dir, f"something-{self.mock_addon.branch}")
+                    os.mkdir(subdir)
+                    with open(os.path.join(subdir, "README.txt"), "w", encoding="utf-8") as f:
+                        f.write("# Test file for unit testing")
+                    with open(os.path.join(subdir, "AnotherFile.txt"), "w", encoding="utf-8") as f:
+                        f.write("# Test file for unit testing")
+                    installer._move_code_out_of_subdirectory(temp_dir)
+                    self.assertTrue(os.path.isfile(os.path.join(temp_dir, "README.txt")))
+                    self.assertTrue(os.path.isfile(os.path.join(temp_dir, "AnotherFile.txt")))
+                    self.assertFalse(os.path.isdir(subdir))
 
     def test_install_by_git(self):
         """Test using git to install. Depends on there being a local git

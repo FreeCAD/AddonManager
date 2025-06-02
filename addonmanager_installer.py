@@ -419,6 +419,8 @@ class AddonInstaller(QtCore.QObject):
 
     def _expected_subdirectory_name(self) -> str:
         url = self.addon_to_install.url
+        if url.endswith("/"):
+            url = url[:-1]
         if url.endswith(".git"):
             url = url[:-4]
         _, _, name = url.rpartition("/")
