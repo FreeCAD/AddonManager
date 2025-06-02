@@ -97,6 +97,7 @@ class CacheWriter:
 
     def __init__(self):
         self.catalog: AddonCatalog = None
+        self.icon_errors = {}
         if os.path.isabs(BASE_DIRECTORY):
             self.cwd = BASE_DIRECTORY
         else:
@@ -113,6 +114,9 @@ class CacheWriter:
             os.path.join(self.cwd, "addon_catalog_cache.zip"), "w", zipfile.ZIP_DEFLATED
         ) as zipf:
             zipf.writestr("cache.json", json.dumps(self._cache, indent="  "))
+
+        with open(os.path.join(self.cwd, "icon_errors.json"), "w") as f:
+            json.dump(self.icon_errors, f, indent="  ")
 
         os.chdir(original_working_directory)
         print(f"Wrote cache to {os.path.join(self.cwd, 'addon_catalog_cache.zip')}")
@@ -202,6 +206,7 @@ class CacheWriter:
                 with open(absolute_icon_path, "rb") as f:
                     cache_entry.icon_data = base64.b64encode(f.read()).decode("utf-8")
             else:
+                self.icon_errors[metadata.name] = relative_icon_path
                 print(f"ERROR: Could not find icon file {absolute_icon_path}")
         return cache_entry
 
