@@ -424,7 +424,7 @@ class GitManager:
             if "Windows" in platform.system():
                 git_exe += ".exe"
 
-        if platform.system() == "Darwin" and not self._xcode_command_line_tools_are_installed():
+        if platform.system() == "Darwin" and not self._git_is_real():
             return
 
         if not git_exe or not os.path.exists(git_exe):
@@ -436,14 +436,30 @@ class GitManager:
         prefs.SetString("GitExecutable", git_exe)
         self.git_exe = git_exe
 
-    def _xcode_command_line_tools_are_installed(self) -> bool:
+    @staticmethod
+    def _git_is_real() -> bool:
         """On Macs, there is *always* an executable called "git", but sometimes it's just a
         script that tells the user to install XCode's Command Line tools. So the existence of git
         on the Mac actually requires us to check for that installation."""
         try:
-            subprocess.check_output(["xcode-select", "-p"])
-            return True
+            # Get the path to git from xcrun
+            git_path = (
+                subprocess.check_output(["xcrun", "--find", "git"], stderr=subprocess.DEVNULL)
+                .decode()
+                .strip()
+            )
+            if not os.path.exists(git_path) or not os.access(git_path, os.X_OK):
+                return False
+
+            # Check if running git triggers version output
+            result = subprocess.run(
+                [git_path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+            )
+            return result.returncode == 0
+
         except subprocess.CalledProcessError:
+            return False
+        except FileNotFoundError:
             return False
 
     def _synchronous_call_git(self, args: List[str]) -> str:
