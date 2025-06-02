@@ -69,9 +69,10 @@ class TestInstallerGui(unittest.TestCase):
             translate("AddonsInstaller", "Installation Failed"),
             QtWidgets.QDialogButtonBox.Cancel,
         )
-        self.installer_gui._installation_failed(
-            self.addon_to_install, "Test of installation failure"
-        )
+        message = "Some addon failed to install, so here is a really long error message that explains in excruciating detail exactly what has gone wrong."
+        for error_line in range(100):
+            message += f"\nError line {error_line}"
+        self.installer_gui._installation_failed(self.addon_to_install, message)
         self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
         self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
 

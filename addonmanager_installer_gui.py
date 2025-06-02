@@ -502,14 +502,15 @@ class AddonInstallerGUI(QtCore.QObject):
 
     def _installation_failed(self, addon, message):
         """Called if the installation failed."""
-        QtWidgets.QMessageBox.critical(
-            utils.get_main_am_window(),
-            translate("AddonsInstaller", "Installation Failed"),
+        error_dialog = QtWidgets.QMessageBox(utils.get_main_am_window())
+        error_dialog.setIcon(QtWidgets.QMessageBox.Critical)
+        error_dialog.setWindowTitle(translate("AddonsInstaller", "Installation Failed"))
+        error_dialog.setText(
             translate("AddonsInstaller", "Failed to install {}").format(addon.name)
-            + "\n"
-            + message,
-            QtWidgets.QMessageBox.Cancel,
         )
+        error_dialog.setStandardButtons(QtWidgets.QMessageBox.Cancel)
+        error_dialog.setDetailedText(message)
+        error_dialog.exec()
         self.finished.emit()
 
 
