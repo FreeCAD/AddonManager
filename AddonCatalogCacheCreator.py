@@ -214,7 +214,11 @@ class CacheWriter:
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
     ):
         expected_name = self.get_directory_name(addon_id, index, catalog_entry)
-        self.clone_or_update(expected_name, catalog_entry.repository, catalog_entry.git_ref)
+        try:
+            self.clone_or_update(expected_name, catalog_entry.repository, catalog_entry.git_ref)
+        except RuntimeError as e:
+            print(f"ERROR: Failed to clone or update {addon_id} from {catalog_entry.repository}.")
+            print(f"ERROR: {e}")
 
     @staticmethod
     def get_directory_name(addon_id, index, catalog_entry):
