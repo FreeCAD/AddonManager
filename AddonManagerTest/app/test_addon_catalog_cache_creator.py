@@ -24,10 +24,11 @@
 """The AddonCatalogCacheCreator is an independent script that is run server-side to generate a
 cache of the addon metadata and icons. These tests verify the functionality of its methods."""
 import base64
+import dataclasses
 from unittest import mock
 
 from pyfakefs.fake_filesystem_unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import os
 
@@ -35,6 +36,62 @@ import os
 import AddonCatalogCacheCreator as accc
 import AddonCatalog
 from AddonCatalogCacheCreator import EXCLUDED_REPOS
+
+
+class TestRecursiveSerialize(TestCase):
+
+    def test_simple_object(self):
+        result = accc.recursive_serialize("just a string")
+        self.assertEqual(result, "just a string")
+
+    def test_list(self):
+        result = accc.recursive_serialize(["a", "b", "c"])
+        self.assertListEqual(result, ["a", "b", "c"])
+
+    def test_dict(self):
+        result = accc.recursive_serialize({"a": 1, "b": 2, "c": 3})
+        self.assertDictEqual(result, {"a": 1, "b": 2, "c": 3})
+
+    def test_tuple(self):
+        result = accc.recursive_serialize(("a", "b", "c"))
+        self.assertTupleEqual(result, ("a", "b", "c"))
+
+    def test_dataclasses(self):
+        @dataclasses.dataclass
+        class TestClass:
+            a: int = 0
+            b: str = "b"
+            c: float = 1.0
+
+        instance = TestClass()
+        result = accc.recursive_serialize(instance)
+        self.assertDictEqual(result, {"a": 0, "b": "b", "c": 1.0})
+
+    def test_normal_class(self):
+        class TestClass:
+            def __init__(self):
+                self.a = 0
+                self.b = "b"
+                self.c = 1.0
+
+        instance = TestClass()
+        result = accc.recursive_serialize(instance)
+        self.assertDictEqual(result, {"a": 0, "b": "b", "c": 1.0})
+
+    def test_nested_class(self):
+        @dataclasses.dataclass
+        class TestClassA:
+            a: int = 0
+            b: str = "b"
+            c: float = 1.0
+
+        class TestClassB:
+            def __init__(self):
+                self.a = TestClassA()
+
+        instance = TestClassB()
+        result = accc.recursive_serialize(instance)
+        self.assertDictEqual(result, {"a": {"a": 0, "b": "b", "c": 1.0}})
 
 
 class TestCacheWriter(TestCase):
@@ -190,11 +247,10 @@ class TestCacheWriter(TestCase):
             ),
         ]
         writer = accc.CacheWriter()
+        writer.catalog = MagicMock()
         writer.cwd = os.path.abspath(os.path.join("home", "cache"))
         writer.create_local_copy_of_single_addon("TestMod", catalog_entries)
         self.assertEqual(mock_create_with_git.call_count, 3)
-        self.assertIn("TestMod", writer._cache)
-        self.assertEqual(3, len(writer._cache["TestMod"]))
 
     @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_git")
     @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_zip")
@@ -211,12 +267,11 @@ class TestCacheWriter(TestCase):
             ),
         ]
         writer = accc.CacheWriter()
+        writer.catalog = MagicMock()
         writer.cwd = os.path.abspath(os.path.join("home", "cache"))
         writer.create_local_copy_of_single_addon("TestMod", catalog_entries)
         self.assertEqual(mock_create_with_zip.call_count, 2)
         self.assertEqual(mock_create_with_git.call_count, 1)
-        self.assertIn("TestMod", writer._cache)
-        self.assertEqual(3, len(writer._cache["TestMod"]))
 
     @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon")
     @patch("AddonCatalogCacheCreator.CatalogFetcher.fetch_catalog")
