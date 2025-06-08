@@ -24,18 +24,19 @@
 """Classes and utility functions to generate a remotely hosted cache of all addon catalog entries.
 Intended to be run by a server-side systemd timer to generate a file that is then loaded by the
 Addon Manager in each FreeCAD installation."""
-import enum
-import xml.etree.ElementTree
-from dataclasses import dataclass, asdict
-from typing import List, Optional
+from dataclasses import is_dataclass, fields
+from typing import Any, List, Optional
 
 import base64
+import enum
+import hashlib
 import io
 import json
 import os
 import requests
 import shutil
 import subprocess
+import xml.etree.ElementTree
 import zipfile
 
 import AddonCatalog
@@ -52,15 +53,23 @@ MAX_COUNT = 10000  # Do at most this many repos (for testing purposes this can b
 EXCLUDED_REPOS = ["parts_library"]
 
 
-@dataclass
-class CacheEntry:
-    """All contents of a CacheEntry are the text contents of the file listed. The icon data is
-    base64-encoded (although it was probably an SVG, other formats are supported)."""
-
-    package_xml: str = ""
-    requirements_txt: str = ""
-    metadata_txt: str = ""
-    icon_data: str = ""
+def recursive_serialize(obj: Any):
+    """Recursively serialize an object, supporting non-dataclasses that themselves contain
+    dataclasses  (in this case, AddonCatalog, which contains AddonCatalogEntry)"""
+    if is_dataclass(obj):
+        result = {}
+        for f in fields(obj):
+            value = getattr(obj, f.name)
+            result[f.name] = recursive_serialize(value)
+        return result
+    elif isinstance(obj, list):
+        return [recursive_serialize(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: recursive_serialize(v) for k, v in obj.items()}
+    elif hasattr(obj, "__dict__"):
+        return {k: recursive_serialize(v) for k, v in vars(obj).items() if not k.startswith("_")}
+    else:
+        return obj
 
 
 class GitRefType(enum.IntEnum):
@@ -113,7 +122,14 @@ class CacheWriter:
         with zipfile.ZipFile(
             os.path.join(self.cwd, "addon_catalog_cache.zip"), "w", zipfile.ZIP_DEFLATED
         ) as zipf:
-            zipf.writestr("cache.json", json.dumps(self._cache, indent="  "))
+            zipf.writestr("cache.json", json.dumps(recursive_serialize(self.catalog), indent="  "))
+
+        # Also generate the sha256 hash of the zip file and store it
+        with open("addon_catalog_cache.zip", "rb") as cache_file:
+            cache_file_content = cache_file.read()
+        sha256 = hashlib.sha256(cache_file_content).hexdigest()
+        with open("addon_catalog_cache.zip.sha256", "w", encoding="utf-8") as hash_file:
+            hash_file.write(sha256)
 
         with open(os.path.join(self.cwd, "icon_errors.json"), "w") as f:
             json.dump(self.icon_errors, f, indent="  ")
@@ -146,17 +162,12 @@ class CacheWriter:
                     "Neither git info nor zip info was specified."
                 )
                 continue
-            entry = self.generate_cache_entry(addon_id, index, catalog_entry)
-            if addon_id not in self._cache:
-                self._cache[addon_id] = []
-            if entry is not None:
-                self._cache[addon_id].append(asdict(entry))
-            else:
-                self._cache[addon_id].append({})
+            metadata = self.generate_cache_entry(addon_id, index, catalog_entry)
+            self.catalog.add_metadata_to_entry(addon_id, index, metadata)
 
     def generate_cache_entry(
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
-    ) -> Optional[CacheEntry]:
+    ) -> Optional[AddonCatalog.CatalogEntryMetadata]:
         """Create the cache entry for this catalog entry if there is data to cache. If there is
         nothing to cache, returns None."""
         path_to_package_xml = self.find_file("package.xml", addon_id, index, catalog_entry)
@@ -167,14 +178,14 @@ class CacheWriter:
         path_to_requirements = self.find_file("requirements.txt", addon_id, index, catalog_entry)
         if path_to_requirements and os.path.exists(path_to_requirements):
             if cache_entry is None:
-                cache_entry = CacheEntry()
+                cache_entry = AddonCatalog.CatalogEntryMetadata()
             with open(path_to_requirements, "r", encoding="utf-8") as f:
                 cache_entry.requirements_txt = f.read()
 
         path_to_metadata = self.find_file("metadata.txt", addon_id, index, catalog_entry)
         if path_to_metadata and os.path.exists(path_to_metadata):
             if cache_entry is None:
-                cache_entry = CacheEntry()
+                cache_entry = AddonCatalog.CatalogEntryMetadata()
             with open(path_to_metadata, "r", encoding="utf-8") as f:
                 cache_entry.metadata_txt = f.read()
 
@@ -182,8 +193,8 @@ class CacheWriter:
 
     def generate_cache_entry_from_package_xml(
         self, path_to_package_xml: str
-    ) -> Optional[CacheEntry]:
-        cache_entry = CacheEntry()
+    ) -> Optional[AddonCatalog.CatalogEntryMetadata]:
+        cache_entry = AddonCatalog.CatalogEntryMetadata()
         with open(path_to_package_xml, "r", encoding="utf-8") as f:
             cache_entry.package_xml = f.read()
         try:
