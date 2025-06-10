@@ -36,14 +36,7 @@ import zipfile
 
 import addonmanager_freecad_interface as fci
 
-try:
-    # If run from within FreeCAD, a wrapper is provided to handle the below versioning
-    from PySide import QtCore
-except ImportError:
-    try:
-        from PySide6 import QtCore
-    except ImportError:
-        from PySide2 import QtCore
+from PySideWrapper import QtCore
 
 from Addon import Addon
 import addonmanager_utilities as utils
@@ -278,7 +271,9 @@ class AddonInstaller(QtCore.QObject):
         if addon_url.startswith("file://"):
             addon_url = addon_url[len("file://") :]  # Strip off the file:// part
         name = self.addon_to_install.name
-        shutil.copytree(addon_url, os.path.join(self.installation_path, name), dirs_exist_ok=True)
+        shutil.copytree(
+            addon_url, str(os.path.join(self.installation_path, name)), dirs_exist_ok=True
+        )
         self._finalize_successful_installation()
         return True
 
@@ -299,7 +294,7 @@ class AddonInstaller(QtCore.QObject):
         """Installs the specified url by using git to clone from it. The URL can be local or remote,
         but must represent a git repository, and the url must be in a format that git can handle
         (git, ssh, rsync, file, or a bare filesystem path)."""
-        install_path = os.path.join(self.installation_path, self.addon_to_install.name)
+        install_path = str(os.path.join(self.installation_path, self.addon_to_install.name))
         try:
             if self._can_use_update():
                 self.git_manager.update(install_path)
@@ -358,7 +353,7 @@ class AddonInstaller(QtCore.QObject):
         if index == self.zip_download_index:
             self.progress_update.emit(bytes_read, data_size)
 
-    def _finish_zip(self, index: int, response_code: int, filename: os.PathLike):
+    def _finish_zip(self, index: int, response_code: int, filename: str):
         """Once the zip download is finished, unzip it into the correct location. Only called if
         the GUI is up, and the NetworkManager was responsible for the download. Do not call
         directly."""
@@ -378,12 +373,12 @@ class AddonInstaller(QtCore.QObject):
         fci.Console.PrintLog("ZIP download complete. Installing...\n")
         self._finalize_zip_installation(filename)
 
-    def _finalize_zip_installation(self, filename: os.PathLike):
+    def _finalize_zip_installation(self, filename: str):
         """Given a path to a zipfile, extract that file and put its contents in the correct
         location. Has special handling for GitHub's zip structure, which places the data in a
         subdirectory of the main directory."""
 
-        destination = os.path.join(self.installation_path, self.addon_to_install.name)
+        destination = str(os.path.join(self.installation_path, self.addon_to_install.name))
         if os.path.exists(destination):
             remove_succeeded = utils.rmdir(destination)
             if not remove_succeeded:
@@ -444,8 +439,8 @@ class AddonInstaller(QtCore.QObject):
 
     def _update_metadata(self):
         """Loads the package metadata from the Addon's downloaded package.xml file."""
-        package_xml = os.path.join(
-            self.installation_path, self.addon_to_install.name, "package.xml"
+        package_xml = str(
+            os.path.join(self.installation_path, self.addon_to_install.name, "package.xml")
         )
 
         if hasattr(self.addon_to_install, "metadata") and os.path.isfile(package_xml):
@@ -468,7 +463,7 @@ class AddonInstaller(QtCore.QObject):
 
         installed_macro_files = []
         for root, _, files in os.walk(
-            os.path.join(self.installation_path, self.addon_to_install.name)
+            str(os.path.join(self.installation_path, self.addon_to_install.name))
         ):
             for f in files:
                 if f.lower().endswith(".fcmacro"):
@@ -519,7 +514,7 @@ class MacroInstaller(QtCore.QObject):
     # is done (i.e. whatever thread this is running in can quit).
     finished = QtCore.Signal()
 
-    def __init__(self, addon: object):
+    def __init__(self, addon):
         """The provided addon object must have an attribute called "macro", and that attribute must
         itself provide a callable "install" method that takes a single string, the path to the
         installation location."""
@@ -576,7 +571,7 @@ class MacroInstaller(QtCore.QObject):
             fci.Console.PrintWarning(manifest_file)
 
     @classmethod
-    def _validate_object(cls, addon: object):
+    def _validate_object(cls, addon):
         """Make sure this object provides an attribute called "macro" with a method called
         "install" """
         if (
