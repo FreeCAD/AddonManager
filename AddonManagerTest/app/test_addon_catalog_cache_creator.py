@@ -93,6 +93,22 @@ class TestRecursiveSerialize(TestCase):
         result = accc.recursive_serialize(instance)
         self.assertDictEqual(result, {"a": {"a": 0, "b": "b", "c": 1.0}})
 
+    def test_real_catalog(self):
+        catalog_dict = {
+            "TestMod1": [
+                {"repository": "https://some.url", "git_ref": "branch-1"},
+                {"repository": "https://some.url", "git_ref": "branch-2"},
+            ],
+            "TestMod2": [
+                {"zip_url": "zip1"},
+                {"zip_url": "zip2"},
+            ],
+        }
+        catalog = AddonCatalog.AddonCatalog(catalog_dict)
+        result = accc.recursive_serialize(catalog.get_catalog())
+        self.assertIn("TestMod1", result)
+        self.assertIn("TestMod2", result)
+
 
 class TestCacheWriter(TestCase):
 

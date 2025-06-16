@@ -55,7 +55,7 @@ EXCLUDED_REPOS = ["parts_library"]
 
 def recursive_serialize(obj: Any):
     """Recursively serialize an object, supporting non-dataclasses that themselves contain
-    dataclasses  (in this case, AddonCatalog, which contains AddonCatalogEntry)"""
+    dataclasses (in this case, AddonCatalog, which contains AddonCatalogEntry)"""
     if is_dataclass(obj):
         result = {}
         for f in fields(obj):
@@ -67,7 +67,7 @@ def recursive_serialize(obj: Any):
     elif isinstance(obj, dict):
         return {k: recursive_serialize(v) for k, v in obj.items()}
     elif hasattr(obj, "__dict__"):
-        return {k: recursive_serialize(v) for k, v in vars(obj).items() if not k.startswith("_")}
+        return {k: recursive_serialize(v) for k, v in vars(obj).items() if not k.startswith("__")}
     else:
         return obj
 
@@ -122,7 +122,10 @@ class CacheWriter:
         with zipfile.ZipFile(
             os.path.join(self.cwd, "addon_catalog_cache.zip"), "w", zipfile.ZIP_DEFLATED
         ) as zipf:
-            zipf.writestr("cache.json", json.dumps(recursive_serialize(self.catalog), indent="  "))
+            zipf.writestr(
+                "cache.json",
+                json.dumps(recursive_serialize(self.catalog.get_catalog()), indent="  "),
+            )
 
         # Also generate the sha256 hash of the zip file and store it
         with open("addon_catalog_cache.zip", "rb") as cache_file:

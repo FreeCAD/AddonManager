@@ -87,13 +87,15 @@ class AddonCatalogEntry:
             if hasattr(self, key):
                 if key in ("freecad_min", "freecad_max"):
                     value = Version(from_string=value)
-                elif key == "metadata" and isinstance(value, str):
-                    value = CatalogEntryMetadata.from_dict(json.loads(value))
-                elif key == "git_ref":
-                    if self.branch_display_name is None:
-                        # The branch display name defaults to the git ref if it doesn't get set
-                        # explicitly
-                        self.branch_display_name = value
+                elif key == "metadata":
+                    if isinstance(value, dict):
+                        metadata = CatalogEntryMetadata()
+                        metadata.__dict__.update(value)
+                        value = metadata
+                    elif isinstance(value, str):
+                        value = CatalogEntryMetadata.from_dict(json.loads(value))
+                elif key == "git_ref" and self.branch_display_name is None:
+                    self.branch_display_name = value
                 setattr(self, key, value)
 
     def is_compatible(self) -> bool:
