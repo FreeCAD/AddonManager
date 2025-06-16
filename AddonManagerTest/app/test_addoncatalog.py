@@ -11,6 +11,8 @@ AddonCatalogEntry = None
 AddonCatalog = None
 Version = None
 
+from Addon import Addon
+
 
 class TestAddonCatalogEntry(TestCase):
     """Tests for the AddonCatalogEntry class."""
@@ -95,10 +97,11 @@ class TestAddonCatalog(TestCase):
         """Start mock for addonmanager_licenses class."""
         self.addon_patch = mock.patch.dict("sys.modules", {"addonmanager_licenses": mock.Mock()})
         self.mock_addon_module = self.addon_patch.start()
-        from AddonCatalog import AddonCatalog
+        from AddonCatalog import AddonCatalog, CatalogEntryMetadata
         from addonmanager_metadata import Version
 
         self.AddonCatalog = AddonCatalog
+        self.CatalogEntryMetadata = CatalogEntryMetadata
         self.Version = Version
 
     def tearDown(self):
@@ -225,6 +228,162 @@ class TestAddonCatalog(TestCase):
         self.assertNotIn("_meta", ids)
         self.assertNotIn("$schema", ids)
         self.assertIn("AnAddon", ids)
+
+    def test_get_addon_from_id_no_branch(self):
+        data = {
+            "AnAddon": [
+                {
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                    "zip_url": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+                }
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        addon = catalog.get_addon_from_id("AnAddon")
+        self.assertIsNotNone(addon)
+
+    def test_get_addon_from_id_with_branch(self):
+        data = {
+            "AnAddon": [
+                {
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                    "zip_url": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+                }
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        addon = catalog.get_addon_from_id("AnAddon", "main")
+        self.assertIsNotNone(addon)
+
+    def test_get_addon_from_id_with_wrong_branch(self):
+        data = {
+            "AnAddon": [
+                {
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                    "zip_url": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+                }
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        with self.assertRaises(ValueError):
+            _ = catalog.get_addon_from_id("AnAddon", "not_main")
+
+    def test_get_addon_from_id_with_branch_display_name(self):
+        data = {
+            "AnAddon": [
+                {
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                    "zip_url": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+                    "branch_display_name": "My great branch of doom",
+                }
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        addon = catalog.get_addon_from_id("AnAddon", "My great branch of doom")
+        self.assertIsNotNone(addon)
+
+    def test_get_addon_from_unknown_id(self):
+        data = {}  # An empty catalog can't match any ID
+        catalog = self.AddonCatalog(data)
+        with self.assertRaises(ValueError):
+            _ = catalog.get_addon_from_id("AnAddon")
+
+    def test_get_addon_no_compatible_addons(self):
+        data = {
+            "AnAddon": [
+                {
+                    "freecad_min": "1.0.0",
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                },
+                {
+                    "freecad_min": "0.21.0",
+                    "freecad_max": "0.21.99",
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "0_21_compatibility_branch",
+                    "branch_display_name": "FreeCAD 0.21 Compatibility Branch",
+                },
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        with patch("AddonCatalog.AddonCatalogEntry.is_compatible", return_value=False):
+            with self.assertRaises(ValueError):
+                _ = catalog.get_addon_from_id("AnAddon")
+
+    def test_get_addon_from_id_with_package_xml(self):
+        metadata_dict = {
+            "package_xml": """<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+  <name>Test Workbench</name>
+  <description>A package.xml file for unit testing.</description>
+  <version>1.0.1</version>
+  <date>2022-01-07</date>
+  <maintainer email="developer@freecad.org">FreeCAD Developer</maintainer>
+  <license file="LICENSE">LGPL-2.1</license>
+  <url type="repository" branch="main">https://github.com/chennes/FreeCAD-Package</url>
+
+  <content>
+    <other>
+      <name>Some content</name>
+    </other>
+  </content>
+
+</package>"""
+        }
+        addon = self._get_addon_for_test(metadata_dict)
+        self.assertEqual(addon.metadata.name, "Test Workbench")
+
+    def test_get_addon_from_id_with_metadata_txt(self):
+        metadata_dict = {
+            "metadata_txt": """
+workbenches=bim,fem,part,partdesign
+pylibs=first_lib,second_lib,third_lib
+optionalpylibs=fourth_lib,fifth_lib,sixth_lib,seventh_lib
+        """
+        }
+        addon = self._get_addon_for_test(metadata_dict)
+        self.assertEqual(3, len(addon.python_requires))
+        self.assertEqual(4, len(addon.python_optional))
+        self.assertEqual(4, len(addon.requires))
+
+    def test_get_addon_from_id_with_requirements_txt(self):
+        metadata_dict = {
+            "requirements_txt": """
+some_requirement=1.0
+some_other_requirement<=2.0
+third_requirement>=3.0
+final_requirement #yeah, some requirement
+        """
+        }
+        addon = self._get_addon_for_test(metadata_dict)
+        self.assertEqual(4, len(addon.python_requires))
+
+    def test_get_addon_from_id_with_icon_data(self):
+        metadata_dict = {
+            "icon_data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDAwIi8+PC9zdmc+"
+        }
+        addon = self._get_addon_for_test(metadata_dict)
+        self.assertIsNotNone(addon.icon)
+
+    def _get_addon_for_test(self, metadata_dict) -> Addon:
+        metadata = self.CatalogEntryMetadata.from_dict(metadata_dict)
+        data = {
+            "AnAddon": [
+                {
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                    "metadata": metadata,
+                }
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        addon = catalog.get_addon_from_id("AnAddon", "main")
+        self.assertIsNotNone(addon)
+        return addon
 
 
 if __name__ == "__main__":

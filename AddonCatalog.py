@@ -24,10 +24,17 @@
 """The Addon Catalog is the main list of all Addons along with their various
 sources and compatible versions. Added in FreeCAD 1.1 to replace .gitmodules."""
 
+import base64
+import os
+import tempfile
 from dataclasses import dataclass
+import json
 from hashlib import sha256
 from typing import Any, Dict, List, Optional, Tuple
-from addonmanager_metadata import Version
+
+from PySideWrapper import QtGui
+
+from addonmanager_metadata import Version, MetadataReader
 from Addon import Addon
 
 import addonmanager_freecad_interface as fci
@@ -42,6 +49,20 @@ class CatalogEntryMetadata:
     requirements_txt: str = ""
     metadata_txt: str = ""
     icon_data: str = ""
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "CatalogEntryMetadata":
+        """Create CatalogEntryMetadata from a data dictionary"""
+        md = CatalogEntryMetadata()
+        if "package_xml" in data:
+            md.package_xml = data["package_xml"]
+        if "requirements_txt" in data:
+            md.requirements_txt = data["requirements_txt"]
+        if "metadata_txt" in data:
+            md.metadata_txt = data["metadata_txt"]
+        if "icon_data" in data:
+            md.icon_data = data["icon_data"]
+        return md
 
 
 @dataclass
@@ -66,6 +87,13 @@ class AddonCatalogEntry:
             if hasattr(self, key):
                 if key in ("freecad_min", "freecad_max"):
                     value = Version(from_string=value)
+                elif key == "metadata" and isinstance(value, str):
+                    value = CatalogEntryMetadata.from_dict(json.loads(value))
+                elif key == "git_ref":
+                    if self.branch_display_name is None:
+                        # The branch display name defaults to the git ref if it doesn't get set
+                        # explicitly
+                        self.branch_display_name = value
                 setattr(self, key, value)
 
     def is_compatible(self) -> bool:
@@ -97,6 +125,7 @@ class AddonCatalog:
         self._original_data = data
         self._dictionary: Dict[str, List[AddonCatalogEntry]] = {}
         self._parse_raw_data()
+        self._temp_icon_files = []
 
     def _parse_raw_data(self):
         self._dictionary = {}  # Clear pre-existing contents
@@ -165,7 +194,7 @@ class AddonCatalog:
         """Get access to the entire catalog, without any filtering applied."""
         return self._dictionary
 
-    def get_addon_from_id(self, addon_id: str, branch: Optional[Tuple[str, str]] = None) -> Addon:
+    def get_addon_from_id(self, addon_id: str, branch_display_name: Optional[str] = None) -> Addon:
         """Get the instantiated Addon object for the given ID and optionally branch. If no
         branch is provided, whichever branch is the "primary" branch will be returned (i.e. the
         first branch that matches). Raises a ValueError if no addon matches the request."""
@@ -174,6 +203,97 @@ class AddonCatalog:
         for entry in self._dictionary[addon_id]:
             if not entry.is_compatible():
                 continue
-            if not branch or entry.branch_display_name == branch:
-                return entry.addon
-        raise ValueError(f"Addon '{addon_id}' has no compatible branches named '{branch}'")
+            if not branch_display_name or entry.branch_display_name == branch_display_name:
+                url = entry.repository if entry.repository else entry.zip_url
+                if entry.git_ref:
+                    addon = Addon(addon_id, url, branch=entry.git_ref)
+                else:
+                    addon = Addon(addon_id, url)
+                if entry.metadata:
+                    self._load_addon_metadata(addon, entry.metadata)
+                return addon
+        raise ValueError(
+            f"Addon '{addon_id}' has no compatible branches named '{branch_display_name}'"
+        )
+
+    def _load_addon_metadata(self, addon: Addon, cem: CatalogEntryMetadata):
+        if cem.package_xml:
+            metadata = MetadataReader.from_bytes(cem.package_xml.encode("utf-8"))
+            addon.set_metadata(metadata)
+        if cem.requirements_txt:
+            AddonCatalog._load_requirements_txt(addon, cem.requirements_txt)
+        if cem.metadata_txt:
+            AddonCatalog._load_metadata_txt(addon, cem.metadata_txt)
+        if cem.icon_data:
+            self._load_icon_data(addon, cem.icon_data)
+
+    @staticmethod
+    def _load_metadata_txt(repo: Addon, data: str):
+        """Process the metadata.txt metadata file"""
+        lines = data.splitlines()
+        for line in lines:
+            if line.startswith("workbenches="):
+                depswb = line.split("=")[1].split(",")
+                for wb in depswb:
+                    wb_name = wb.strip()
+                    if wb_name:
+                        repo.requires.add(wb_name)
+                        fci.Console.PrintLog(
+                            f"{repo.display_name} requires FreeCAD Addon '{wb_name}'\n"
+                        )
+
+            elif line.startswith("pylibs="):
+                depspy = line.split("=")[1].split(",")
+                for pl in depspy:
+                    dep = pl.strip()
+                    if dep:
+                        repo.python_requires.add(dep)
+                        fci.Console.PrintLog(
+                            f"{repo.display_name} requires python package '{dep}'\n"
+                        )
+
+            elif line.startswith("optionalpylibs="):
+                opspy = line.split("=")[1].split(",")
+                for pl in opspy:
+                    dep = pl.strip()
+                    if dep:
+                        repo.python_optional.add(dep)
+                        fci.Console.PrintLog(
+                            f"{repo.display_name} optionally imports python package"
+                            + f" '{pl.strip()}'\n"
+                        )
+
+    @staticmethod
+    def _load_requirements_txt(repo: Addon, data: str):
+        """Process the requirements.txt metadata file"""
+
+        lines = data.splitlines()
+        for line in lines:
+            break_chars = " <>=~!+#"
+            package = line
+            for n, c in enumerate(line):
+                if c in break_chars:
+                    package = line[:n].strip()
+                    break
+            if package:
+                repo.python_requires.add(package)
+
+    def _load_icon_data(self, repo: Addon, data: str):
+        """Process the icon data."""
+        icon_data = base64.b64decode(data)
+        if not icon_data:
+            raise ValueError(f"Invalid icon data '{data}' in cache for addon '{repo.name}'")
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(icon_data)
+            tmp.close()
+            repo.icon = QtGui.QIcon(tmp.name)
+            self._temp_icon_files.append(tmp.name)
+
+    def delete_icon_files(self):
+        """Intended to be used as a callback with weakref.finalize."""
+        for tmp in self._temp_icon_files:
+            try:
+                os.unlink(tmp)
+            except OSError as e:
+                fci.Console.PrintError(f"Failed to delete icon file '{tmp}': {e}")
+        self._temp_icon_files = []
