@@ -70,12 +70,24 @@ class WidgetReadmeBrowser(QtWidgets.QTextBrowser):
         self.setGeometry(geometry)
 
     def _clean_markdown(self, md: str):
-        # Remove some HTML tags ( for now just img and br, which are the most common offenders that break rendering )
-        br_re = re.compile(r"<br\s*/?>")
-        img_re = re.compile(r"<img\s.*?src=(?:'|\")([^'\">]+)(?:'|\").*?\/?>")
+        # Remove some HTML tags (for now just img and br, which are the most common offenders that break rendering)
+        br_re = re.compile(r"<br\s*/?>", re.IGNORECASE)
+        comment_re = re.compile(r"<!--.*?-->", re.DOTALL)
+        img_re = re.compile(
+            r'<img\s+[^>]*src=["\'](?P<src>[^"\']+)["\'][^>]*'
+            r'(alt=["\'](?P<alt>[^"\']*)["\'])?[^>]*/?>',
+            re.IGNORECASE,
+        )
+
+        # Replace html images to markdown
+        def _markdown_img(m):
+            src = m.group("src")
+            alt = m.group("alt") or ""
+            return f"![{alt}]({src})"
 
         cleaned = br_re.sub(r"\n", md)
-        cleaned = img_re.sub(r"[html tag removed]", cleaned)
+        cleaned = comment_re.sub("", cleaned)
+        cleaned = img_re.sub(_markdown_img, cleaned)
 
         return cleaned
 
