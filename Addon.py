@@ -193,6 +193,7 @@ class Addon:
             self.metadata_url = None
         self.metadata: Optional[Metadata] = None
         self.icon = None  # A QIcon version of this Addon's icon
+        self.icon_data: bytes = bytes()  # In-memory version of this icon's data
         self.icon_file: str = ""  # Absolute local path to cached icon file
         self.best_icon_relative_path = ""
         self.macro = None  # Bridge to Gaël Écorchard's macro management class

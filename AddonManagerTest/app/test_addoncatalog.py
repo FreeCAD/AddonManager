@@ -3,7 +3,7 @@
 # pylint: import-outside-toplevel,
 
 """Tests for the AddonCatalog and AddonCatalogEntry classes."""
-
+import time
 from unittest import mock, main, TestCase
 from unittest.mock import patch
 
@@ -367,7 +367,7 @@ final_requirement #yeah, some requirement
             "icon_data": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDAwIi8+PC9zdmc+"
         }
         addon = self._get_addon_for_test(metadata_dict)
-        self.assertIsNotNone(addon.icon)
+        self.assertIsNotNone(addon.icon_data)
 
     def _get_addon_for_test(self, metadata_dict) -> Addon:
         metadata = self.CatalogEntryMetadata.from_dict(metadata_dict)
@@ -384,6 +384,36 @@ final_requirement #yeah, some requirement
         addon = catalog.get_addon_from_id("AnAddon", "main")
         self.assertIsNotNone(addon)
         return addon
+
+    @patch("os.path.getmtime")
+    @patch("os.path.exists")
+    @patch("os.listdir")
+    def test_instantiate_installed_addon_with_package_xml(
+        self, mock_listdir, mock_exists, mock_getmtime
+    ):
+        fake_mtime = time.time()
+
+        def exists_side_effect(path):
+            return True
+
+        mock_exists.side_effect = exists_side_effect
+        mock_listdir.return_value = ["some_file", "package.xml"]
+        mock_getmtime.return_value = fake_mtime
+
+        data = {
+            "AnAddon": [
+                {
+                    "repository": "https://github.com/FreeCAD/FreeCAD",
+                    "git_ref": "main",
+                    "zip_url": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+                }
+            ]
+        }
+        catalog = self.AddonCatalog(data)
+        addon = catalog.get_addon_from_id("AnAddon")
+
+        self.assertEqual(addon.updated_timestamp, fake_mtime)
+        self.assertEqual(addon.status(), Addon.Status.UNCHECKED)
 
 
 if __name__ == "__main__":

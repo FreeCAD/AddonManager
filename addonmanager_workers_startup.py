@@ -46,6 +46,7 @@ except ImportError:
 import addonmanager_utilities as utils
 from addonmanager_macro import Macro
 from Addon import Addon
+from AddonCatalog import AddonCatalog
 from AddonStats import AddonStats
 import NetworkManager
 from addonmanager_git import initialize_git, GitFailed
@@ -94,7 +95,7 @@ class CreateAddonListWorker(QtCore.QThread):
         except ConnectionError:
             return
         self._get_custom_addons()
-        self._get_official_addons()
+        self._get_official_addons()  # TODO: Replace with _get_addon_catalog
         self._retrieve_macros_from_git()
         self._retrieve_macros_from_wiki()
 
@@ -210,6 +211,45 @@ class CreateAddonListWorker(QtCore.QThread):
                         )
 
                 self.addon_repo.emit(repo)
+
+    def _get_addon_catalog(self):
+        url = fci.Preferences().get("AddonCatalogURL")
+        p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(url, 30000)
+        if not p:
+            fci.Console.PrintError(f"The Addon Manager failed to fetch the addon catalog from {url}\n")
+            return
+        p = p.data().decode("utf8")
+        try:
+            catalog = AddonCatalog(json.loads(p))
+        except RuntimeError as e:
+            fci.Console.PrintError(f"Failed to parse the addon catalog from {url}\n")
+            fci.Console.PrintError(str(e) + "\n")
+            return
+        for addon_id in catalog.get_available_addon_ids():
+            if addon_id in self.package_names:
+                # We already have something with this name, skip this one
+                fci.Console.PrintWarning(
+                    translate("AddonsInstaller", "WARNING: User-provided custom addon {} is overriding the one in the official addon catalog").format(
+                        addon_id
+                    )
+                )
+                continue
+            self.package_names.append(addon_id)
+            branches = catalog.get_available_branches(addon_id)
+            if not branches:
+                fci.Console.PrintWarning(
+                    f"Failed to find any compatible branches for {addon_id}. This is an internal error, please report it to the developers.\n"
+                )
+                continue
+            main = branches[0]
+            try:
+                addon = catalog.get_addon_from_id(addon_id, main[0])
+                self.addon_repo.emit(addon)
+            except RuntimeError as e:
+                fci.Console.PrintError(
+                    f"Failed to load the addon {addon_id} from the addon catalog, skipping it.\n"
+                )
+                fci.Console.PrintError(str(e) + "\n")
 
     def _get_official_addons(self):
         # querying official addons

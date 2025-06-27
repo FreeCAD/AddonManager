@@ -27,12 +27,11 @@ sources and compatible versions. Added in FreeCAD 1.1 to replace .gitmodules."""
 import base64
 import os
 import tempfile
+import xml.etree.ElementTree
 from dataclasses import dataclass
 import json
 from hashlib import sha256
 from typing import Any, Dict, List, Optional, Tuple
-
-from PySideWrapper import QtGui
 
 from addonmanager_metadata import Version, MetadataReader
 from Addon import Addon
@@ -117,6 +116,104 @@ class AddonCatalogEntry:
         sha256_hash.update(str(self).encode("utf-8"))
         return sha256_hash.hexdigest()
 
+    def instantiate_addon(self, addon_id: str) -> Addon:
+        """Return an instantiated Addon object"""
+        addon_dir = os.path.join(fci.DataPaths().mod_dir, addon_id)
+        last_modified = None
+        if os.path.exists(addon_dir) and os.listdir(addon_dir):
+            # make sure the folder exists and it contains files!
+            state = Addon.Status.UNCHECKED
+            if os.path.exists(os.path.join(addon_dir, "package.xml")):
+                last_modified = os.path.getmtime(os.path.join(addon_dir, "package.xml"))
+        else:
+            state = Addon.Status.NOT_INSTALLED
+        url = self.repository if self.repository else self.zip_url
+        if self.git_ref:
+            addon = Addon(addon_id, url, state, branch=self.git_ref)
+        else:
+            addon = Addon(addon_id, url, state)
+        if last_modified:
+            addon.updated_timestamp = last_modified
+
+        if self.metadata:
+            try:
+                self._load_addon_metadata(addon, self.metadata)
+            except xml.etree.ElementTree.ParseError:
+                fci.Console.PrintWarning(
+                    "An invalid or corrupted package.xml file was installed for"
+                )
+        return addon
+
+    def _load_addon_metadata(self, addon: Addon, cem: CatalogEntryMetadata):
+        if cem.package_xml:
+            metadata = MetadataReader.from_bytes(cem.package_xml.encode("utf-8"))
+            addon.set_metadata(metadata)
+        if cem.requirements_txt:
+            AddonCatalogEntry._load_requirements_txt(addon, cem.requirements_txt)
+        if cem.metadata_txt:
+            AddonCatalogEntry._load_metadata_txt(addon, cem.metadata_txt)
+        if cem.icon_data:
+            self._load_icon_data(addon, cem.icon_data)
+
+    @staticmethod
+    def _load_metadata_txt(repo: Addon, data: str):
+        """Process the metadata.txt metadata file"""
+        lines = data.splitlines()
+        for line in lines:
+            if line.startswith("workbenches="):
+                depswb = line.split("=")[1].split(",")
+                for wb in depswb:
+                    wb_name = wb.strip()
+                    if wb_name:
+                        repo.requires.add(wb_name)
+                        fci.Console.PrintLog(
+                            f"{repo.display_name} requires FreeCAD Addon '{wb_name}'\n"
+                        )
+
+            elif line.startswith("pylibs="):
+                depspy = line.split("=")[1].split(",")
+                for pl in depspy:
+                    dep = pl.strip()
+                    if dep:
+                        repo.python_requires.add(dep)
+                        fci.Console.PrintLog(
+                            f"{repo.display_name} requires python package '{dep}'\n"
+                        )
+
+            elif line.startswith("optionalpylibs="):
+                opspy = line.split("=")[1].split(",")
+                for pl in opspy:
+                    dep = pl.strip()
+                    if dep:
+                        repo.python_optional.add(dep)
+                        fci.Console.PrintLog(
+                            f"{repo.display_name} optionally imports python package"
+                            + f" '{pl.strip()}'\n"
+                        )
+
+    @staticmethod
+    def _load_requirements_txt(repo: Addon, data: str):
+        """Process the requirements.txt metadata file"""
+
+        lines = data.splitlines()
+        for line in lines:
+            break_chars = " <>=~!+#"
+            package = line
+            for n, c in enumerate(line):
+                if c in break_chars:
+                    package = line[:n].strip()
+                    break
+            if package:
+                repo.python_requires.add(package)
+
+    @staticmethod
+    def _load_icon_data(repo: Addon, data: str):
+        """Process the icon data."""
+
+        repo.icon_data = base64.b64decode(data)
+        if not repo.icon_data:
+            raise ValueError(f"Invalid icon data '{data}' in cache for addon '{repo.name}'")
+
 
 class AddonCatalog:
     """A catalog of addons grouped together into sets representing versions that are
@@ -193,7 +290,7 @@ class AddonCatalog:
         return result
 
     def get_catalog(self) -> Dict[str, List[AddonCatalogEntry]]:
-        """Get access to the entire catalog, without any filtering applied."""
+        """Get access to the entire catalog without any filtering applied."""
         return self._dictionary
 
     def get_addon_from_id(self, addon_id: str, branch_display_name: Optional[str] = None) -> Addon:
@@ -206,96 +303,7 @@ class AddonCatalog:
             if not entry.is_compatible():
                 continue
             if not branch_display_name or entry.branch_display_name == branch_display_name:
-                url = entry.repository if entry.repository else entry.zip_url
-                if entry.git_ref:
-                    addon = Addon(addon_id, url, branch=entry.git_ref)
-                else:
-                    addon = Addon(addon_id, url)
-                if entry.metadata:
-                    self._load_addon_metadata(addon, entry.metadata)
-                return addon
+                return entry.instantiate_addon(addon_id)
         raise ValueError(
             f"Addon '{addon_id}' has no compatible branches named '{branch_display_name}'"
         )
-
-    def _load_addon_metadata(self, addon: Addon, cem: CatalogEntryMetadata):
-        if cem.package_xml:
-            metadata = MetadataReader.from_bytes(cem.package_xml.encode("utf-8"))
-            addon.set_metadata(metadata)
-        if cem.requirements_txt:
-            AddonCatalog._load_requirements_txt(addon, cem.requirements_txt)
-        if cem.metadata_txt:
-            AddonCatalog._load_metadata_txt(addon, cem.metadata_txt)
-        if cem.icon_data:
-            self._load_icon_data(addon, cem.icon_data)
-
-    @staticmethod
-    def _load_metadata_txt(repo: Addon, data: str):
-        """Process the metadata.txt metadata file"""
-        lines = data.splitlines()
-        for line in lines:
-            if line.startswith("workbenches="):
-                depswb = line.split("=")[1].split(",")
-                for wb in depswb:
-                    wb_name = wb.strip()
-                    if wb_name:
-                        repo.requires.add(wb_name)
-                        fci.Console.PrintLog(
-                            f"{repo.display_name} requires FreeCAD Addon '{wb_name}'\n"
-                        )
-
-            elif line.startswith("pylibs="):
-                depspy = line.split("=")[1].split(",")
-                for pl in depspy:
-                    dep = pl.strip()
-                    if dep:
-                        repo.python_requires.add(dep)
-                        fci.Console.PrintLog(
-                            f"{repo.display_name} requires python package '{dep}'\n"
-                        )
-
-            elif line.startswith("optionalpylibs="):
-                opspy = line.split("=")[1].split(",")
-                for pl in opspy:
-                    dep = pl.strip()
-                    if dep:
-                        repo.python_optional.add(dep)
-                        fci.Console.PrintLog(
-                            f"{repo.display_name} optionally imports python package"
-                            + f" '{pl.strip()}'\n"
-                        )
-
-    @staticmethod
-    def _load_requirements_txt(repo: Addon, data: str):
-        """Process the requirements.txt metadata file"""
-
-        lines = data.splitlines()
-        for line in lines:
-            break_chars = " <>=~!+#"
-            package = line
-            for n, c in enumerate(line):
-                if c in break_chars:
-                    package = line[:n].strip()
-                    break
-            if package:
-                repo.python_requires.add(package)
-
-    def _load_icon_data(self, repo: Addon, data: str):
-        """Process the icon data."""
-        icon_data = base64.b64decode(data)
-        if not icon_data:
-            raise ValueError(f"Invalid icon data '{data}' in cache for addon '{repo.name}'")
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(icon_data)
-            tmp.close()
-            repo.icon = QtGui.QIcon(tmp.name)
-            self._temp_icon_files.append(tmp.name)
-
-    def delete_icon_files(self):
-        """Intended to be used as a callback with weakref.finalize."""
-        for tmp in self._temp_icon_files:
-            try:
-                os.unlink(tmp)
-            except OSError as e:
-                fci.Console.PrintError(f"Failed to delete icon file '{tmp}': {e}")
-        self._temp_icon_files = []
