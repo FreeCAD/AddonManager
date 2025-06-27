@@ -216,7 +216,9 @@ class CreateAddonListWorker(QtCore.QThread):
         url = fci.Preferences().get("AddonCatalogURL")
         p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(url, 30000)
         if not p:
-            fci.Console.PrintError(f"The Addon Manager failed to fetch the addon catalog from {url}\n")
+            fci.Console.PrintError(
+                f"The Addon Manager failed to fetch the addon catalog from {url}\n"
+            )
             return
         p = p.data().decode("utf8")
         try:
@@ -229,9 +231,10 @@ class CreateAddonListWorker(QtCore.QThread):
             if addon_id in self.package_names:
                 # We already have something with this name, skip this one
                 fci.Console.PrintWarning(
-                    translate("AddonsInstaller", "WARNING: User-provided custom addon {} is overriding the one in the official addon catalog").format(
-                        addon_id
-                    )
+                    translate(
+                        "AddonsInstaller",
+                        "WARNING: User-provided custom addon {} is overriding the one in the official addon catalog",
+                    ).format(addon_id)
                 )
                 continue
             self.package_names.append(addon_id)
