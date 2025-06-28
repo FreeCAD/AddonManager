@@ -206,16 +206,6 @@ class TestAddonCatalog(TestCase):
             branches = catalog.get_available_branches("AnAddon")
             self.assertEqual(len(branches), 1)
 
-    def test_load_metadata_cache(self):
-        """Test that an addon with a known hash is correctly loaded (e.g. no exception is raised)"""
-        data = {"AnAddon": [{"git_ref": "main"}]}
-        catalog = self.AddonCatalog(data)
-        sha = "cbce6737d7d058dca2b5ae3f2fdb8cc45b0c02bf711e75bdf5f12fb71ce87790"
-        cache = {sha: "CacheData"}
-        with patch("addonmanager_freecad_interface.Version", return_value=cache):
-            with patch("AddonCatalog.Addon") as addon_mock:
-                catalog.load_metadata_cache(cache)
-
     def test_documentation_not_added(self):
         """Ensure that the documentation objects don't get added to the catalog"""
         data = {

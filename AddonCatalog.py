@@ -26,7 +26,6 @@ sources and compatible versions. Added in FreeCAD 1.1 to replace .gitmodules."""
 
 import base64
 import os
-import tempfile
 import xml.etree.ElementTree
 from dataclasses import dataclass
 import json
@@ -66,7 +65,7 @@ class CatalogEntryMetadata:
 
 @dataclass
 class AddonCatalogEntry:
-    """Each individual entry in the catalog, storing data about a particular version of an
+    """Each entry in the catalog, storing data about a particular version of an
     Addon. Note that this class needs to be identical to the one that is used in the remote cache
     generation, so don't make changes here without ensuring that the classes are synchronized."""
 
@@ -85,7 +84,16 @@ class AddonCatalogEntry:
         for key, value in raw_data.items():
             if hasattr(self, key):
                 if key in ("freecad_min", "freecad_max"):
-                    value = Version(from_string=value)
+                    if isinstance(value, str):
+                        value = Version(from_string=value)
+                    elif isinstance(value, list):
+                        value = Version(from_list=value)
+                    elif value is None:
+                        pass
+                    elif isinstance(value, dict) and "version_as_list" in value:
+                        value = Version(from_list=value["version_as_list"])
+                    else:
+                        raise ValueError(f"Invalid value for {key}: {value}")
                 elif key == "metadata":
                     if isinstance(value, dict):
                         metadata = CatalogEntryMetadata()
@@ -161,8 +169,8 @@ class AddonCatalogEntry:
         lines = data.splitlines()
         for line in lines:
             if line.startswith("workbenches="):
-                depswb = line.split("=")[1].split(",")
-                for wb in depswb:
+                workbench_dependencies = line.split("=")[1].split(",")
+                for wb in workbench_dependencies:
                     wb_name = wb.strip()
                     if wb_name:
                         repo.requires.add(wb_name)
@@ -171,8 +179,8 @@ class AddonCatalogEntry:
                         )
 
             elif line.startswith("pylibs="):
-                depspy = line.split("=")[1].split(",")
-                for pl in depspy:
+                python_dependencies = line.split("=")[1].split(",")
+                for pl in python_dependencies:
                     dep = pl.strip()
                     if dep:
                         repo.python_requires.add(dep)
@@ -181,8 +189,8 @@ class AddonCatalogEntry:
                         )
 
             elif line.startswith("optionalpylibs="):
-                opspy = line.split("=")[1].split(",")
-                for pl in opspy:
+                optional_python_dependencies = line.split("=")[1].split(",")
+                for pl in optional_python_dependencies:
                     dep = pl.strip()
                     if dep:
                         repo.python_optional.add(dep)
@@ -218,7 +226,7 @@ class AddonCatalogEntry:
 class AddonCatalog:
     """A catalog of addons grouped together into sets representing versions that are
     compatible with different versions of FreeCAD and/or represent different available branches
-    of a given addon (e.g. a Development branch that users are presented)."""
+    of a given addon (e.g., a Development branch that users are presented)."""
 
     def __init__(self, data: Dict[str, Any]):
         self._original_data = data
@@ -233,18 +241,13 @@ class AddonCatalog:
                 continue
             self._dictionary[key] = []
             for entry in value:
-                self._dictionary[key].append(AddonCatalogEntry(entry))
-
-    def load_metadata_cache(self, cache: Dict[str, Any]):
-        """Given the raw dictionary, couple that with the remote metadata cache to create the
-        final working addon dictionary. Only create Addons that are compatible with the current
-        version of FreeCAD."""
-        for value in self._dictionary.values():
-            for entry in value:
-                sha256_hash = entry.unique_identifier()
-                print(sha256_hash)
-                if sha256_hash in cache and entry.is_compatible():
-                    entry.addon = Addon.from_cache(cache[sha256_hash])
+                try:
+                    self._dictionary[key].append(AddonCatalogEntry(entry))
+                except (RuntimeError, LookupError) as e:
+                    fci.Console.PrintWarning(
+                        f"Failed to parse AddonCatalogEntry for {key}:\n\n {entry} \n\n"
+                    )
+                    fci.Console.PrintWarning(f"{e}\n")
 
     def get_available_addon_ids(self) -> List[str]:
         """Get a list of IDs that have at least one entry compatible with the current version of
@@ -295,7 +298,7 @@ class AddonCatalog:
 
     def get_addon_from_id(self, addon_id: str, branch_display_name: Optional[str] = None) -> Addon:
         """Get the instantiated Addon object for the given ID and optionally branch. If no
-        branch is provided, whichever branch is the "primary" branch will be returned (i.e. the
+        branch is provided, whichever branch is the "primary" branch will be returned (i.e., the
         first branch that matches). Raises a ValueError if no addon matches the request."""
         if addon_id not in self._dictionary:
             raise ValueError(f"Addon '{addon_id}' not found")

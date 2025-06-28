@@ -50,7 +50,6 @@ SET(AddonManager_SRCS
     addonmanager_uninstaller_gui.py
     addonmanager_update_all_gui.py
     addonmanager_utilities.py
-    addonmanager_workers_installation.py
     addonmanager_workers_startup.py
     addonmanager_workers_utility.py
     change_branch.py

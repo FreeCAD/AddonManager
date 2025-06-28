@@ -24,6 +24,7 @@
 
 """Worker thread classes for Addon Manager startup"""
 import hashlib
+import io
 import json
 import os
 import queue
@@ -34,14 +35,9 @@ import threading
 import time
 from typing import List, Optional
 import xml.etree.ElementTree
+import zipfile
 
-try:
-    from PySide import QtCore
-except ImportError:
-    try:
-        from PySide6 import QtCore
-    except ImportError:
-        from PySide2 import QtCore
+from PySideWrapper import QtCore
 
 import addonmanager_utilities as utils
 from addonmanager_macro import Macro
@@ -56,7 +52,7 @@ import addonmanager_freecad_interface as fci
 translate = fci.translate
 
 # Workers only have one public method by design
-# pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
+# pylint: disable=c-extension-no-member, too-few-public-methods, too-many-instance-attributes
 
 
 class CreateAddonListWorker(QtCore.QThread):
@@ -77,86 +73,35 @@ class CreateAddonListWorker(QtCore.QThread):
         # These addons will print an additional message informing the user
         self.obsolete = []
 
-        # These addons will print an additional message informing the user Python2 only
+        # These addons will print an additional message informing the user it is Python2 only
         self.py2only = []
 
         self.package_names = []
-        self.moddir = fci.DataPaths().mod_dir
+        self.mod_dir = fci.DataPaths().mod_dir
         self.current_thread = None
 
         self.git_manager = initialize_git()
 
     def run(self):
-        "populates the list of addons"
+        """populates the list of addons"""
 
         self.current_thread = QtCore.QThread.currentThread()
         try:
-            self._get_freecad_addon_repo_data()
-        except ConnectionError:
+            self._get_custom_addons()
+            if CreateAddonListWorker.new_catalog_available():
+                self.get_remote_addon_catalog()
+                self.progress_made.emit("Remote catalog fetched", 50, 100)
+            else:
+                self.get_local_addon_catalog()
+                self.progress_made.emit("Local catalog loaded", 10, 100)
+            self._retrieve_macros_from_git()
+            self.progress_made.emit("git macros fetched", 75, 100)
+            self._retrieve_macros_from_wiki()
+            self.progress_made.emit("Wiki macros fetched", 100, 100)
+        except ConnectionError as e:
+            fci.Console.PrintError("Failed to connect to FreeCAD Addon remote resource:\n")
+            fci.Console.PrintError(str(e) + "\n")
             return
-        self._get_custom_addons()
-        self._get_official_addons()  # TODO: Replace with _get_addon_catalog
-        self._retrieve_macros_from_git()
-        self._retrieve_macros_from_wiki()
-
-    def _get_freecad_addon_repo_data(self):
-        # update info lists
-        p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(
-            "https://raw.githubusercontent.com/FreeCAD/FreeCAD-addons/master/addonflags.json", 5000
-        )
-        if p:
-            p = p.data().decode("utf8")
-            j = json.loads(p)
-            if "obsolete" in j and "Mod" in j["obsolete"]:
-                self.obsolete = j["obsolete"]["Mod"]
-
-            if "blacklisted" in j and "Macro" in j["blacklisted"]:
-                self.macros_reject_list = j["blacklisted"]["Macro"]
-
-            if "blacklisted" in j and "Mod" in j["blacklisted"]:
-                self.mod_reject_list = j["blacklisted"]["Mod"]
-
-            if "py2only" in j and "Mod" in j["py2only"]:
-                self.py2only = j["py2only"]["Mod"]
-
-            if "deprecated" in j:
-                self._process_deprecated(j["deprecated"])
-
-        else:
-            message = translate(
-                "AddonsInstaller",
-                "Failed to connect to GitHub. Check your connection and proxy settings.",
-            )
-            fci.Console.PrintError(message + "\n")
-            raise ConnectionError
-
-    def _process_deprecated(self, deprecated_addons):
-        """Parse the section on deprecated addons"""
-
-        fc_major = int(fci.Version()[0])
-        fc_minor = int(fci.Version()[1])
-        for item in deprecated_addons:
-            if "as_of" in item and "name" in item:
-                try:
-                    version_components = item["as_of"].split(".")
-                    major = int(version_components[0])
-                    if len(version_components) > 1:
-                        minor = int(version_components[1])
-                    else:
-                        minor = 0
-                    if major < fc_major or (major == fc_major and minor <= fc_minor):
-                        if "kind" not in item or item["kind"] == "mod":
-                            self.obsolete.append(item["name"])
-                        elif item["kind"] == "macro":
-                            self.macros_reject_list.append(item["name"])
-                        else:
-                            fci.Console.PrintMessage(
-                                f'Unrecognized Addon kind {item["kind"]} in deprecation list.'
-                            )
-                except ValueError:
-                    fci.Console.PrintMessage(
-                        f"Failed to parse version from {item['name']}, version {item['as_of']}"
-                    )
 
     def _get_custom_addons(self):
 
@@ -176,7 +121,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 if addon["url"][-1] == "/":
                     addon["url"] = addon["url"][0:-1]  # Strip trailing slash
                 addon["url"] = addon["url"].split(".git")[0]  # Remove .git
-                name = addon["url"].split("/")[-1]
+                name: str = addon["url"].split("/")[-1]
                 if name in self.package_names:
                     # We already have something with this name, skip this one
                     fci.Console.PrintWarning(
@@ -189,13 +134,13 @@ class CreateAddonListWorker(QtCore.QThread):
                     f"Adding custom location {addon['url']} with branch {addon['branch']}\n"
                 )
                 self.package_names.append(name)
-                addondir = os.path.join(self.moddir, name)
-                if os.path.exists(addondir) and os.listdir(addondir):
+                addon_dir = os.path.join(self.mod_dir, name)
+                if os.path.exists(addon_dir) and os.listdir(addon_dir):
                     state = Addon.Status.UNCHECKED
                 else:
                     state = Addon.Status.NOT_INSTALLED
                 repo = Addon(name, addon["url"], state, addon["branch"])
-                md_file = os.path.join(addondir, "package.xml")
+                md_file = os.path.join(addon_dir, "package.xml")
                 if os.path.isfile(md_file):
                     try:
                         repo.installed_metadata = MetadataReader.from_file(md_file)
@@ -204,29 +149,56 @@ class CreateAddonListWorker(QtCore.QThread):
                         repo.verify_url_and_branch(addon["url"], addon["branch"])
                     except xml.etree.ElementTree.ParseError:
                         fci.Console.PrintWarning(
-                            "An invalid or corrupted package.xml file was installed for"
-                        )
-                        fci.Console.PrintWarning(
-                            f" custom addon {self.name}... ignoring the bad data.\n"
+                            f"An invalid or corrupted package.xml file was installed for custom addon {name}... ignoring the bad data.\n"
                         )
 
                 self.addon_repo.emit(repo)
 
-    def _get_addon_catalog(self):
+    def get_remote_addon_catalog(self):
         url = fci.Preferences().get("AddonCatalogURL")
         p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(url, 30000)
         if not p:
             fci.Console.PrintError(
-                f"The Addon Manager failed to fetch the addon catalog from {url}\n"
+                f"The Addon Manager failed to fetch the addon catalog from {url}. Using cached copy (if available).\n"
             )
+            self.get_local_addon_catalog()
             return
-        p = p.data().decode("utf8")
+
+        zip_data = p.data()
+        sha256 = hashlib.sha256(zip_data).hexdigest()
+        fci.Preferences().set("LastFetchedAddonCatalogHash", sha256)
+
+        with zipfile.ZipFile(io.BytesIO(zip_data)) as zip_file:
+            if "cache.json" in zip_file.namelist():
+                with zip_file.open("cache.json") as target_file:
+                    catalog_text_data = target_file.read()
+                cached_catalog_file = os.path.join(
+                    fci.DataPaths().cache_dir, "AddonManager", "addon_catalog_cache.json"
+                )
+                os.makedirs(os.path.dirname(cached_catalog_file), exist_ok=True)
+                with open(cached_catalog_file, "wb") as f:
+                    f.write(catalog_text_data)
+            else:
+                raise FileNotFoundError(f"cache.json not found in ZIP")
+        self.process_addon_catalog(catalog_text_data.decode("utf-8"))
+
+    def get_local_addon_catalog(self):
+        cached_catalog_file = os.path.join(
+            fci.DataPaths().cache_dir, "AddonManager", "addon_catalog_cache.json"
+        )
         try:
-            catalog = AddonCatalog(json.loads(p))
+            with open(cached_catalog_file, encoding="utf-8") as f:
+                catalog_text_data = f.read()
         except RuntimeError as e:
-            fci.Console.PrintError(f"Failed to parse the addon catalog from {url}\n")
+            fci.Console.PrintError(
+                f"The Addon Manager failed to load the cached addon catalog from {cached_catalog_file}.\n"
+            )
             fci.Console.PrintError(str(e) + "\n")
             return
+        self.process_addon_catalog(catalog_text_data)
+
+    def process_addon_catalog(self, catalog_text_data):
+        catalog = AddonCatalog(json.loads(catalog_text_data))
         for addon_id in catalog.get_available_addon_ids():
             if addon_id in self.package_names:
                 # We already have something with this name, skip this one
@@ -245,6 +217,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 )
                 continue
             main = branches[0]
+            # TODO: add multiple branch information to the Addon class
             try:
                 addon = catalog.get_addon_from_id(addon_id, main[0])
                 self.addon_repo.emit(addon)
@@ -254,60 +227,17 @@ class CreateAddonListWorker(QtCore.QThread):
                 )
                 fci.Console.PrintError(str(e) + "\n")
 
-    def _get_official_addons(self):
-        # querying official addons
-        p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(
-            "https://raw.githubusercontent.com/FreeCAD/FreeCAD-addons/master/.gitmodules", 5000
-        )
+    @staticmethod
+    def new_catalog_available() -> bool:
+        """Downloads and checks the hash of the remote catalog and compares it to our last-fetched hash"""
+        hash_url = fci.Preferences().get("AddonCatalogURL") + ".sha256"
+        p = NetworkManager.AM_NETWORK_MANAGER.blocking_get(hash_url, 5000)
         if not p:
-            return
-        p = p.data().decode("utf8")
-        p = re.findall(
-            (
-                r'(?m)\[submodule\s*"(?P<name>.*)"\]\s*'
-                r"path\s*=\s*(?P<path>.+)\s*"
-                r"url\s*=\s*(?P<url>https?://.*)\s*"
-                r"(branch\s*=\s*(?P<branch>[^\s]*)\s*)?"
-            ),
-            p,
-        )
-        for name, _, url, _, branch in p:
-            if self.current_thread.isInterruptionRequested():
-                return
-            if name in self.package_names:
-                # We already have something with this name, skip this one
-                continue
-            self.package_names.append(name)
-            if branch is None or len(branch) == 0:
-                branch = "master"
-            url = url.split(".git")[0]
-            addondir = os.path.join(self.moddir, name)
-            if os.path.exists(addondir) and os.listdir(addondir):
-                # make sure the folder exists and it contains files!
-                state = Addon.Status.UNCHECKED
-            else:
-                state = Addon.Status.NOT_INSTALLED
-            repo = Addon(name, url, state, branch)
-            md_file = os.path.join(addondir, "package.xml")
-            if os.path.isfile(md_file):
-                try:
-                    repo.installed_metadata = MetadataReader.from_file(md_file)
-                    repo.installed_version = repo.installed_metadata.version
-                    repo.updated_timestamp = os.path.getmtime(md_file)
-                    repo.verify_url_and_branch(url, branch)
-                except xml.etree.ElementTree.ParseError:
-                    fci.Console.PrintWarning(
-                        "An invalid or corrupted package.xml file was installed for"
-                    )
-                    fci.Console.PrintWarning(f" addon {self.name}... ignoring the bad data.\n")
-
-            if name in self.py2only:
-                repo.python2 = True
-            if name in self.mod_reject_list:
-                repo.rejected = True
-            if name in self.obsolete:
-                repo.obsolete = True
-            self.addon_repo.emit(repo)
+            raise RuntimeError(f"Failed to fetch the addon catalog hash from {hash_url}\n")
+        sha256 = p.data().decode("utf8")
+        if sha256 != fci.Preferences().get("LastFetchedAddonCatalogHash"):
+            return True
+        return False
 
     def _retrieve_macros_from_git(self):
         """Retrieve macros from FreeCAD-macros.git
@@ -446,17 +376,17 @@ class CreateAddonListWorker(QtCore.QThread):
         for _, mac in enumerate(macros):
             if self.current_thread.isInterruptionRequested():
                 return
-            macname = mac[6:]  # Remove "Macro ".
-            macname = macname.replace("&amp;", "&")
-            if not macname:
+            macro_name = mac[6:]  # Remove "Macro ".
+            macro_name = macro_name.replace("&amp;", "&")
+            if not macro_name:
                 continue
             if (
-                (macname not in self.macros_reject_list)
-                and ("recipes" not in macname.lower())
-                and (macname not in macro_names)
+                (macro_name not in self.macros_reject_list)
+                and ("recipes" not in macro_name.lower())
+                and (macro_name not in macro_names)
             ):
-                macro_names.append(macname)
-                macro = Macro(macname)
+                macro_names.append(macro_name)
+                macro = Macro(macro_name)
                 if macro.name in self.package_names:
                     fci.Console.PrintLog(
                         f"Ignoring second macro named {macro.name} (found on wiki)\n"
@@ -470,51 +400,12 @@ class CreateAddonListWorker(QtCore.QThread):
                 utils.update_macro_installation_details(repo)
                 self.addon_repo.emit(repo)
 
-    def _remove_readonly(self, func, path, _) -> None:
+    @staticmethod
+    def _remove_readonly(func, path, _) -> None:
         """Remove a read-only file."""
 
         os.chmod(path, stat.S_IWRITE)
         func(path)
-
-
-class LoadPackagesFromCacheWorker(QtCore.QThread):
-    """A subthread worker that loads package information from its cache file."""
-
-    addon_repo = QtCore.Signal(object)
-
-    def __init__(self, cache_file: str):
-        QtCore.QThread.__init__(self)
-        self.setObjectName("LoadPackagesFromCacheWorker")
-        self.cache_file = cache_file
-        self.metadata_cache_path = os.path.join(
-            fci.DataPaths().cache_dir, "AddonManager", "PackageMetadata"
-        )
-
-    def override_metadata_cache_path(self, path):
-        """For testing purposes, override the location to fetch the package metadata from."""
-        self.metadata_cache_path = path
-
-    def run(self):
-        """Rarely called directly: create an instance and call start() on it instead to
-        launch in a new thread"""
-        with open(self.cache_file, encoding="utf-8") as f:
-            data = f.read()
-            if data:
-                dict_data = json.loads(data)
-                for item in dict_data.values():
-                    if QtCore.QThread.currentThread().isInterruptionRequested():
-                        return
-                    repo = Addon.from_cache(item)
-                    repo_metadata_cache_path = os.path.join(
-                        self.metadata_cache_path, repo.name, "package.xml"
-                    )
-                    if os.path.isfile(repo_metadata_cache_path):
-                        try:
-                            repo.load_metadata_file(repo_metadata_cache_path)
-                        except RuntimeError as e:
-                            fci.Console.PrintLog(f"Failed loading {repo_metadata_cache_path}\n")
-                            fci.Console.PrintLog(str(e) + "\n")
-                    self.addon_repo.emit(repo)
 
 
 class LoadMacrosFromCacheWorker(QtCore.QThread):
@@ -580,7 +471,7 @@ class CheckWorkbenchesForUpdatesWorker(QtCore.QThread):
         self.setObjectName("CheckWorkbenchesForUpdatesWorker")
         self.repos = repos
         self.current_thread = None
-        self.moddir = fci.DataPaths().mod_dir
+        self.mod_dir = fci.DataPaths().mod_dir
 
     def run(self):
         """Rarely called directly: create an instance and call start() on it instead to
@@ -611,16 +502,16 @@ class CheckWorkbenchesForUpdatesWorker(QtCore.QThread):
 
 class UpdateChecker:
     """A utility class used by the CheckWorkbenchesForUpdatesWorker class. Each function is
-    designed for a specific Addon type, and modifies the passed-in Addon with the determined
+    designed for a specific Addon type and modifies the passed-in Addon with the determined
     update status."""
 
     def __init__(self):
-        self.moddir = fci.DataPaths().mod_dir
+        self.mod_dir: str = fci.DataPaths().mod_dir
         self.git_manager = initialize_git()
 
-    def override_mod_directory(self, moddir):
+    def override_mod_directory(self, mod_dir):
         """Primarily for use when testing, sets an alternate directory to use for mods"""
-        self.moddir = moddir
+        self.mod_dir = mod_dir
 
     def check_workbench(self, wb):
         """Given a workbench Addon wb, check it for updates using git. If git is not
@@ -628,20 +519,20 @@ class UpdateChecker:
         if not self.git_manager:
             wb.set_status(Addon.Status.CANNOT_CHECK)
             return
-        clonedir = os.path.join(self.moddir, wb.name)
-        if os.path.exists(clonedir):
+        clone_dir = os.path.join(self.mod_dir, wb.name)
+        if os.path.exists(clone_dir):
             # mark as already installed AND already checked for updates
-            if not os.path.exists(os.path.join(clonedir, ".git")):
+            if not os.path.exists(os.path.join(clone_dir, ".git")):
                 with wb.git_lock:
-                    self.git_manager.repair(wb.url, clonedir)
+                    self.git_manager.repair(wb.url, clone_dir)
             with wb.git_lock:
                 try:
-                    status = self.git_manager.status(clonedir)
+                    status = self.git_manager.status(clone_dir)
                     if "(no branch)" in status:
                         # By definition, in a detached-head state we cannot
                         # update, so don't even bother checking.
                         wb.set_status(Addon.Status.NO_UPDATE_AVAILABLE)
-                        wb.branch = self.git_manager.current_branch(clonedir)
+                        wb.branch = self.git_manager.current_branch(clone_dir)
                         return
                 except GitFailed as e:
                     fci.Console.PrintWarning(
@@ -656,7 +547,7 @@ class UpdateChecker:
                     wb.set_status(Addon.Status.CANNOT_CHECK)
                 else:
                     try:
-                        if self.git_manager.update_available(clonedir):
+                        if self.git_manager.update_available(clone_dir):
                             wb.set_status(Addon.Status.UPDATE_AVAILABLE)
                         else:
                             wb.set_status(Addon.Status.NO_UPDATE_AVAILABLE)
@@ -668,7 +559,7 @@ class UpdateChecker:
                         wb.set_status(Addon.Status.CANNOT_CHECK)
 
     def _branch_name_changed(self, package: Addon) -> bool:
-        clone_dir = os.path.join(self.moddir, package.name)
+        clone_dir = os.path.join(self.mod_dir, package.name)
         installed_metadata_file = os.path.join(clone_dir, "package.xml")
         if not os.path.isfile(installed_metadata_file):
             return False
@@ -685,12 +576,12 @@ class UpdateChecker:
         return False
 
     def check_package(self, package: Addon) -> None:
-        """Given a packaged Addon package, check it for updates. If git is available that is
+        """Given a packaged Addon package, check it for updates. If git is available, that is
         used. If not, the package's metadata is examined, and if the metadata file has changed
         compared to the installed copy, an update is flagged. In addition, a change to the
         default branch name triggers an update."""
 
-        clone_dir = self.moddir + os.sep + package.name
+        clone_dir = self.mod_dir + os.sep + package.name
         if os.path.exists(clone_dir):
 
             # First, see if the branch name changed, which automatically triggers an update
@@ -702,7 +593,7 @@ class UpdateChecker:
             if self.git_manager:
                 self.check_workbench(package)
                 if package.status() != Addon.Status.CANNOT_CHECK:
-                    # It worked, just exit now
+                    # It worked, exit now
                     return
 
             # If we were unable to do a git-based update, try using the package.xml file instead:
@@ -718,7 +609,7 @@ class UpdateChecker:
             try:
                 installed_metadata = MetadataReader.from_file(installed_metadata_file)
                 package.installed_version = installed_metadata.version
-                # Packages are considered up-to-date if the metadata version matches.
+                # Packages are considered up to date if the metadata version matches.
                 # Authors should update their version string when they want the addon
                 # manager to alert users of a new version.
                 if package.metadata.version != installed_metadata.version:
@@ -735,7 +626,8 @@ class UpdateChecker:
                 )
                 package.set_status(Addon.Status.CANNOT_CHECK)
 
-    def check_macro(self, macro_wrapper: Addon) -> None:
+    @staticmethod
+    def check_macro(macro_wrapper: Addon) -> None:
         """Check to see if the online copy of the macro's code differs from the local copy."""
 
         # Make sure this macro has its code downloaded:
@@ -786,7 +678,7 @@ class UpdateChecker:
 
 
 class CacheMacroCodeWorker(QtCore.QThread):
-    """Download and cache the macro code, and parse its internal metadata"""
+    """Download and cache the macro code and parse its internal metadata"""
 
     update_macro = QtCore.Signal(Addon)
     progress_made = QtCore.Signal(str, int, int)
@@ -848,7 +740,7 @@ class CacheMacroCodeWorker(QtCore.QThread):
 
     def _process_queue(self, num_macros) -> bool:
         """Spools up six network connections and downloads the macro code. Returns True if
-        it was interrupted by user request, or False if it ran to completion."""
+        it was interrupted by a user request, or False if it ran to completion."""
 
         # Emulate QNetworkAccessManager and spool up six connections:
         for _ in range(6):
@@ -902,14 +794,14 @@ class CacheMacroCodeWorker(QtCore.QThread):
             with self.lock:
                 self.workers.append(worker)
                 self.terminators.append(
-                    QtCore.QTimer.singleShot(10000, lambda: self.terminate(worker))
+                    QtCore.QTimer.singleShot(10000, lambda: self.clean_terminate(worker))
                 )
             worker.start()
         except queue.Empty:
-            # If the queue is empty it's not actually an error, it's an expected end condition
+            # If the queue is empty, it's not an error, it's an expected end condition
             pass
 
-    def terminate(self, worker) -> None:
+    def clean_terminate(self, worker) -> None:
         """Shut down all running workers and exit the thread"""
         if not worker.isFinished():
             macro_name = worker.macro.name

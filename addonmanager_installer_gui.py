@@ -547,7 +547,7 @@ class MacroInstallerGUI(QtCore.QObject):
                 fci.Console.PrintError(
                     "INTERNAL ERROR: Thread did not quit() cleanly, using terminate()\n"
                 )
-                self.worker_thread.terminate()
+                self.worker_thread.clean_terminate()
 
     def run(self):
         """Perform the installation, including any necessary user interaction via modal dialog

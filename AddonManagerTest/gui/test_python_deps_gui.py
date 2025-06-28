@@ -24,7 +24,7 @@ class TestPythonPackageManager(unittest.TestCase):
 
     def tearDown(self) -> None:
         if self.manager.worker_thread:
-            self.manager.worker_thread.terminate()
+            self.manager.worker_thread.clean_terminate()
             self.manager.worker_thread.wait()
 
     @patch("addonmanager_python_deps_gui.PythonPackageManager._create_list_from_pip")

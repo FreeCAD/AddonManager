@@ -180,18 +180,6 @@ class TestAddon(unittest.TestCase):
         self.assertEqual(addon.macro.icon, "not_real.png")
         self.assertNotEqual(addon.macro.xpm, "")
 
-    def test_cache(self):
-        addon = Addon(
-            "FreeCAD",
-            "https://github.com/FreeCAD/FreeCAD",
-            Addon.Status.NOT_INSTALLED,
-            "master",
-        )
-        cache_data = addon.to_cache()
-        second_addon = Addon.from_cache(cache_data)
-
-        self.assertTrue(addon.__dict__, second_addon.__dict__)
-
     def test_dependency_resolution(self):
         addonA = Addon(
             "AddonA",
@@ -299,7 +287,7 @@ class TestAddon(unittest.TestCase):
             os.mkdir(os.path.join(mod_dir, test_addon.name))
 
             # Act
-            wb_name = test_addon.try_find_wbname_in_files()
+            wb_name = test_addon.try_find_workbench_name_in_files()
 
             # Assert
             self.assertEqual(wb_name, "")
@@ -316,7 +304,7 @@ class TestAddon(unittest.TestCase):
                 f.write("Gui.addWorkbench(TestWorkbench())")
 
             # Act
-            wb_name = test_addon.try_find_wbname_in_files()
+            wb_name = test_addon.try_find_workbench_name_in_files()
 
             # Assert
             self.assertEqual(wb_name, "")
@@ -333,7 +321,7 @@ class TestAddon(unittest.TestCase):
                 f.write("Gui.addWorkbench(TestWorkbench())")
 
             # Act
-            wb_name = test_addon.try_find_wbname_in_files()
+            wb_name = test_addon.try_find_workbench_name_in_files()
 
             # Assert
             self.assertEqual(wb_name, "TestWorkbench")
@@ -352,7 +340,7 @@ class TestAddon(unittest.TestCase):
                 f.write("Gui.addWorkbench(TestWorkbench())")
 
             # Act
-            wb_name = test_addon.try_find_wbname_in_files()
+            wb_name = test_addon.try_find_workbench_name_in_files()
 
             # Assert
             self.assertEqual(wb_name, "TestWorkbench")
@@ -369,7 +357,7 @@ class TestAddon(unittest.TestCase):
                 f.write("Gui.addWorkbench(wb)")
 
             # Act
-            wb_name = test_addon.try_find_wbname_in_files()
+            wb_name = test_addon.try_find_workbench_name_in_files()
 
             # Assert
             self.assertEqual(wb_name, "")
@@ -397,7 +385,7 @@ class TestAddon(unittest.TestCase):
                         f.write(variant)
 
                     # Act
-                    wb_name = test_addon.try_find_wbname_in_files()
+                    wb_name = test_addon.try_find_workbench_name_in_files()
 
                     # Assert
                     self.assertEqual(wb_name, "TestWorkbench")

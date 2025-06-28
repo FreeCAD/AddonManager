@@ -30,19 +30,15 @@ import json
 from datetime import date
 from typing import Dict
 
-from PySideWrapper import QtGui, QtCore, QtWidgets
+from PySideWrapper import QtGui, QtCore, QtWidgets, QtSvg
 
 from addonmanager_workers_startup import (
     CreateAddonListWorker,
-    LoadPackagesFromCacheWorker,
     LoadMacrosFromCacheWorker,
     CheckWorkbenchesForUpdatesWorker,
     CacheMacroCodeWorker,
     GetBasicAddonStatsWorker,
     GetAddonScoreWorker,
-)
-from addonmanager_workers_installation import (
-    UpdateMetadataCacheWorker,
 )
 from addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
 from addonmanager_uninstaller_gui import AddonUninstallerGUI
@@ -57,7 +53,6 @@ from Addon import Addon
 from addonmanager_python_deps_gui import (
     PythonPackageManager,
 )
-from addonmanager_cache import local_cache_needs_update
 from addonmanager_devmode import DeveloperMode
 from addonmanager_firstrun import FirstRunDialog
 from addonmanager_connection_checker import ConnectionCheckerGUI
@@ -102,6 +97,28 @@ are downloaded instead.
 INSTANCE = None
 
 
+class SvgIconEngine(QtGui.QIconEngine):
+    def __init__(self, svg_bytes: bytes):
+        super().__init__()
+        self.renderer = QtSvg.QSvgRenderer(QtCore.QByteArray(svg_bytes))
+
+    def paint(self, painter: QtGui.QPainter, rect: QtCore.QRect, mode, state):
+        self.renderer.render(painter, rect)
+
+    def pixmap(self, size: QtCore.QSize, mode, state):
+        pixmap = QtGui.QPixmap(size)
+        pixmap.fill(QtCore.Qt.transparent)
+        painter = QtGui.QPainter(pixmap)
+        self.renderer.render(painter)
+        painter.end()
+        return pixmap
+
+
+def scalable_icon_from_svg_bytes(svg_bytes: bytes) -> QtGui.QIcon:
+    engine = SvgIconEngine(svg_bytes)
+    return QtGui.QIcon(engine)
+
+
 def get_icon(repo: Addon, update: bool = False) -> QtGui.QIcon:
     """Returns an icon for an Addon. Uses a cached icon if possible, unless update is True,
     in which case the icon is regenerated."""
@@ -109,8 +126,12 @@ def get_icon(repo: Addon, update: bool = False) -> QtGui.QIcon:
     icon_path = os.path.join(os.path.dirname(__file__), "Resources", "icons")
     path = ""
 
-    if not update and repo.icon and not repo.icon.isNull() and repo.icon.isValid():
-        return repo.icon
+    if not update:
+        if repo.icon and not repo.icon.isNull() and repo.icon.isValid():
+            return repo.icon
+        elif repo.icon_data:
+            repo.icon = scalable_icon_from_svg_bytes(repo.icon_data)
+            return repo.icon
 
     default_icon = QtGui.QIcon(os.path.join(icon_path, "document-package.svg"))
     if repo.repo_type == Addon.Kind.WORKBENCH:
@@ -135,8 +156,8 @@ def get_icon(repo: Addon, update: bool = False) -> QtGui.QIcon:
             default_icon = QtGui.QIcon(os.path.join(icon_path, "document-python.svg"))
     elif repo.repo_type == Addon.Kind.PACKAGE:
         # The cache might not have been downloaded yet, check to see if it's there...
-        if os.path.isfile(repo.get_cached_icon_filename()):
-            path = repo.get_cached_icon_filename()
+        if repo.icon_data:
+            default_icon = scalable_icon_from_svg_bytes(repo.icon_data)
         elif repo.contains_workbench():
             default_icon = QtGui.QIcon(os.path.join(icon_path, "document-package.svg"))
         elif repo.contains_macro():
@@ -162,7 +183,6 @@ class CommandAddonManager(QtCore.QObject):
         "show_worker",
         "showmacro_worker",
         "macro_worker",
-        "update_metadata_cache_worker",
         "load_macro_metadata_worker",
         "update_all_worker",
         "check_for_python_package_updates_worker",
@@ -203,7 +223,6 @@ class CommandAddonManager(QtCore.QObject):
         self.check_worker = None
         self.check_for_python_package_updates_worker = None
         self.update_all_worker = None
-        self.update_metadata_cache_worker = None
         self.macro_worker = None
         self.create_addon_list_worker = None
         self.get_addon_score_worker = None
@@ -254,14 +273,13 @@ class CommandAddonManager(QtCore.QObject):
         am_version = str(metadata.version)
         self.dialog.setWindowTitle(translate("AddonsInstaller", "Addon Manager v") + am_version)
 
-        # cleanup the leftovers from previous runs
+        # clean up the leftovers from previous runs
         self.macro_repo_dir = fci.DataPaths().macro_dir
         self.packages_with_updates = set()
         self.startup_sequence = []
         self.cleanup_workers()
-        self.update_cache = local_cache_needs_update()
 
-        # restore window geometry from stored state
+        # restore window geometry from the stored state
         w = fci.Preferences().get("WindowWidth")
         h = fci.Preferences().get("WindowHeight")
         self.composite_view = CompositeView(self.dialog)
@@ -289,8 +307,6 @@ class CommandAddonManager(QtCore.QObject):
         # enable/disable stuff
         self.button_bar.update_all_addons.setEnabled(False)
         self.hide_progress_widgets()
-        self.button_bar.refresh_local_cache.setEnabled(False)
-        self.button_bar.refresh_local_cache.setText(translate("AddonsInstaller", "Starting up..."))
         if dev_mode_active:
             self.button_bar.developer_tools.show()
         else:
@@ -306,7 +322,6 @@ class CommandAddonManager(QtCore.QObject):
         )
         self.button_bar.python_dependencies.triggered.connect(self.show_python_updates_dialog)
         self.button_bar.addons_folder.triggered.connect(self.open_addons_folder)
-        self.button_bar.refresh_local_cache.triggered.connect(self.on_button_update_cache_clicked)
         self.button_bar.developer_tools.clicked.connect(self.show_developer_tools)
         self.composite_view.package_list.stop_loading.connect(self.stop_update)
         self.composite_view.package_list.setEnabled(False)
@@ -316,7 +331,7 @@ class CommandAddonManager(QtCore.QObject):
         self.composite_view.update.connect(self.update)
         self.composite_view.update_status.connect(self.status_updated)
 
-        # center the dialog over the FreeCAD window, if it exists
+        # center the dialog over the FreeCAD window if it exists
         self.dialog.resize(w, h)
         if fci.FreeCADGui:
             mw = fci.FreeCADGui.getMainWindow()
@@ -367,7 +382,6 @@ class CommandAddonManager(QtCore.QObject):
 
         # ensure all threads are finished before closing
         ok_to_close = True
-        worker_killed = False
         self.startup_sequence = []
         for worker in self.workers:
             if hasattr(self, worker):
@@ -376,7 +390,6 @@ class CommandAddonManager(QtCore.QObject):
                     if not thread.isFinished():
                         thread.blockSignals(True)
                         thread.requestInterruption()
-                        worker_killed = True
                         ok_to_close = False
         while not ok_to_close:
             ok_to_close = True
@@ -388,22 +401,6 @@ class CommandAddonManager(QtCore.QObject):
                         if not thread.isFinished():
                             ok_to_close = False
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-
-        # Write the cache data if it's safe to do so:
-        if not worker_killed:
-            for repo in self.item_model.repos:
-                if repo.repo_type == Addon.Kind.MACRO:
-                    self.cache_macro(repo)
-                else:
-                    self.cache_package(repo)
-            self.write_package_cache()
-            self.write_macro_cache()
-        else:
-            self.write_cache_stopfile()
-            fci.Console.PrintLog(
-                "Not writing the cache because a process was forcibly terminated and the state is "
-                "unknown.\n"
-            )
 
         if self.restart_required:
             # display restart dialog
@@ -445,17 +442,17 @@ class CommandAddonManager(QtCore.QObject):
         Second, the list of macros is downloaded from the FreeCAD/FreeCAD-macros repository and
         the wiki.
 
-        Third, each of these items is queried for a package.xml metadata file. If that file exists
+        Third, each of these items is queried for a package.xml metadata file. If that file exists,
         it is downloaded, cached, and any icons that it references are also downloaded and cached.
 
-        Finally, for workbenches that are not contained within a package (e.g. they provide no
+        Finally, for workbenches that are not contained within a package (e.g., they provide no
         metadata), an additional git query is made to see if an update is available. Macros are
         checked for file changes.
 
         Each of these stages is launched in a separate thread to ensure that the UI remains
-        responsive, and the operation can be cancelled.
+        responsive, and the operation can be canceled.
 
-        Each stage is also subject to caching, so may return immediately, if no cache update has
+        Each stage is also subject to caching, so may return immediately if no cache update has
         been requested."""
 
         # Each function in this list is expected to launch a thread and connect its completion
@@ -464,8 +461,6 @@ class CommandAddonManager(QtCore.QObject):
         self.startup_sequence = [
             self.populate_packages_table,
             self.activate_table_widgets,
-            self.populate_macros,
-            self.update_metadata_cache,
             self.check_updates,
             self.check_python_updates,
             self.fetch_addon_stats,
@@ -487,145 +482,21 @@ class CommandAddonManager(QtCore.QObject):
             phase_runner()
         else:
             self.hide_progress_widgets()
-            self.update_cache = False
-            self.button_bar.refresh_local_cache.setEnabled(True)
-            self.button_bar.refresh_local_cache.setText(
-                translate("AddonsInstaller", "Refresh local cache")
-            )
-            fci.Preferences().set("LastCacheUpdate", date.today().isoformat())
             self.composite_view.package_list.item_filter.invalidateFilter()
 
     def populate_packages_table(self) -> None:
         self.item_model.clear()
 
-        use_cache = not self.update_cache
-        if use_cache:
-            if os.path.isfile(utils.get_cache_file_name("package_cache.json")):
-                with open(utils.get_cache_file_name("package_cache.json"), encoding="utf-8") as f:
-                    data = f.read()
-                    try:
-                        from_json = json.loads(data)
-                        if len(from_json) == 0:
-                            use_cache = False
-                    except json.JSONDecodeError:
-                        use_cache = False
-            else:
-                use_cache = False
-
-        if not use_cache:
-            self.update_cache = True  # Make sure to trigger the other cache updates, if the json
-            # file was missing
-            self.create_addon_list_worker = CreateAddonListWorker()
-            self.create_addon_list_worker.addon_repo.connect(self.add_addon_repo)
-            self.update_progress_bar(translate("AddonsInstaller", "Creating addon list"), 10, 100)
-            self.create_addon_list_worker.finished.connect(
-                self.do_next_startup_phase
-            )  # Link to step 2
-            self.create_addon_list_worker.start()
-        else:
-            self.create_addon_list_worker = LoadPackagesFromCacheWorker(
-                utils.get_cache_file_name("package_cache.json")
-            )
-            self.create_addon_list_worker.addon_repo.connect(self.add_addon_repo)
-            self.update_progress_bar(translate("AddonsInstaller", "Loading addon list"), 10, 100)
-            self.create_addon_list_worker.finished.connect(
-                self.do_next_startup_phase
-            )  # Link to step 2
-            self.create_addon_list_worker.start()
-
-    def cache_package(self, repo: Addon):
-        if not hasattr(self, "package_cache"):
-            self.package_cache = {}
-        self.package_cache[repo.name] = repo.to_cache()
-
-    def write_package_cache(self):
-        if hasattr(self, "package_cache"):
-            package_cache_path = utils.get_cache_file_name("package_cache.json")
-            with open(package_cache_path, "w", encoding="utf-8") as f:
-                f.write(json.dumps(self.package_cache, indent="  "))
+        self.create_addon_list_worker = CreateAddonListWorker()
+        self.create_addon_list_worker.addon_repo.connect(self.add_addon_repo)
+        self.update_progress_bar(translate("AddonsInstaller", "Creating addon list"), 10, 100)
+        self.create_addon_list_worker.finished.connect(self.do_next_startup_phase)  # Link to step 2
+        self.create_addon_list_worker.start()
 
     def activate_table_widgets(self) -> None:
         self.composite_view.package_list.setEnabled(True)
         self.composite_view.package_list.ui.view_bar.search.setFocus()
         self.do_next_startup_phase()
-
-    def populate_macros(self) -> None:
-        macro_cache_file = utils.get_cache_file_name("macro_cache.json")
-        cache_is_bad = True
-        if os.path.isfile(macro_cache_file):
-            size = os.path.getsize(macro_cache_file)
-            if size > 1000:  # Make sure there is actually data in there
-                cache_is_bad = False
-        if cache_is_bad:
-            if not self.update_cache:
-                self.update_cache = True  # Make sure to trigger the other cache updates, if the
-                # json file was missing
-                self.create_addon_list_worker = CreateAddonListWorker()
-                self.create_addon_list_worker.addon_repo.connect(self.add_addon_repo)
-                self.update_progress_bar(
-                    translate("AddonsInstaller", "Creating macro list"), 10, 100
-                )
-                self.create_addon_list_worker.finished.connect(
-                    self.do_next_startup_phase
-                )  # Link to step 2
-                self.create_addon_list_worker.start()
-            else:
-                # It's already been done in the previous step (TODO: Refactor to eliminate this
-                # step)
-                self.do_next_startup_phase()
-        else:
-            self.macro_worker = LoadMacrosFromCacheWorker(
-                utils.get_cache_file_name("macro_cache.json")
-            )
-            self.macro_worker.add_macro_signal.connect(self.add_addon_repo)
-            self.macro_worker.finished.connect(self.do_next_startup_phase)
-            self.macro_worker.start()
-
-    def cache_macro(self, repo: Addon):
-        if not hasattr(self, "macro_cache"):
-            self.macro_cache = []
-        if repo.macro is not None:
-            self.macro_cache.append(repo.macro.to_cache())
-        else:
-            fci.Console.PrintError(
-                f"Addon Manager: Internal error, cache_macro called on non-macro {repo.name}\n"
-            )
-
-    def write_macro_cache(self):
-        if not hasattr(self, "macro_cache"):
-            return
-        macro_cache_path = utils.get_cache_file_name("macro_cache.json")
-        with open(macro_cache_path, "w", encoding="utf-8") as f:
-            f.write(json.dumps(self.macro_cache, indent="  "))
-            self.macro_cache = []
-
-    def update_metadata_cache(self) -> None:
-        if self.update_cache:
-            self.update_metadata_cache_worker = UpdateMetadataCacheWorker(self.item_model.repos)
-            self.update_metadata_cache_worker.finished.connect(
-                self.do_next_startup_phase
-            )  # Link to step 4
-            self.update_metadata_cache_worker.progress_made.connect(self.update_progress_bar)
-            self.update_metadata_cache_worker.package_updated.connect(self.on_package_updated)
-            self.update_metadata_cache_worker.start()
-        else:
-            self.do_next_startup_phase()
-
-    def on_button_update_cache_clicked(self) -> None:
-        self.update_cache = True
-        cache_path = fci.DataPaths().cache_dir
-        am_path = os.path.join(cache_path, "AddonManager")
-        utils.rmdir(am_path)
-        self.button_bar.refresh_local_cache.setEnabled(False)
-        self.button_bar.refresh_local_cache.setText(
-            translate("AddonsInstaller", "Updating cache...")
-        )
-        self.startup()
-
-        # Re-caching implies checking for updates, regardless of the user's autocheck option
-        if self.check_updates in self.startup_sequence:
-            self.startup_sequence.remove(self.check_updates)
-        self.startup_sequence.append(self.force_check_updates)
 
     def on_package_updated(self, repo: Addon) -> None:
         """Called when the named package has either new metadata or a new icon (or both)"""
@@ -635,14 +506,11 @@ class CommandAddonManager(QtCore.QObject):
             self.item_model.reload_item(repo)
 
     def load_macro_metadata(self) -> None:
-        if self.update_cache:
-            self.load_macro_metadata_worker = CacheMacroCodeWorker(self.item_model.repos)
-            self.load_macro_metadata_worker.update_macro.connect(self.on_package_updated)
-            self.load_macro_metadata_worker.progress_made.connect(self.update_progress_bar)
-            self.load_macro_metadata_worker.finished.connect(self.do_next_startup_phase)
-            self.load_macro_metadata_worker.start()
-        else:
-            self.do_next_startup_phase()
+        self.load_macro_metadata_worker = CacheMacroCodeWorker(self.item_model.repos)
+        self.load_macro_metadata_worker.update_macro.connect(self.on_package_updated)
+        self.load_macro_metadata_worker.progress_made.connect(self.update_progress_bar)
+        self.load_macro_metadata_worker.finished.connect(self.do_next_startup_phase)
+        self.load_macro_metadata_worker.start()
 
     def select_addon(self) -> None:
         prefs = fci.Preferences()
@@ -875,20 +743,6 @@ class CommandAddonManager(QtCore.QObject):
         self.cleanup_workers()
         self.hide_progress_widgets()
         self.write_cache_stopfile()
-        self.button_bar.refresh_local_cache.setEnabled(True)
-        self.button_bar.refresh_local_cache.setText(
-            translate("AddonsInstaller", "Refresh local cache")
-        )
-
-    @staticmethod
-    def write_cache_stopfile() -> None:
-        stopfile = utils.get_cache_file_name("CACHE_UPDATE_INTERRUPTED")
-        with open(stopfile, "w", encoding="utf8") as f:
-            f.write(
-                "This file indicates that a cache operation was interrupted, and "
-                "the cache is in an unknown state. It will be deleted next time "
-                "AddonManager re-caches."
-            )
 
     def on_package_status_changed(self, repo: Addon) -> None:
         if repo.status() == Addon.Status.PENDING_RESTART:

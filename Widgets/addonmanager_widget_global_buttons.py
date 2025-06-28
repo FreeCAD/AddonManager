@@ -38,7 +38,6 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget = None):
         super().__init__(parent)
         self.horizontal_layout = None
-        self.refresh_local_cache = None
         self.update_all_addons = None
         self.check_for_updates = None
         self.python_dependencies = None
@@ -67,16 +66,13 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
             # Qt6
             self.addons_folder = QtGui.QAction()
             self.python_dependencies = QtGui.QAction()
-            self.refresh_local_cache = QtGui.QAction()
         else:
             # Qt5
             self.addons_folder = QtWidgets.QAction()
             self.python_dependencies = QtWidgets.QAction()
-            self.refresh_local_cache = QtWidgets.QAction()
         self.gear_menu = QtWidgets.QMenu(self.gear_tools)
         self.gear_menu.addAction(self.addons_folder)
         self.gear_menu.addAction(self.python_dependencies)
-        self.gear_menu.addAction(self.refresh_local_cache)
 
         self.gear_tools.setMenu(self.gear_menu)
 
@@ -97,7 +93,6 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         )
 
     def retranslateUi(self, _):
-        self.refresh_local_cache.setText(translate("AddonsInstaller", "Refresh local cache"))
         self.update_all_addons.setText(translate("AddonsInstaller", "Update all addons"))
         self.check_for_updates.setText(translate("AddonsInstaller", "Check for updates"))
         self.python_dependencies.setText(translate("AddonsInstaller", "Open Python dependencies"))
