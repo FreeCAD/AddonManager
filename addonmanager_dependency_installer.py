@@ -197,7 +197,7 @@ class DependencyInstaller(QtCore.QObject):
             result = installer.run()  # Run in this thread, which should be off the GUI thread
             if not result:
                 self.failure.emit(
-                    translate("AddonsInstaller", "Installation of Addon {} failed").format(
+                    translate("AddonsInstaller", "Installation of addon {} failed").format(
                         addon.name
                     ),
                     "",

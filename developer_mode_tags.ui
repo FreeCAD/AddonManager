@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Comma-separated list of tags describing this item:</string>
+      <string>Comma-separated list of tags describing this item</string>
      </property>
     </widget>
    </item>
@@ -32,7 +32,7 @@
       </font>
      </property>
      <property name="text">
-      <string>HINT: Common tags include &quot;Assembly&quot;, &quot;FEM&quot;, &quot;Mesh&quot;, &quot;NURBS&quot;, etc.</string>
+      <string>Hint: Common tags include &quot;Assembly&quot;, &quot;FEM&quot;, &quot;Mesh&quot;, &quot;NURBS&quot;, etc.</string>
      </property>
     </widget>
    </item>

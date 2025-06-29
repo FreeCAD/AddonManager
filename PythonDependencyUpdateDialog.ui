@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>The following Python packages have been installed locally by the Addon Manager to satisfy Addon dependencies. Installation location:</string>
+      <string>The following Python packages have been installed locally by the Addon Manager to satisfy addon dependencies. Installation location</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -84,7 +84,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that Used by only records direct imports in the Addon. Other Python packages that those packages depend upon may have been installed as well.</string>
+      <string>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that 'Used by' only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -96,7 +96,7 @@
      <item>
       <widget class="QPushButton" name="buttonUpdateAll">
        <property name="text">
-        <string>Update all available</string>
+        <string>Update All</string>
        </property>
       </widget>
      </item>

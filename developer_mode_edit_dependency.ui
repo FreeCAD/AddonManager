@@ -17,7 +17,7 @@
    <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Dependency Type</string>
+      <string>Dependency type</string>
      </property>
     </widget>
    </item>
@@ -39,7 +39,7 @@
      <item>
       <widget class="QLineEdit" name="lineEdit">
        <property name="placeholderText">
-        <string>Package name, if &quot;Other...&quot;</string>
+        <string>Package name, if &quot;Other…&quot;</string>
        </property>
       </widget>
      </item>

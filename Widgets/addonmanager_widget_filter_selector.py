@@ -83,7 +83,7 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
 
     def _build_menu(self):
         self.clear()
-        self.addItem(translate("AddonsInstaller", "Filter by..."))
+        self.addItem(translate("AddonsInstaller", "Filter By…"))
         self.insertSeparator(self.count())
         self.addItem(translate("AddonsInstaller", "Addon Type"))
         self.addon_type_index = self.count() - 1

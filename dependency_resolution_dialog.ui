@@ -26,9 +26,9 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>This Addon has the following required and optional dependencies. You must install them before this Addon can be used.
+      <string>This addon has the following required and optional dependencies. Install them before this addon can be used.
 
-Do you want the Addon Manager to install them automatically? Choose "Ignore" to install the Addon without installing the dependencies.</string>
+Do you want the Addon Manager to install them automatically? Choose "Ignore" to install the addon without installing the dependencies.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -52,7 +52,7 @@ Do you want the Addon Manager to install them automatically? Choose "Ignore" to 
      <item>
       <widget class="QGroupBox" name="groupBox_2">
        <property name="title">
-        <string>Required Python modules</string>
+        <string>Required Python Modules</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
@@ -64,7 +64,7 @@ Do you want the Addon Manager to install them automatically? Choose "Ignore" to 
      <item>
       <widget class="QGroupBox" name="groupBox_3">
        <property name="title">
-        <string>Optional Python modules</string>
+        <string>Optional Python Modules</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>

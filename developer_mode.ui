@@ -22,7 +22,7 @@
      <item>
       <widget class="QLabel" name="labelPathToAddon">
        <property name="text">
-        <string>Path to Addon</string>
+        <string>Path to addon</string>
        </property>
       </widget>
      </item>
@@ -42,7 +42,7 @@
      <item>
       <widget class="QPushButton" name="addonPathBrowseButton">
        <property name="text">
-        <string>Browse...</string>
+        <string>Browse…</string>
        </property>
       </widget>
      </item>
@@ -74,7 +74,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="labelDescription">
         <property name="toolTip">
-         <string>Explanation of what this Addon provides. Displayed in the Addon Manager. It is not necessary for this to state that this is a FreeCAD Addon.</string>
+         <string>Explanation of what this addon provides. Displayed in the Addon Manager. It is not necessary for this to state that this is a FreeCAD addon.</string>
         </property>
         <property name="text">
          <string>Description</string>
@@ -117,7 +117,7 @@
         <item>
          <widget class="QPushButton" name="versionToTodayButton">
           <property name="text">
-           <string>Set to today (CalVer style)</string>
+           <string>Set to Today (CalVer Style)</string>
           </property>
          </widget>
         </item>
@@ -136,7 +136,7 @@
       <item row="0" column="1">
        <widget class="QLineEdit" name="displayNameLineEdit">
         <property name="toolTip">
-         <string>Displayed in the Addon Manager's list of Addons. Should not include the word &quot;FreeCAD&quot;, and must be a valid directory name on all support operating systems.</string>
+         <string>Displayed in the Addon Manager's list of addons. Should not include the word &quot;FreeCAD&quot;, and must be a valid directory name on all support operating systems.</string>
         </property>
        </widget>
       </item>
@@ -150,20 +150,20 @@
       <item row="7" column="0">
        <widget class="QLabel" name="labelReadmeURL">
         <property name="text">
-         <string>README URL</string>
+         <string>ReadMe URL</string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
        <widget class="QPlainTextEdit" name="descriptionTextEdit">
         <property name="toolTip">
-         <string>Explanation of what this Addon provides. Displayed in the Addon Manager. It is not necessary for this to state that this is a FreeCAD Addon.</string>
+         <string>Explanation of what this addon provides. Displayed in the Addon Manager. It is not necessary for this to state that this is a FreeCAD addon.</string>
         </property>
         <property name="tabChangesFocus">
          <bool>true</bool>
         </property>
         <property name="placeholderText">
-         <string>TIP: Since this is displayed within FreeCAD, in the Addon Manager, it is not necessary to take up space saying things like &quot;This is a FreeCAD Addon...&quot; -- just say what it does.</string>
+         <string>Tip: Since this is displayed within FreeCAD, in the Addon Manager, it is not necessary to take up space saying things like &quot;This is a FreeCAD Addon…&quot; -- just say what it does.</string>
         </property>
        </widget>
       </item>
@@ -192,7 +192,7 @@
         <item>
          <widget class="QPushButton" name="iconBrowseButton">
           <property name="text">
-           <string>Browse...</string>
+           <string>Browse…</string>
           </property>
          </widget>
         </item>
@@ -222,10 +222,10 @@
       <item row="0" column="0">
        <widget class="QLabel" name="labelDisplayName">
         <property name="toolTip">
-         <string>Displayed in the Addon Manager's list of Addons. Should not include the word &quot;FreeCAD&quot;, and must be a valid directory name on all support operating systems.</string>
+         <string>Displayed in the Addon Manager's list of addons. Should not include the word &quot;FreeCAD&quot;, and must be a valid directory name on all support operating systems.</string>
         </property>
         <property name="text">
-         <string>Addon Name</string>
+         <string>Addon name</string>
         </property>
        </widget>
       </item>
@@ -262,7 +262,7 @@
         <item>
          <widget class="QPushButton" name="detectMinPythonButton">
           <property name="text">
-           <string>Detect...</string>
+           <string>Detect…</string>
           </property>
          </widget>
         </item>
@@ -298,14 +298,14 @@
         <item>
          <widget class="QToolButton" name="addContentItemToolButton">
           <property name="text">
-           <string notr="true">...</string>
+           <string notr="true">…</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QToolButton" name="removeContentItemToolButton">
           <property name="text">
-           <string notr="true">...</string>
+           <string notr="true">…</string>
           </property>
          </widget>
         </item>

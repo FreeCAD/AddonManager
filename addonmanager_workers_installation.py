@@ -239,7 +239,7 @@ class UpdateMetadataCacheWorker(QtCore.QThread):
             fci.Console.PrintWarning(
                 translate(
                     "AddonsInstaller",
-                    "Failed to decode {} file for Addon '{}'",
+                    "Failed to decode {} file for addon '{}'",
                 ).format(file_name, addon_name)
                 + "\n"
             )
@@ -265,7 +265,7 @@ class UpdateMetadataCacheWorker(QtCore.QThread):
                     if wb_name:
                         repo.requires.add(wb_name)
                         fci.Console.PrintLog(
-                            f"{repo.display_name} requires FreeCAD Addon '{wb_name}'\n"
+                            f"{repo.display_name} requires FreeCAD addon '{wb_name}'\n"
                         )
 
             elif line.startswith("pylibs="):

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Addon manager options</string>
+   <string>Addon Manager Options</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="margin">
@@ -20,8 +20,7 @@
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxcheckupdates">
      <property name="toolTip">
-      <string>If this option is selected, when launching the Addon Manager,
-installed addons will be checked for available updates</string>
+      <string>Checks for updates of installed addons when launching the Addon Manager</string>
      </property>
      <property name="text">
       <string>Automatically check for updates at start (requires Git)</string>
@@ -95,7 +94,7 @@ installed addons will be checked for available updates</string>
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxhideunlicensed">
      <property name="text">
-      <string>Hide Addons without a license</string>
+      <string>Hide addons without a license</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -111,7 +110,7 @@ installed addons will be checked for available updates</string>
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxhidenonfsf">
      <property name="text">
-      <string>Hide Addons with non-FSF Free/Libre license</string>
+      <string>Hide addons with non-FSF free/libre license</string>
      </property>
      <property name="checked">
       <bool>false</bool>
@@ -127,7 +126,7 @@ installed addons will be checked for available updates</string>
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxnonosi">
      <property name="text">
-      <string>Hide Addons with non-OSI-approved license</string>
+      <string>Hide addons with non-OSI-approved license</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -143,7 +142,7 @@ installed addons will be checked for available updates</string>
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxhidepy2">
      <property name="text">
-      <string>Hide Addons marked Python 2 Only</string>
+      <string>Hide addons marked Python 2 only</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -159,7 +158,7 @@ installed addons will be checked for available updates</string>
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxhideobsolete">
      <property name="text">
-      <string>Hide Addons marked Obsolete</string>
+      <string>Hide addons marked obsolete</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -175,7 +174,7 @@ installed addons will be checked for available updates</string>
    <item>
     <widget class="Gui::PrefCheckBox" name="guiprefcheckboxhidenewerfreecadrequired">
      <property name="text">
-      <string>Hide Addons that require a newer version of FreeCAD</string>
+      <string>Hide addons that require a newer version of FreeCAD</string>
      </property>
      <property name="checked">
       <bool>true</bool>
@@ -235,14 +234,14 @@ installed addons will be checked for available updates</string>
      <item>
       <widget class="QToolButton" name="addCustomRepositoryButton">
        <property name="text">
-        <string notr="true">...</string>
+        <string notr="true">…</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QToolButton" name="removeCustomRepositoryButton">
        <property name="text">
-        <string notr="true">...</string>
+        <string notr="true">…</string>
        </property>
       </widget>
      </item>
@@ -286,7 +285,7 @@ installed addons will be checked for available updates</string>
       <item>
        <widget class="Gui::PrefRadioButton" name="guiprefradiobuttonuserproxy">
         <property name="text">
-         <string>User-defined proxy:</string>
+         <string>User-defined proxy</string>
         </property>
         <property name="checked">
          <bool>false</bool>
@@ -330,7 +329,7 @@ installed addons will be checked for available updates</string>
         </sizepolicy>
        </property>
        <property name="toolTip">
-        <string>The URL for the Addon Score data (see Addon Manager wiki page for formatting and hosting details).</string>
+        <string>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</string>
        </property>
        <property name="prefEntry" stdset="0">
         <cstring>AddonsScoreURL</cstring>
@@ -347,7 +346,7 @@ installed addons will be checked for available updates</string>
      <item row="1" column="0">
       <widget class="QLabel" name="label_3">
        <property name="text">
-        <string>Path to Git executable (optional):</string>
+        <string>Path to Git executable (optional)</string>
        </property>
       </widget>
      </item>
@@ -419,7 +418,7 @@ installed addons will be checked for available updates</string>
       <item>
        <widget class="Gui::PrefCheckBox" name="guiprefcheckboxDeveloperMode">
         <property name="toolTip">
-         <string>Activate Addon Manager options intended for developers of new Addons.</string>
+         <string>Activate Addon Manager options intended for developers of new addons</string>
         </property>
         <property name="text">
          <string>Addon developer mode</string>

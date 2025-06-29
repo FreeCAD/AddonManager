@@ -152,7 +152,7 @@ class AddonUninstaller(QtCore.QObject):
                 fci.Console.PrintError(
                     translate(
                         "AddonsInstaller",
-                        "Execution of Addon's uninstall.py script failed. Proceeding with uninstall...",
+                        "Execution of addon's uninstall.py script failed. Proceeding with uninstall...",
                     )
                     + "\n"
                 )

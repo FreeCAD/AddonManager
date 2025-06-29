@@ -68,7 +68,7 @@ class SPDXLicenseManager:
         if spdx_id not in self.license_data:
             fci.Console.PrintWarning(
                 f"WARNING: License ID {spdx_id} is not in the SPDX license "
-                f"list. The Addon author must correct their metadata.\n"
+                f"list. The author of the addon must correct their metadata.\n"
             )
             return False
         return (
@@ -84,7 +84,7 @@ class SPDXLicenseManager:
         if spdx_id not in self.license_data:
             fci.Console.PrintWarning(
                 f"WARNING: License ID {spdx_id} is not in the SPDX license "
-                f"list. The Addon author must correct their metadata.\n"
+                f"list. The author of the addon must correct their metadata.\n"
             )
             return False
         return (

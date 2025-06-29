@@ -292,7 +292,7 @@ class MetadataReader:
                 metadata.__dict__[tag] = Version(from_string=child.text)
             except ValueError:
                 print(
-                    f"Invalid version specified for tag {tag} in Addon {metadata.name}: {child.text}"
+                    f"Invalid version specified for tag {tag} in addon {metadata.name}: {child.text}"
                 )
                 metadata.__dict__[tag] = Version(from_list=[0, 0, 0])
         elif tag in ["tag", "file"]:

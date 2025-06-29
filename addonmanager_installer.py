@@ -383,7 +383,7 @@ class AddonInstaller(QtCore.QObject):
             remove_succeeded = utils.rmdir(destination)
             if not remove_succeeded:
                 fci.Console.PrintError(f"Failed to remove {destination}, aborting update")
-                raise RuntimeError(f"Failed to remove outdated Addon from {destination}")
+                raise RuntimeError(f"Failed to remove outdated addon from {destination}")
 
         with zipfile.ZipFile(filename, "r") as zfile:
             zfile.extractall(destination)
@@ -484,7 +484,7 @@ class AddonInstaller(QtCore.QObject):
                 now = datetime.now(timezone.utc)
                 f.write(
                     "# The following files were created outside this installation "
-                    f"path during the installation of this Addon on {now}:\n"
+                    f"path during the installation of this addon on {now}:\n"
                 )
                 for fcmacro_file in installed_macro_files:
                     f.write(fcmacro_file + "\n")

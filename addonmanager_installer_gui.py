@@ -265,7 +265,7 @@ class AddonInstallerGUI(QtCore.QObject):
                 translate("AddonsInstaller", "Incompatible Python version"),
                 translate(
                     "AddonsInstaller",
-                    "This Addon (or one of its dependencies) requires Python {}.{}, and your system is running {}.{}. Installation cancelled.",
+                    "This addon (or one of its dependencies) requires Python {}.{}, and your system is running {}.{}. Installation cancelled.",
                 ).format(
                     missing.python_min_version["major"],
                     missing.python_min_version["minor"],
@@ -451,7 +451,7 @@ class AddonInstallerGUI(QtCore.QObject):
         self.installing_dialog = QtWidgets.QMessageBox(
             QtWidgets.QMessageBox.NoIcon,
             translate("AddonsInstaller", "Installing Addon"),
-            translate("AddonsInstaller", "Installing FreeCAD Addon '{}'").format(
+            translate("AddonsInstaller", "Installing FreeCAD addon '{}'").format(
                 self.addon_to_install.display_name
             ),
             QtWidgets.QMessageBox.Cancel,

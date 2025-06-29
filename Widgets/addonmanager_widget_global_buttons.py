@@ -97,20 +97,20 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         )
 
     def retranslateUi(self, _):
-        self.refresh_local_cache.setText(translate("AddonsInstaller", "Refresh local cache"))
-        self.update_all_addons.setText(translate("AddonsInstaller", "Update all addons"))
-        self.check_for_updates.setText(translate("AddonsInstaller", "Check for updates"))
+        self.refresh_local_cache.setText(translate("AddonsInstaller", "Refresh Local Cache"))
+        self.update_all_addons.setText(translate("AddonsInstaller", "Update all Addons"))
+        self.check_for_updates.setText(translate("AddonsInstaller", "Check for Updates"))
         self.python_dependencies.setText(translate("AddonsInstaller", "Open Python dependencies"))
-        self.addons_folder.setText(translate("AddonsFolder", "Open Addons folder"))
-        self.developer_tools.setText(translate("AddonsInstaller", "Developer tools..."))
+        self.addons_folder.setText(translate("AddonsFolder", "Open Addons Folder"))
+        self.developer_tools.setText(translate("AddonsInstaller", "Developer Tools…"))
         self.close.setText(translate("AddonsInstaller", "Close"))
-        self.gear_tools.setText(translate("AddonsInstaller", "Gear tools ..."))
+        self.gear_tools.setText(translate("AddonsInstaller", "Gear Tools…"))
 
     def set_number_of_available_updates(self, updates: int):
         if updates > 0:
             self.update_all_addons.setEnabled(True)
             self.update_all_addons.setText(
-                translate("AddonsInstaller", "Apply %n available update(s)", "", updates)
+                translate("AddonsInstaller", "Apply %n Available Update(s)", "", updates)
             )
         else:
             self.update_all_addons.setEnabled(False)

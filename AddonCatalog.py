@@ -167,7 +167,7 @@ class AddonCatalogEntry:
                     if wb_name:
                         repo.requires.add(wb_name)
                         fci.Console.PrintLog(
-                            f"{repo.display_name} requires FreeCAD Addon '{wb_name}'\n"
+                            f"{repo.display_name} requires FreeCAD addon '{wb_name}'\n"
                         )
 
             elif line.startswith("pylibs="):

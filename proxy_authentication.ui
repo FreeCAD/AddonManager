@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Proxy login required</string>
+   <string>Proxy Login Required</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -26,7 +26,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label_4">
        <property name="text">
-        <string>Proxy:</string>
+        <string>Proxy</string>
        </property>
       </widget>
      </item>
@@ -46,7 +46,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="labelRealmCaption">
        <property name="text">
-        <string>Realm:</string>
+        <string>Realm</string>
        </property>
       </widget>
      </item>

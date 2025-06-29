@@ -22,7 +22,7 @@
      <item>
       <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>Content type:</string>
+        <string>Content type</string>
        </property>
       </widget>
      </item>
@@ -48,10 +48,10 @@
      <item>
       <widget class="QCheckBox" name="singletonCheckBox">
        <property name="toolTip">
-        <string>If this is the only thing in the Addon, all other metadata can be inherited from the top level, and does not need to be specified here.</string>
+        <string>If this is the only thing in the addon, all other metadata can be inherited from the top level, and does not need to be specified here</string>
        </property>
        <property name="text">
-        <string>This is the only item in the Addon</string>
+        <string>This is the only item in the addon</string>
        </property>
        <property name="checked">
         <bool>true</bool>
@@ -97,7 +97,7 @@
        <item>
         <widget class="QPushButton" name="macroFileBrowseButton">
          <property name="text">
-          <string>Browse...</string>
+          <string>Browse…</string>
          </property>
         </widget>
        </item>
@@ -108,7 +108,7 @@
        <item>
         <widget class="QLabel" name="label_10">
          <property name="text">
-          <string>Preference Pack Name</string>
+          <string>Preference pack name</string>
          </property>
         </widget>
        </item>
@@ -158,7 +158,7 @@
        <item>
         <widget class="QPushButton" name="subdirectoryBrowseButton">
          <property name="text">
-          <string>Browse...</string>
+          <string>Browse…</string>
          </property>
         </widget>
        </item>
@@ -183,14 +183,14 @@
        <item>
         <widget class="QLineEdit" name="iconLineEdit">
          <property name="placeholderText">
-          <string>Optional, defaults to inheriting from top-level Addon</string>
+          <string>Optional, defaults to inheriting from top-level addon</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="iconBrowseButton">
          <property name="text">
-          <string>Browse...</string>
+          <string>Browse…</string>
          </property>
         </widget>
        </item>
@@ -203,21 +203,21 @@
      <item>
       <widget class="QPushButton" name="tagsButton">
        <property name="text">
-        <string>Tags...</string>
+        <string>Tags…</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="dependenciesButton">
        <property name="text">
-        <string>Dependencies...</string>
+        <string>Dependencies…</string>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="freecadVersionsButton">
        <property name="text">
-        <string>FreeCAD Versions...</string>
+        <string>FreeCAD Versions…</string>
        </property>
       </widget>
      </item>
@@ -261,7 +261,7 @@
       <item row="1" column="1">
        <widget class="QLineEdit" name="displayNameLineEdit">
         <property name="toolTip">
-         <string>Displayed in the Addon Manager's list of Addons. Should not include the word &quot;FreeCAD&quot;.</string>
+         <string>Displayed in the Addon Manager's list of addons. Should not include the word &quot;FreeCAD&quot;.</string>
         </property>
        </widget>
       </item>
@@ -310,7 +310,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="labelDisplayName">
         <property name="text">
-         <string>Display Name</string>
+         <string>Display name</string>
         </property>
        </widget>
       </item>
@@ -327,7 +327,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Any fields left blank are inherited from the top-level Addon metadata, so technically they are all optional. For Addons with multiple content items, each item should provide a unique Display Name and Description.</string>
+         <string>Any fields left blank are inherited from the top-level addon metadata, so technically they are all optional. For addons with multiple content items, each item should provide a unique display name and description.</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>

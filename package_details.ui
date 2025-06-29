@@ -26,7 +26,7 @@
      <item>
       <widget class="QToolButton" name="buttonRefresh">
        <property name="text">
-        <string notr="true">...</string>
+        <string notr="true">…</string>
        </property>
       </widget>
      </item>
@@ -46,7 +46,7 @@
      <item>
       <widget class="QPushButton" name="buttonInstall">
        <property name="toolTip">
-        <string>Uninstalls a selected macro or workbench</string>
+        <string>Installs a macro or workbench</string>
        </property>
        <property name="text">
         <string>Install</string>
@@ -77,7 +77,7 @@
      <item>
       <widget class="QPushButton" name="buttonChangeBranch">
        <property name="text">
-        <string>Change branch</string>
+        <string>Change Branch</string>
        </property>
       </widget>
      </item>

@@ -60,7 +60,7 @@ class AddonGitInterface:
             try:
                 AddonGitInterface.git_manager = GitManager()
             except NoGitFound:
-                fci.Console.PrintLog("No git found, Addon Manager Developer Mode disabled.")
+                fci.Console.PrintLog("No Git found, Addon Manager developer mode disabled.")
                 return
 
         self.path = path
@@ -411,7 +411,7 @@ class DeveloperMode:
             parent=self.dialog,
             caption=translate(
                 "AddonsInstaller",
-                "Select the folder containing your Addon",
+                "Select the folder containing your addon",
             ),
             dir=start_dir,
         )
@@ -545,7 +545,7 @@ class DeveloperMode:
             )
             return
         fci.Console.PrintMessage(
-            translate("AddonsInstaller", "Scanning Addon for Python version compatibility")
+            translate("AddonsInstaller", "Scanning addon for Python version compatibility")
             + "...\n"
         )
         # pylint: disable=import-outside-toplevel
@@ -592,7 +592,7 @@ class DeveloperMode:
                 translate("AddonsInstaller", "Install Vermin?"),
                 translate(
                     "AddonsInstaller",
-                    "Auto-detecting the required version of Python for this Addon requires Vermin (https://pypi.org/project/vermin/). OK to install?",
+                    "Auto-detecting the required version of Python for this addon requires Vermin (https://pypi.org/project/vermin/). OK to install?",
                 ),
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel,
             )
@@ -642,7 +642,7 @@ class DeveloperMode:
                 translate("AddonsInstaller", "Installation failed"),
                 translate(
                     "AddonsInstaller",
-                    "Failed to import vermin after installation -- cannot scan Addon.",
+                    "Failed to import vermin after installation -- cannot scan addon.",
                     "'vermin' is the name of a Python package, do not translate",
                 ),
                 QtWidgets.QMessageBox.Cancel,

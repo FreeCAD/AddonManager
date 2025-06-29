@@ -151,7 +151,7 @@ class CreateAddonListWorker(QtCore.QThread):
                             self.macros_reject_list.append(item["name"])
                         else:
                             fci.Console.PrintMessage(
-                                f'Unrecognized Addon kind {item["kind"]} in deprecation list.'
+                                f'Unrecognized addon kind {item["kind"]} in deprecation list.'
                             )
                 except ValueError:
                     fci.Console.PrintMessage(
@@ -992,7 +992,7 @@ class GetBasicAddonStatsWorker(QtCore.QThread):
             fci.Console.PrintError(
                 translate(
                     "AddonsInstaller",
-                    "Failed to get Addon statistics from {} -- only sorting alphabetically will"
+                    "Failed to get addon statistics from {} -- only sorting alphabetically will"
                     " be accurate\n",
                 ).format(self.url)
             )
@@ -1026,7 +1026,7 @@ class GetAddonScoreWorker(QtCore.QThread):
                 fci.Console.PrintError(
                     translate(
                         "AddonsInstaller",
-                        "Failed to get Addon score from '{}' -- sorting by score will fail\n",
+                        "Failed to get addon score from '{}' -- sorting by score will fail\n",
                     ).format(self.url)
                 )
                 return

@@ -226,10 +226,10 @@ class CommandAddonManager(QtCore.QObject):
         """FreeCAD-required function: get the core resource information for this Mod."""
         return {
             "Pixmap": "AddonManager",
-            "MenuText": QT_TRANSLATE_NOOP("Std_AddonMgr", "&Addon manager"),
+            "MenuText": QT_TRANSLATE_NOOP("Std_AddonMgr", "&Addon Manager"),
             "ToolTip": QT_TRANSLATE_NOOP(
                 "Std_AddonMgr",
-                "Manage external workbenches, macros, and preference packs",
+                "Manages external workbenches, macros, and preference packs",
             ),
             "Group": "Tools",
         }
@@ -290,7 +290,7 @@ class CommandAddonManager(QtCore.QObject):
         self.button_bar.update_all_addons.setEnabled(False)
         self.hide_progress_widgets()
         self.button_bar.refresh_local_cache.setEnabled(False)
-        self.button_bar.refresh_local_cache.setText(translate("AddonsInstaller", "Starting up..."))
+        self.button_bar.refresh_local_cache.setText(translate("AddonsInstaller", "Starting up…"))
         if dev_mode_active:
             self.button_bar.developer_tools.show()
         else:
@@ -350,7 +350,7 @@ class CommandAddonManager(QtCore.QObject):
                             fci.Console.PrintWarning(
                                 translate(
                                     "AddonsInstaller",
-                                    "Worker process {} is taking a long time to stop...",
+                                    "Worker process {} is taking a long time to stop…",
                                 ).format(worker)
                                 + "\n"
                             )
@@ -408,7 +408,7 @@ class CommandAddonManager(QtCore.QObject):
         if self.restart_required:
             # display restart dialog
             m = QtWidgets.QMessageBox()
-            m.setWindowTitle(translate("AddonsInstaller", "Addon manager"))
+            m.setWindowTitle(translate("AddonsInstaller", "Addon Manager"))
             icon_path = os.path.join(os.path.dirname(__file__), "Resources", "icons")
             m.setWindowIcon(QtGui.QIcon(os.path.join(icon_path, "addon_manager.svg")))
             m.setText(
@@ -618,7 +618,7 @@ class CommandAddonManager(QtCore.QObject):
         utils.rmdir(am_path)
         self.button_bar.refresh_local_cache.setEnabled(False)
         self.button_bar.refresh_local_cache.setText(
-            translate("AddonsInstaller", "Updating cache...")
+            translate("AddonsInstaller", "Updating cache…")
         )
         self.startup()
 
@@ -676,7 +676,7 @@ class CommandAddonManager(QtCore.QObject):
                     return
 
         self.button_bar.update_all_addons.setText(
-            translate("AddonsInstaller", "Checking for updates...")
+            translate("AddonsInstaller", "Checking for updates…")
         )
         self.packages_with_updates.clear()
         self.button_bar.update_all_addons.show()
@@ -711,7 +711,7 @@ class CommandAddonManager(QtCore.QObject):
             and self.check_worker.isRunning()
         ):
             self.button_bar.update_all_addons.setText(
-                translate("AddonsInstaller", "Checking for updates...")
+                translate("AddonsInstaller", "Checking for updates…")
             )
         else:
             self.button_bar.set_number_of_available_updates(0)

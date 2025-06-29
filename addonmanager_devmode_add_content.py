@@ -555,7 +555,7 @@ class EditDependency:
         sorted_keys = sorted(repo_dict)
         for item in sorted_keys:
             self.dialog.dependencyComboBox.addItem(repo_dict[item][0], repo_dict[item][1])
-        self.dialog.dependencyComboBox.addItem(translate("AddonsInstaller", "Other..."), "other")
+        self.dialog.dependencyComboBox.addItem(translate("AddonsInstaller", "Other…"), "other")
 
     def _populate_allowed_python_packages(self):
         """Add all allowed python packages to the list"""
@@ -566,7 +566,7 @@ class EditDependency:
         packages = sorted(AM_INSTANCE.allowed_packages)
         for package in packages:
             self.dialog.dependencyComboBox.addItem(package, package)
-        self.dialog.dependencyComboBox.addItem(translate("AddonsInstaller", "Other..."), "other")
+        self.dialog.dependencyComboBox.addItem(translate("AddonsInstaller", "Other…"), "other")
 
     def _type_selection_changed(self, _):
         """Callback: The type of dependency has been changed"""

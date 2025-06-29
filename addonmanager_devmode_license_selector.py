@@ -99,7 +99,7 @@ class LicenseSelector:
     def __init__(self, path_to_addon):
         self.other_label = translate(
             "AddonsInstaller",
-            "Other...",
+            "Other…",
             "For providing a license other than one listed",
         )
         self.path_to_addon = path_to_addon
@@ -190,7 +190,7 @@ class LicenseSelector:
             parent=self.dialog,
             caption=translate(
                 "AddonsInstaller",
-                "Select the corresponding license file in your Addon",
+                "Select the corresponding license file in your addon",
             ),
             dir=str(start_dir),
         )
@@ -205,7 +205,7 @@ class LicenseSelector:
         if base_dir[-1] != os.path.sep:
             base_dir += os.path.sep
         if not license_path.startswith(base_dir):
-            fci.Console.PrintError("Selected file not in Addon\n")
+            fci.Console.PrintError("Selected file not in addon\n")
             # Eventually offer to copy it?
             return
         relative_path = license_path[len(base_dir) :]

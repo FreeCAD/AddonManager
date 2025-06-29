@@ -20,7 +20,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Updating out-of-date addons...</string>
+      <string>Updating out-of-date addons…</string>
      </property>
     </widget>
    </item>

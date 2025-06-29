@@ -39,7 +39,7 @@ def run_suite(runner: unittest.TextTestRunner, suite: unittest.TestSuite):
     mw = QtWidgets.QMainWindow()
     mw.setObjectName("MainWindow")
     label = QtWidgets.QLabel()
-    label.setText("Running GUI tests...")
+    label.setText("Running GUI tests…")
     mw.setCentralWidget(label)
     mw.show()
 

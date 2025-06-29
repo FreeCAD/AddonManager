@@ -26,7 +26,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Name:</string>
+        <string>Name</string>
        </property>
       </widget>
      </item>
@@ -36,14 +36,14 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Email:</string>
+        <string>Email</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
       <widget class="QLineEdit" name="emailLineEdit">
        <property name="toolTip">
-        <string>Email is required for maintainers, and optional for authors.</string>
+        <string>Email is required for maintainers, and optional for authors</string>
        </property>
       </widget>
      </item>

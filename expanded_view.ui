@@ -98,7 +98,7 @@
        <item>
         <widget class="QLabel" name="labelPackageName">
          <property name="text">
-          <string>&lt;h1&gt;Package Name&lt;/h1&gt;</string>
+          <string>&lt;h1&gt;Package name&lt;/h1&gt;</string>
          </property>
         </widget>
        </item>

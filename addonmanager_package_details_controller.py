@@ -128,7 +128,7 @@ class PackageDetailsController(QtCore.QObject):
         if repo.status() == Addon.Status.UNCHECKED:
             self.ui.button_bar.check_for_update.show()
             self.ui.button_bar.check_for_update.setText(
-                translate("AddonsInstaller", "Check for update")
+                translate("AddonsInstaller", "Check for Update")
             )
             self.ui.button_bar.check_for_update.setEnabled(True)
             if not self.update_check_thread:

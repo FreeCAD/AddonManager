@@ -63,7 +63,7 @@
    <item>
     <widget class="QLabel" name="labelPackageName">
      <property name="text">
-      <string>&lt;b&gt;Package Name&lt;/b&gt;</string>
+      <string>&lt;b&gt;Package name&lt;/b&gt;</string>
      </property>
     </widget>
    </item>
