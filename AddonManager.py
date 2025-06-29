@@ -617,9 +617,7 @@ class CommandAddonManager(QtCore.QObject):
         am_path = os.path.join(cache_path, "AddonManager")
         utils.rmdir(am_path)
         self.button_bar.refresh_local_cache.setEnabled(False)
-        self.button_bar.refresh_local_cache.setText(
-            translate("AddonsInstaller", "Updating cache…")
-        )
+        self.button_bar.refresh_local_cache.setText(translate("AddonsInstaller", "Updating cache…"))
         self.startup()
 
         # Re-caching implies checking for updates, regardless of the user's autocheck option
