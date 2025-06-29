@@ -36,7 +36,7 @@ from addonmanager_metadata import (
     get_branch_from_metadata,
     get_repo_url_from_metadata,
 )
-from addonmanager_workers_startup import GetMacroDetailsWorker, CheckSingleUpdateWorker
+from addonmanager_workers_startup import CheckSingleUpdateWorker
 from addonmanager_git import GitManager, NoGitFound
 from Addon import Addon
 from change_branch import ChangeBranchDialog
@@ -204,14 +204,7 @@ class PackageDetailsController(QtCore.QObject):
         # If all four above checks passed, then it's possible for us to switch
         # branches, if there are any besides the one we are on: show the button
         self.ui.button_bar.change_branch.show()
-
-    def update_macro_info(self, repo: Addon) -> None:
-        if not repo.macro.url:
-            # We need to populate the macro information... may as well do it while the user reads
-            # the wiki page
-            self.worker = GetMacroDetailsWorker(repo)
-            self.worker.readme_updated.connect(self.macro_readme_updated)
-            self.worker.start()
+        self.ui.button_bar.change_branch.show()
 
     def change_branch_clicked(self) -> None:
         """Loads the branch-switching dialog"""
