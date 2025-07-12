@@ -243,6 +243,8 @@ def construct_git_url(repo, filename):
         return f"{repo_url}/-/raw/{repo.branch}/{filename}"
     if parsed_url.netloc in ["codeberg.org"]:
         return f"{repo_url}/raw/branch/{repo.branch}/{filename}"
+    if parsed_url.netloc == "":
+        return f"{parsed_url.path}/{filename}"
     fci.Console.PrintLog(
         "Debug: addonmanager_utilities.construct_git_url: Unknown git host:"
         + parsed_url.netloc
