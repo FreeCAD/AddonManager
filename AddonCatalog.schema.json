@@ -53,6 +53,9 @@
           },
           "branch_display_name": {
             "type": "string"
+          },
+          "last_update_time": {
+            "type": "string"
           }
         },
         "anyOf": [

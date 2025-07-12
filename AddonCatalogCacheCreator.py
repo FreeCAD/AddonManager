@@ -24,6 +24,7 @@
 """Classes and utility functions to generate a remotely hosted cache of all addon catalog entries.
 Intended to be run by a server-side systemd timer to generate a file that is then loaded by the
 Addon Manager in each FreeCAD installation."""
+import datetime
 from dataclasses import is_dataclass, fields
 from typing import Any, List, Optional
 
@@ -192,6 +193,13 @@ class CacheWriter:
             with open(path_to_metadata, "r", encoding="utf-8") as f:
                 cache_entry.metadata_txt = f.read()
 
+        if os.path.exists(os.path.join(self.cwd, addon_id, ".git")):
+            old_dir = os.getcwd()
+            os.chdir(os.path.join(self.cwd, addon_id))
+            last_updated_time = CacheWriter.determine_last_commit_time()
+            cache_entry.last_update_time = last_updated_time.isoformat()
+            os.chdir(old_dir)
+
         return cache_entry
 
     def generate_cache_entry_from_package_xml(
@@ -258,6 +266,11 @@ class CacheWriter:
         os.makedirs(extract_to_dir, exist_ok=True)
 
         with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            latest = max(
+                (info.date_time for info in zip_file.infolist() if not info.is_dir()), default=None
+            )
+            if latest is not None:
+                catalog_entry.last_update_time = datetime.datetime(*latest).isoformat()
             zip_file.extractall(path=extract_to_dir)
 
     @staticmethod
@@ -358,6 +371,14 @@ class CacheWriter:
             f"Could not determine if {branch} of {name} is a tag, branch, or hash. "
             f"Output was: {completed_process_output}"
         )
+
+    @staticmethod
+    def determine_last_commit_time() -> datetime.datetime:
+        """Executed on the current working directory. Returns the time of the last commit."""
+        command = ["git", "log", "-1", "--format=%cd"]
+        completed_process = subprocess.run(command, capture_output=True)
+        completed_process_output = completed_process.stdout.decode("utf-8")
+        return datetime.datetime.strptime(completed_process_output, "%Y-%m-%d %H:%M:%S %z")
 
 
 if __name__ == "__main__":
