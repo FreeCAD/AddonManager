@@ -198,6 +198,7 @@ class CacheWriter:
             os.chdir(os.path.join(self.cwd, addon_id))
             last_updated_time = CacheWriter.determine_last_commit_time()
             cache_entry.last_update_time = last_updated_time.isoformat()
+            cache_entry.last_commit_sha = CacheWriter.determine_last_commit_sha()
             os.chdir(old_dir)
 
         return cache_entry
@@ -271,6 +272,7 @@ class CacheWriter:
             )
             if latest is not None:
                 catalog_entry.last_update_time = datetime.datetime(*latest).isoformat()
+            catalog_entry.last_commit_sha = hashlib.sha256(response.content).hexdigest()
             zip_file.extractall(path=extract_to_dir)
 
     @staticmethod
@@ -379,6 +381,14 @@ class CacheWriter:
         completed_process = subprocess.run(command, capture_output=True)
         completed_process_output = completed_process.stdout.decode("utf-8")
         return datetime.datetime.strptime(completed_process_output, "%Y-%m-%d %H:%M:%S %z")
+
+    @staticmethod
+    def determine_last_commit_sha() -> str:
+        """Executed on the current working directory. Returns the SHA of the last commit."""
+        command = ["git", "log", "-1", "--format=%H"]
+        completed_process = subprocess.run(command, capture_output=True)
+        completed_process_output = completed_process.stdout.decode("utf-8").strip()
+        return completed_process_output
 
 
 if __name__ == "__main__":

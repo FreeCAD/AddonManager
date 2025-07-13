@@ -56,6 +56,9 @@
           },
           "last_update_time": {
             "type": "string"
+          },
+          "last_commit_sha": {
+            "type": "string"
           }
         },
         "anyOf": [
