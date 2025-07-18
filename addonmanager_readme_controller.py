@@ -91,9 +91,19 @@ class ReadmeController(QtCore.QObject):
                 self.addon.display_name, self.url
             )
         )
-        self.readme_request_index = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(
-            self.url
-        )
+
+        if self.url[0] == "/":
+            if self.url[:3] == ".md":
+                self.readme_data_type = ReadmeDataType.Markdown
+            elif self.url[:5] == ".html":
+                self.readme_data_type = ReadmeDataType.Html
+
+            with open(self.url, "r") as fd:
+                self._process_package_download("".join(fd.readlines()))
+        else:
+            self.readme_request_index = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(
+                self.url
+            )
 
     def _download_completed(self, index: int, code: int, data: QtCore.QByteArray) -> None:
         """Callback for handling a completed README file download."""
