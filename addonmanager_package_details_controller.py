@@ -155,6 +155,9 @@ class PackageDetailsController(QtCore.QObject):
         )
         self.ui.button_bar.set_can_run(False)
         self.ui.button_bar.set_can_check_for_updates(True if self.addon.cache_directory else False)
+        self.ui.button_bar.set_update_available(
+            self.addon.status() == Addon.Status.UPDATE_AVAILABLE
+        )
         if self.addon.name == "AddonManager":
             self.ui.button_bar.setup_for_addon_manager()  # Must happen AFTER other config steps
 
