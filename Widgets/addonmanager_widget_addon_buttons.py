@@ -32,12 +32,6 @@ from addonmanager_freecad_interface import translate
 from PySideWrapper import QtCore, QtGui, QtWidgets
 
 
-class ButtonBarDisplayMode(Enum):
-    TextOnly = auto()
-    IconsOnly = auto()
-    TextAndIcons = auto()
-
-
 class WidgetAddonButtons(QtWidgets.QWidget):
 
     install_branch = QtCore.Signal(str)
@@ -48,15 +42,6 @@ class WidgetAddonButtons(QtWidgets.QWidget):
         self.is_addon_manager = False
         self.actions = []
         self.branch_menu = None
-        self.display_mode = ButtonBarDisplayMode.TextAndIcons
-        self._setup_ui()
-        self._set_icons()
-        self.retranslateUi(None)
-
-    def set_display_mode(self, mode: ButtonBarDisplayMode):
-        """NOTE: Not really implemented yet -- TODO: Implement this functionality"""
-        if mode == self.display_mode:
-            return
         self._setup_ui()
         self._set_icons()
         self.retranslateUi(None)
@@ -65,6 +50,10 @@ class WidgetAddonButtons(QtWidgets.QWidget):
         """Only non-catalog addons have a separate update checker -- addons in the catalog don't
         query their update status individually."""
         self.update.setVisible(can_check_for_updates)
+
+    def set_update_available(self, update_available: bool):
+        """Set the update availability."""
+        self.update.setVisible(update_available)
 
     def set_installation_status(
         self,
@@ -77,21 +66,31 @@ class WidgetAddonButtons(QtWidgets.QWidget):
         :param installed: Whether the addon is currently installed or not.
         :param available_branches: The list of branches available -- cna be empty in which case it is
         not presented to the user as an option to change.
-        :param disabled: Whether the addon is currently disabled."""
+        :param disabled: Whether the addon is currently disabled.
+        :param can_be_disabled: Whether the addon can be disabled (i.e., if it is NOT a macro)"""
         self.is_addon_manager = False
         self.setup_to_change_branch = False
         self.uninstall.setVisible(installed)
-        if not available_branches or len(available_branches) == 1 and not installed:
-            self.install.setVisible(not installed)
+
+        if installed and not available_branches:
+            # Installed, and only one available branch: don't show the `install` button
+            self.install.setVisible(False)
             self.install.setMenu(None)
             self.branch_menu = None
+            self.setup_to_change_branch = False
+        elif not installed and len(available_branches) <= 1:
+            # Not installed, only one available branch: show the simple `install` button
+            self.install.setVisible(True)
+            self.install.setMenu(None)
+            self.branch_menu = None
+            self.setup_to_change_branch = False
         else:
+            # More complicated: needs to show the branch drop-down
             self.install.setVisible(True)
             self.branch_menu = QtWidgets.QMenu()
             self.install.setMenu(self.branch_menu)
             self.actions.clear()
-            if installed:
-                self.setup_to_change_branch = True
+            self.setup_to_change_branch = installed  # Changes the button's label
             for branch in available_branches:
                 if hasattr(QtGui, "QAction"):
                     # Qt6
