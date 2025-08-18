@@ -767,6 +767,23 @@ class MissingDependencies:
             option for option in self.python_optional if option not in self.python_requires
         ]
 
+    def join(self, other: "MissingDependencies"):
+        """Join two sets of missing dependencies together"""
+        self.external_addons.extend(
+            [x for x in other.external_addons if x not in self.external_addons]
+        )
+        self.wbs.extend([x for x in other.wbs if x not in self.wbs])
+        self.python_requires.extend(
+            [x for x in other.python_requires if x not in self.python_requires]
+        )
+        self.python_optional.extend(
+            [x for x in other.python_optional if x not in self.python_optional]
+        )
+        self.python_min_version = max(self.python_min_version, other.python_min_version)
+
+        # Clean up optional:
+        self.python_optional = [x for x in self.python_optional if x not in self.python_requires]
+
     @staticmethod
     def package_is_installed(package_name: str) -> bool:
         """Check to see if a Python package is installed (i.e., if it can be imported).

@@ -36,7 +36,7 @@ from PySideWrapper import QtCore
 from addonmanager_installation_manifest import InstallationManifest
 
 from addonmanager_macro import Macro
-from Addon import Addon
+from Addon import Addon, MissingDependencies
 from AddonCatalog import AddonCatalog
 from AddonStats import AddonStats
 import NetworkManager
@@ -638,3 +638,56 @@ class GetAddonScoreWorker(QtCore.QThread):
                     fci.Console.PrintLog(
                         f"Failed to convert score value '{score}' to an integer for {addon.name}"
                     )
+
+
+class CheckForMissingDependenciesWorker(QtCore.QThread):
+    """A worker class to examine installed addons and check for missing dependencies"""
+
+    progress = QtCore.Signal(str, int, int)
+
+    def __init__(self, addons: List[Addon], parent: QtCore.QObject = None):
+        super().__init__(parent)
+        self.addons = addons
+        self.missing_dependencies = MissingDependencies()
+
+    def run(self):
+        self.progress.emit(
+            translate("AddonsInstaller", "Checking for missing dependencies"),
+            0,
+            len(self.addons),
+        )
+
+        installed_addons = [
+            addon for addon in self.addons if addon.status() != Addon.Status.NOT_INSTALLED
+        ]
+        counter = 0
+        details = ""
+        for addon in installed_addons:
+            counter += 1
+            self.progress.emit(
+                translate("AddonsInstaller", "Checking for missing dependencies"),
+                counter,
+                len(installed_addons),
+            )
+            deps = MissingDependencies()
+            deps.import_from_addon(addon, self.addons)
+            if deps.wbs:
+                details += f"{addon.display_name} is missing workbenches {', '.join(deps.wbs)}\n"
+            if deps.external_addons:
+                details += (
+                    f"{addon.display_name} is missing addons {', '.join(deps.external_addons)}\n"
+                )
+            if deps.python_requires:
+                details += f"{addon.display_name} is missing python packages {', '.join(deps.python_requires)}\n"
+            self.missing_dependencies.join(deps)
+
+        md = self.missing_dependencies
+        message = "\nAddon Missing Dependency Analysis\n"
+        message += "---------------------------------\n"
+        message += f"Missing FreeCAD Workbenches: {len(md.wbs)}\n"
+        message += f"Missing addons: {len(md.external_addons)}\n"
+        message += f"Missing required Python packages: {len(md.python_requires)}\n"
+        message += f"Missing optional Python packages: {len(md.python_optional)}\n"
+        message += f"Minimum required Python version evaluated to {md.python_min_version}\n\n"
+        fci.Console.PrintMessage(message)
+        fci.Console.PrintLog(details)
