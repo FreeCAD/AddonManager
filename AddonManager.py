@@ -36,8 +36,13 @@ from addonmanager_workers_startup import (
     CheckWorkbenchesForUpdatesWorker,
     GetBasicAddonStatsWorker,
     GetAddonScoreWorker,
+    CheckForMissingDependenciesWorker,
 )
-from addonmanager_installer_gui import AddonInstallerGUI, MacroInstallerGUI
+from addonmanager_installer_gui import (
+    AddonInstallerGUI,
+    MacroInstallerGUI,
+    AddonDependencyInstallerGUI,
+)
 from addonmanager_icon_utilities import get_icon_for_addon
 from addonmanager_uninstaller_gui import AddonUninstallerGUI
 from addonmanager_update_all_gui import UpdateAllGUI
@@ -46,8 +51,9 @@ import addonmanager_freecad_interface as fci
 from composite_view import CompositeView
 from Widgets.addonmanager_widget_global_buttons import WidgetGlobalButtonBar
 from Widgets.addonmanager_widget_progress_bar import Progress
+from Widgets.addonmanager_utility_dialogs import MessageDialog
 from package_list import PackageListItemModel
-from Addon import Addon, cycle_to_sub_addon
+from Addon import Addon, cycle_to_sub_addon, MissingDependencies
 from addonmanager_python_deps_gui import (
     PythonPackageManagerGui,
 )
@@ -104,6 +110,7 @@ class CommandAddonManager(QtCore.QObject):
         "check_for_python_package_updates_worker",
         "get_basic_addon_stats_worker",
         "get_addon_score_worker",
+        "check_missing_dependencies_worker",
     ]
 
     lock = threading.Lock()
@@ -139,12 +146,16 @@ class CommandAddonManager(QtCore.QObject):
         self.create_addon_list_worker = None
         self.get_addon_score_worker = None
         self.get_basic_addon_stats_worker = None
+        self.check_missing_dependencies_worker = None
 
         self.manage_python_packages_dialog = None
+        self.missing_dependency_installer = None
 
         # Set up the connection checker
         self.connection_checker = ConnectionCheckerGUI()
         self.connection_checker.connection_available.connect(self.launch)
+
+        self.missing_dependencies = MissingDependencies()
 
         # Give other parts of the AM access to the current instance
         global INSTANCE
@@ -338,7 +349,7 @@ class CommandAddonManager(QtCore.QObject):
             self.populate_packages_table,
             self.activate_table_widgets,
             self.check_updates,
-            self.check_python_updates,
+            self.check_missing_dependencies,
             self.fetch_addon_stats,
             self.fetch_addon_score,
             self.select_addon,
@@ -358,6 +369,7 @@ class CommandAddonManager(QtCore.QObject):
         else:
             self.hide_progress_widgets()
             self.composite_view.package_list.item_filter.invalidateFilter()
+            self.post_startup()
 
     def populate_packages_table(self) -> None:
         self.item_model.clear()
@@ -451,21 +463,15 @@ class CommandAddonManager(QtCore.QObject):
         self.enable_updates(len(self.packages_with_updates))
         self.button_bar.check_for_updates.setEnabled(True)
 
-    def check_python_updates(self) -> None:
-        # TODO: Run the checker to see if we need to do any Python updates as well
-
-        # Really, there are two different things to check here: first, run our normal dependency
-        # checker and display the dependency resolution dialog. This will handle addons that have
-        # disappeared/been uninstalled (but were required by other addons) as well as Python required
-        # and optional dependencies. The only catch is, if we ONLY have optional Python dependencies
-        # missing, we should ignore them.
-
-        # Second, if this is a version of Python we've used before, do any of our Python libraries
-        # installed into the custom directory, or the venv, need to be updated?
-
-        # To the user these are two quite different things, so their interface should reflect that.
-
-        self.do_next_startup_phase()
+    def check_missing_dependencies(self) -> None:
+        """See if we have any missing dependencies"""
+        self.check_missing_dependencies_worker = CheckForMissingDependenciesWorker(
+            self.item_model.repos
+        )
+        self.update_progress_bar(translate("AddonsInstaller", "Checking dependencies"), 0, 100)
+        self.check_missing_dependencies_worker.progress.connect(self.update_progress_bar)
+        self.check_missing_dependencies_worker.finished.connect(self.do_next_startup_phase)
+        self.check_missing_dependencies_worker.start()
 
     def show_python_updates_dialog(self) -> None:
         if not self.manage_python_packages_dialog:
@@ -626,6 +632,47 @@ class CommandAddonManager(QtCore.QObject):
             current_task_progress=current_value / max_value,
         )
         self.composite_view.package_list.update_loading_progress(progress)
+
+    def post_startup(self) -> None:
+        """This is called after the startup sequence has completed"""
+        if self.check_missing_dependencies_worker:
+            deps: MissingDependencies = self.check_missing_dependencies_worker.missing_dependencies
+            if deps.wbs or deps.external_addons or deps.python_requires:
+                ignored_deps_string = fci.Preferences().get("ignored_missing_deps")
+                ignored_deps = ignored_deps_string.split(";") if ignored_deps_string else []
+
+                proceed = False
+                all_deps = set()
+                all_deps.update(deps.wbs)
+                all_deps.update(deps.external_addons)
+                all_deps.update(deps.python_requires)
+                for dep in all_deps:
+                    if dep not in ignored_deps:
+                        proceed = True
+                        break
+
+                if proceed:
+                    self.missing_dependency_installer = AddonDependencyInstallerGUI([], deps)
+                    self.missing_dependency_installer.dependency_dialog.label.setText(
+                        translate(
+                            "AddonsInstaller",
+                            "Some installed addons are missing dependencies. Would you like to install them now?",
+                        )
+                    )
+                    self.missing_dependency_installer.dependency_dialog.buttonBox.button(
+                        QtWidgets.QDialogButtonBox.Ignore
+                    ).clicked.connect(self.ignore_missing_dependencies)
+                    self.missing_dependency_installer.run()
+
+    def ignore_missing_dependencies(self):
+        old_deps_string = fci.Preferences().get("ignored_missing_deps")
+        old_deps = set(old_deps_string.split(";") if old_deps_string else [])
+        deps = self.check_missing_dependencies_worker.missing_dependencies
+        new_deps = old_deps.union(deps.wbs)
+        new_deps = new_deps.union(deps.external_addons)
+        new_deps = new_deps.union(deps.python_requires)
+        new_deps_string = ";".join(new_deps)
+        fci.Preferences().set("ignored_missing_deps", new_deps_string)
 
     def stop_update(self) -> None:
         self.cleanup_workers()
