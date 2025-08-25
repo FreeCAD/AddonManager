@@ -576,7 +576,7 @@ class Addon:
         workbench_name = self.get_workbench_name()
 
         # Add the wb to the list of disabled if it was not already
-        disabled_wbs = pref.GetString("Disabled", "NoneWorkbench,TestWorkbench")
+        disabled_wbs = pref.GetString("NoneWorkbench,TestWorkbench,InspectionWorkbench,RobotWorkbench,OpenSCADWorkbench")
         # print(f"start disabling {disabled_wbs}")
         disabled_wbs_list = disabled_wbs.split(",")
         if not (workbench_name in disabled_wbs_list):
