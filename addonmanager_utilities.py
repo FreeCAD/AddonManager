@@ -602,5 +602,13 @@ def create_pip_call(args: List[str]) -> List[str]:
         if not python_exe:
             raise RuntimeError("Could not locate Python executable on this system")
         call_args = [python_exe, "-m", "pip", "--disable-pip-version-check"]
+
     call_args.extend(args)
+
+    # If installing or updating, apply our constraints file
+    if "install" in args or "download" in args or "wheel" in args:
+        constraints = fci.Preferences().get("pip_constraints_url")
+        if constraints:
+            call_args.extend(["-c", constraints])
+
     return call_args

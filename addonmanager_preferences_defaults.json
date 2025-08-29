@@ -33,5 +33,6 @@
     "last_fetched_macro_cache_hash": "Cache never fetched, no hash available",
     "macro_cache_url": "https://addons.freecad.org/macro_cache.zip",
     "old_backup_handling": "ask",
+    "pip_constraints_url": "https://raw.githubusercontent.com/FreeCAD/FreeCAD-addons/master/constraints.txt",
     "readWarning2022": false
 }
