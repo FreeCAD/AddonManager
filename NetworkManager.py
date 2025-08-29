@@ -60,9 +60,9 @@ import itertools
 import tempfile
 import time
 from typing import Dict, List, Optional
-from urllib.parse import urlparse
 
 import addonmanager_freecad_interface as fci
+from addonmanager_preferences_migrations import migrate_proxy_settings_2025
 
 from PySideWrapper import QtCore, QtNetwork, QtWidgets
 
@@ -176,119 +176,48 @@ class NetworkManager(QtCore.QObject):
 
         # Set up the proxy, if necessary:
         if fci.FreeCAD:
-            (
-                noProxyCheck,
-                systemProxyCheck,
-                userProxyCheck,
-                proxy_string,
-            ) = self._setup_proxy_freecad()
+            migrate_proxy_settings_2025()
+            proxy_type = fci.Preferences().get("proxy_type")
+            proxy_host = fci.Preferences().get("proxy_host")
+            proxy_port = fci.Preferences().get("proxy_port")
         else:
-            (
-                noProxyCheck,
-                systemProxyCheck,
-                userProxyCheck,
-                proxy_string,
-            ) = self._setup_proxy_standalone()
+            proxy_type, proxy_host, proxy_port = self._setup_proxy_standalone()
 
-        if noProxyCheck:
+        if proxy_type == "none":
             pass
-        elif systemProxyCheck:
+        elif proxy_type == "system":
             query = QtNetwork.QNetworkProxyQuery(QtCore.QUrl("https://github.com/FreeCAD/FreeCAD"))
             proxy = QtNetwork.QNetworkProxyFactory.systemProxyForQuery(query)
             if proxy and proxy[0]:
                 self.QNAM.setProxy(proxy[0])  # This may still be QNetworkProxy.NoProxy
-        elif userProxyCheck:
+        elif proxy_type == "custom":
             try:
-                parsed_url = urlparse(proxy_string)
-                host = parsed_url.hostname
-                port = parsed_url.port
-                scheme = (
-                    "http" if parsed_url.scheme == "https" else parsed_url.scheme
-                )  # There seems no https type: doc.qt.io/qt-6/qnetworkproxy.html#ProxyType-enum
-            except ValueError:
-                fci.Console.PrintError(
-                    translate(
-                        "AddonsInstaller",
-                        "Failed to parse proxy URL '{}'",
-                    ).format(proxy_string)
-                    + "\n"
+                fci.Console.PrintMessage(f"Using proxy {proxy_host}:{proxy_port} \n")
+                proxy = QtNetwork.QNetworkProxy(
+                    QtNetwork.QNetworkProxy.HttpProxy, proxy_host, proxy_port
                 )
-                return
-
-            fci.Console.PrintMessage(f"Using proxy {scheme}://{host}:{port} \n")
-            if scheme == "http":
-                _scheme = QtNetwork.QNetworkProxy.HttpProxy
-            elif scheme == "socks5":
-                _scheme = QtNetwork.QNetworkProxy.Socks5Proxy
-            else:
-                fci.Console.PrintWarning(f"Unknown proxy scheme '{scheme}', using http. \n")
-                _scheme = QtNetwork.QNetworkProxy.HttpProxy
-            proxy = QtNetwork.QNetworkProxy(_scheme, host, port)
-            self.QNAM.setProxy(proxy)
-
-    def _setup_proxy_freecad(self):
-        """If we are running within FreeCAD, this uses the config data to set up the proxy"""
-        noProxyCheck = fci.Preferences().get("NoProxyCheck")
-        systemProxyCheck = fci.Preferences().get("SystemProxyCheck")
-        userProxyCheck = fci.Preferences().get("UserProxyCheck")
-        proxy_string = fci.Preferences().get("ProxyUrl")
-
-        # Add some error checking to the proxy setup, since for historical reasons they
-        # are independent booleans, rather than an enumeration:
-        option_count = [noProxyCheck, systemProxyCheck, userProxyCheck].count(True)
-        if option_count != 1:
-            fci.Console.PrintWarning(
-                translate(
-                    "AddonsInstaller",
-                    "Parameter error: mutually exclusive proxy options set. Resetting to default.",
-                )
-                + "\n"
-            )
-            noProxyCheck = False
-            systemProxyCheck = True
-            userProxyCheck = False
-            fci.Preferences().set("NoProxyCheck", noProxyCheck)
-            fci.Preferences().set("SystemProxyCheck", systemProxyCheck)
-            fci.Preferences().set("UserProxyCheck", userProxyCheck)
-
-        if userProxyCheck and not proxy_string:
-            fci.Console.PrintWarning(
-                translate(
-                    "AddonsInstaller",
-                    "Parameter error: user proxy indicated, but no proxy provided. Resetting to default.",
-                )
-                + "\n"
-            )
-            systemProxyCheck = True
-            userProxyCheck = False
-            fci.Preferences().set("SystemProxyCheck", systemProxyCheck)
-            fci.Preferences().set("UserProxyCheck", userProxyCheck)
-        return noProxyCheck, systemProxyCheck, userProxyCheck, proxy_string
+                self.QNAM.setProxy(proxy)
+            except Exception as e:
+                fci.Console.PrintError(f"Error setting up proxy: {e}\n")
 
     def _setup_proxy_standalone(self):
         """If we are NOT running inside FreeCAD, prompt the user for proxy information"""
-        noProxyCheck = True
-        systemProxyCheck = False
-        userProxyCheck = False
-        proxy_string = ""
         print("Please select a proxy type:")
         print("1) No proxy")
         print("2) Use system proxy settings")
         print("3) Custom proxy settings")
         result = input("Choice: ")
         if result == "1":
-            pass
+            return "none", "", ""
         elif result == "2":
-            noProxyCheck = False
-            systemProxyCheck = True
+            return "system", "", ""
         elif result == "3":
-            noProxyCheck = False
-            userProxyCheck = True
-            proxy_string = input("Enter your proxy server (host:port): ")
+            host = input("Enter proxy host: ")
+            port = int(input("Enter proxy port: "))
         else:
-            print(f"Got {result}, expected 1, 2, or 3.")
-            exit(1)
-        return noProxyCheck, systemProxyCheck, userProxyCheck, proxy_string
+            print("Defaulting to system proxy settings")
+            return "system", "", ""
+        return "custom", host, port
 
     def __aboutToQuit(self):
         """Called when the application is about to quit. Not currently used."""
@@ -684,3 +613,10 @@ def InitializeNetworkManager():
     global AM_NETWORK_MANAGER
     if AM_NETWORK_MANAGER is None:
         AM_NETWORK_MANAGER = NetworkManager()
+
+
+def ForceReinitializeNetworkManager():
+    """Called when the user changes the network settings, to force a re-initialization of the
+    network manager."""
+    global AM_NETWORK_MANAGER
+    AM_NETWORK_MANAGER = NetworkManager()

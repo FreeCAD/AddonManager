@@ -59,7 +59,7 @@ class ConnectionChecker(QtCore.QThread):
         on it to spawn a child thread."""
 
         fci.Console.PrintLog("Checking network connection...\n")
-        url = "https://addons.freecad.org/status"
+        url = fci.Preferences().get("status_test_url")
         self.done = False
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self.connection_data_received)
         self.request_id = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(

@@ -40,7 +40,7 @@ import ctypes
 
 from urllib.parse import urlparse
 
-from PySideWrapper import QtCore, QtGui, QtWidgets
+from PySideWrapper import QtCore, QtGui, QtWidgets, QtNetwork
 
 import addonmanager_freecad_interface as fci
 
@@ -602,5 +602,26 @@ def create_pip_call(args: List[str]) -> List[str]:
         if not python_exe:
             raise RuntimeError("Could not locate Python executable on this system")
         call_args = [python_exe, "-m", "pip", "--disable-pip-version-check"]
+
+    proxy_type = fci.Preferences().get("proxy_type")
+    use_proxy = False
+    host = ""
+    port = 8080
+    if proxy_type == "system":
+        url = fci.Preferences().get("status_test_url")
+        query = QtNetwork.QNetworkProxyQuery(QtCore.QUrl(url))
+        proxies = QtNetwork.QNetworkProxyFactory.systemProxyForQuery(query)
+        if proxies and proxies[0] and proxies[0].hostName() and proxies[0].port() > 0:
+            use_proxy = True
+            host = proxies[0].hostName()
+            port = proxies[0].port()
+    elif proxy_type == "custom":
+        use_proxy = True
+        host = fci.Preferences().get("proxy_host")
+        port = fci.Preferences().get("proxy_port")
+
+    if use_proxy:
+        call_args.extend(["--proxy", f"http://{host}:{port}"])
+
     call_args.extend(args)
     return call_args
