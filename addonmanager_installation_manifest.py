@@ -118,6 +118,8 @@ class InstallationManifest:
     def _scan_mod_path_for_extras(self, catalog: AddonCatalog):
         dirs_in_mod = os.listdir(fci.DataPaths().mod_dir)
         for addon_id in dirs_in_mod:
+            if addon_id == "manifest.json":
+                continue
             if not os.path.isdir(os.path.join(fci.DataPaths().mod_dir, addon_id)):
                 continue
             branches = catalog.get_available_branches(addon_id)

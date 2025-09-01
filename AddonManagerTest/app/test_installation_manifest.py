@@ -244,3 +244,39 @@ class TestInstallationManifest(PyFakeFSTestCase):
         manifest = InstallationManifest(catalog)
 
         self.assertIn("SomeAddon-backup-1-2-3", manifest.old_backups)
+
+    @patch("addonmanager_installation_manifest.fci.DataPaths")
+    def test_manifest_json_is_ignored_during_scanning(self, mock_data_paths):
+        mod_dir = "/fake/mod"
+        mock_data_paths.return_value.mod_dir = mod_dir
+        self.fs.create_dir(mod_dir)
+
+        # Create some addon directories
+        self.fs.create_dir(os.path.join(mod_dir, "UnknownAddon"))
+        self.fs.create_dir(os.path.join(mod_dir, "AnotherAddon"))
+
+        # Create the manifest.json file
+        manifest_path = os.path.join(mod_dir, "manifest.json")
+        with open(manifest_path, "w") as f:
+            f.write("{}")
+
+        # Create some other files that should also be ignored
+        self.fs.create_file(os.path.join(mod_dir, "some_file.txt"))
+
+        class MinimalMockCatalog:
+            def get_available_branches(self, addon_id):
+                return []
+
+        catalog = MinimalMockCatalog()
+        InstallationManifest.path_to_manifest_file = ""
+        manifest = InstallationManifest(catalog)
+
+        # Verify that manifest.json is NOT processed as an unrecognized directory
+        self.assertNotIn("manifest.json", manifest.unrecognized_directories)
+
+        # Verify that actual directories are still processed correctly
+        self.assertIn("UnknownAddon", manifest.unrecognized_directories)
+        self.assertIn("AnotherAddon", manifest.unrecognized_directories)
+
+        # Verify that other files are also not processed
+        self.assertNotIn("some_file.txt", manifest.unrecognized_directories)
