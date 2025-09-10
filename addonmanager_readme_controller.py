@@ -27,24 +27,24 @@ from Addon import Addon
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
-from requests import get as fetch , ConnectionError
-from typing import Optional , cast
-from enum import IntEnum , auto
+from requests import get as fetch, ConnectionError
+from typing import Optional, cast
+from enum import IntEnum, auto
 
 import NetworkManager
 from Widgets.addonmanager_widget_readme_browser import WidgetReadmeBrowser
-from addonmanager_metadata import UrlType , License
+from addonmanager_metadata import UrlType, License
 
 translate = fci.translate
 
 from PySideWrapper import QtCore, QtGui
 
 
-
 class ReadmeDataType(IntEnum):
     PlainText = 0
     Markdown = 1
     Html = 2
+
 
 class TabView(IntEnum):
     License = auto()
@@ -55,7 +55,7 @@ class ReadmeController(QtCore.QObject):
     """A class that can provide README data from an Addon, possibly loading external resources such
     as images"""
 
-    def __init__(self, widget : WidgetReadmeBrowser ):
+    def __init__(self, widget: WidgetReadmeBrowser):
         super().__init__()
         NetworkManager.InitializeNetworkManager()
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self._download_completed)
@@ -71,7 +71,7 @@ class ReadmeController(QtCore.QObject):
         self.widget.load_resource.connect(self.loadResource)
         self.widget.follow_link.connect(self.follow_link)
 
-    def set_addon ( self , addon : Addon , view : TabView ):
+    def set_addon(self, addon: Addon, view: TabView):
         """Set which Addon's information is displayed"""
 
         self.addon = addon
@@ -110,7 +110,9 @@ class ReadmeController(QtCore.QObject):
                     else:
                         self.widget.setText(self.readme_data)
                 else:
-                    self.set_addon(self.addon,TabView.Readme)  # Trigger a reload of the page now with resources
+                    self.set_addon(
+                        self.addon, TabView.Readme
+                    )  # Trigger a reload of the page now with resources
 
     def _process_package_download(self, data: str):
         self.readme_data = data
@@ -189,21 +191,21 @@ class ReadmeController(QtCore.QObject):
         self.readme_data_type = ReadmeDataType.Markdown
         self.widget.setMarkdown(markdown)
 
-    def _create_non_wiki_display ( self , view : TabView ):
+    def _create_non_wiki_display(self, view: TabView):
 
         match view:
             case TabView.License:
 
-                addon = cast(Addon,self.addon)
+                addon = cast(Addon, self.addon)
 
                 licenses = addon.license
 
                 match licenses:
                     case list():
 
-                        text = ''
+                        text = ""
 
-                        licenses = cast(list[License | str],licenses)
+                        licenses = cast(list[License | str], licenses)
 
                         for license in licenses:
                             if license == str():
@@ -212,10 +214,10 @@ class ReadmeController(QtCore.QObject):
 
                                 name = license.name
 
-                                url = utils.construct_git_url(addon,license.file)
+                                url = utils.construct_git_url(addon, license.file)
 
                                 try:
-                                     
+
                                     response = fetch(url)
 
                                     if response.ok:
@@ -226,7 +228,7 @@ class ReadmeController(QtCore.QObject):
                                 except ConnectionError:
 
                                     text += name
-                                
+
                         self.widget.setText(text)
 
                     case str():
@@ -235,12 +237,14 @@ class ReadmeController(QtCore.QObject):
             case TabView.Readme:
 
                 self.url = utils.get_readme_url(self.addon)
-            
+
                 if self.addon.metadata and self.addon.metadata.url:
                     for url in self.addon.metadata.url:
                         if url.type == UrlType.readme:
                             if self.url != url.location:
-                                fci.Console.PrintLog("README url does not match expected location\n")
+                                fci.Console.PrintLog(
+                                    "README url does not match expected location\n"
+                                )
                                 fci.Console.PrintLog(f"Expected: {self.url}\n")
                                 fci.Console.PrintLog(f"package.xml contents: {url.location}\n")
                                 fci.Console.PrintLog(
@@ -275,7 +279,6 @@ class ReadmeController(QtCore.QObject):
                     with open(self.url, "r") as fd:
                         self._process_package_download("".join(fd.readlines()))
                 else:
-                    self.readme_request_index = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(
-                        self.url
+                    self.readme_request_index = (
+                        NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(self.url)
                     )
-

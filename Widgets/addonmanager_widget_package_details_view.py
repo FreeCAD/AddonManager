@@ -22,7 +22,7 @@
 # ***************************************************************************
 
 from dataclasses import dataclass
-from typing import Optional , Dict
+from typing import Optional, Dict
 from enum import Enum, auto
 import os
 
@@ -85,7 +85,7 @@ class PackageDetailsView(QtWidgets.QWidget):
         self.installed_branch = None
         self.installed_timestamp = None
         self.can_disable = True
-        self.tabs : Dict[ TabView , int ] = {}
+        self.tabs: Dict[TabView, int] = {}
         self._setup_ui()
 
     def _setup_ui(self):
@@ -94,14 +94,16 @@ class PackageDetailsView(QtWidgets.QWidget):
 
         self.license_browser = WidgetReadmeBrowser(self)
         self.readme_browser = WidgetReadmeBrowser(self)
-        
+
         self.tabs_widget = QtWidgets.QTabWidget(self)
 
-        self.tabs[ TabView.Readme ] = self.tabs_widget \
-            .addTab(self.readme_browser,translate('AddonsInstaller','README'))
+        self.tabs[TabView.Readme] = self.tabs_widget.addTab(
+            self.readme_browser, translate("AddonsInstaller", "README")
+        )
 
-        self.tabs[ TabView.License ] = self.tabs_widget \
-            .addTab(self.license_browser,translate('AddonsInstaller','LICENSE'))
+        self.tabs[TabView.License] = self.tabs_widget.addTab(
+            self.license_browser, translate("AddonsInstaller", "LICENSE")
+        )
 
         self.message_label = QtWidgets.QLabel(self)
         self.location_label = QtWidgets.QLabel(self)
