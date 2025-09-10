@@ -33,11 +33,11 @@ from addonmanager_metadata import (
     get_branch_from_metadata,
     get_repo_url_from_metadata,
 )
+from Widgets.addonmanager_widget_package_details_view import PackageDetailsView , UpdateInformation , WarningFlags
+from addonmanager_readme_controller import ReadmeController , TabView
 from addonmanager_workers_startup import CheckSingleUpdateWorker
 from addonmanager_git import GitManager, NoGitFound
 from Addon import Addon
-from addonmanager_readme_controller import ReadmeController
-from Widgets.addonmanager_widget_package_details_view import UpdateInformation, WarningFlags
 
 translate = fci.translate
 
@@ -52,10 +52,13 @@ class PackageDetailsController(QtCore.QObject):
     execute = QtCore.Signal(Addon)
     update_status = QtCore.Signal(Addon)
 
-    def __init__(self, widget=None):
+    def __init__(self, widget : PackageDetailsView ):
         super().__init__()
         self.ui = widget
+        
+        self.license_controller = ReadmeController(self.ui.license_browser)
         self.readme_controller = ReadmeController(self.ui.readme_browser)
+
         self.worker = None
         self.addon = None
         self.update_check_thread = None
@@ -77,11 +80,24 @@ class PackageDetailsController(QtCore.QObject):
         self.ui.button_bar.install_branch.connect(self.install_branch)
 
     def show_addon(self, addon: Addon) -> None:
+
         """The main entry point for this class shows the package details and related buttons
         for the provided repo."""
+        
         self.addon = addon
-        self.readme_controller.set_addon(addon)
+        
+        self.readme_controller.set_addon(addon,TabView.Readme)
+
+        has_license = bool(self.addon.license)
+
+        self.ui.tabs_widget.setTabVisible(self.ui.tabs[ TabView.License ],has_license)
+
+        if has_license:
+            self.license_controller.set_addon(addon,TabView.License)
+
+
         self.original_disabled_state = self.addon.is_disabled()
+        
         if addon is not None:
             self.ui.button_bar.show()
             if addon.repo_type == Addon.Kind.MACRO:

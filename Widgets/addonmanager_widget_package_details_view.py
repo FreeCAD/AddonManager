@@ -22,11 +22,12 @@
 # ***************************************************************************
 
 from dataclasses import dataclass
+from typing import Optional , Dict
 from enum import Enum, auto
 import os
-from typing import Optional
 
 from addonmanager_freecad_interface import translate
+from addonmanager_readme_controller import TabView
 
 from PySideWrapper import QtCore, QtWidgets
 
@@ -71,6 +72,7 @@ class PackageDetailsView(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget = None):
         super().__init__(parent)
         self.button_bar = None
+        self.license_browser = None
         self.readme_browser = None
         self.message_label = None
         self.location_label = None
@@ -83,12 +85,24 @@ class PackageDetailsView(QtWidgets.QWidget):
         self.installed_branch = None
         self.installed_timestamp = None
         self.can_disable = True
+        self.tabs : Dict[ TabView , int ] = {}
         self._setup_ui()
 
     def _setup_ui(self):
         self.vertical_layout = QtWidgets.QVBoxLayout(self)
         self.button_bar = WidgetAddonButtons(self)
+
+        self.license_browser = WidgetReadmeBrowser(self)
         self.readme_browser = WidgetReadmeBrowser(self)
+        
+        self.tabs_widget = QtWidgets.QTabWidget(self)
+
+        self.tabs[ TabView.Readme ] = self.tabs_widget \
+            .addTab(self.readme_browser,translate('AddonsInstaller','README'))
+
+        self.tabs[ TabView.License ] = self.tabs_widget \
+            .addTab(self.license_browser,translate('AddonsInstaller','LICENSE'))
+
         self.message_label = QtWidgets.QLabel(self)
         self.location_label = QtWidgets.QLabel(self)
         self.url_label = QtWidgets.QLabel(self)
@@ -98,7 +112,7 @@ class PackageDetailsView(QtWidgets.QWidget):
         self.vertical_layout.addWidget(self.message_label)
         self.vertical_layout.addWidget(self.location_label)
         self.vertical_layout.addWidget(self.url_label)
-        self.vertical_layout.addWidget(self.readme_browser)
+        self.vertical_layout.addWidget(self.tabs_widget)
         self.button_bar.hide()  # Start with no bar
 
     def set_location(self, location: Optional[str]):
