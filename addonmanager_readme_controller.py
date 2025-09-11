@@ -27,13 +27,13 @@ from Addon import Addon
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
-from requests import get as fetch, ConnectionError
-from typing import Optional, cast
+from typing import TypedDict, Optional, Dict ,cast
 from enum import IntEnum, auto
 
 import NetworkManager
 from Widgets.addonmanager_widget_readme_browser import WidgetReadmeBrowser
 from addonmanager_metadata import UrlType, License
+from PySideWrapper import QtWidgets
 
 translate = fci.translate
 
@@ -50,6 +50,9 @@ class TabView(IntEnum):
     License = auto()
     Readme = 0
 
+class LicenseRequest(TypedDict):
+    license : License
+    text : QtWidgets.QTextEdit
 
 class ReadmeController(QtCore.QObject):
     """A class that can provide README data from an Addon, possibly loading external resources such
@@ -60,8 +63,12 @@ class ReadmeController(QtCore.QObject):
         NetworkManager.InitializeNetworkManager()
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self._download_completed)
         self.readme_request_index = 0
+        
         self.resource_requests = {}
         self.resource_failures = []
+
+        self.license_requests : Dict[ int , LicenseRequest ] = {}
+        
         self.url = ""
         self.readme_data = None
         self.readme_data_type = None
@@ -114,6 +121,24 @@ class ReadmeController(QtCore.QObject):
                         self.addon, TabView.Readme
                     )  # Trigger a reload of the page now with resources
 
+        elif index in self.license_requests:
+
+            text = None
+
+            if code == 200:
+                text = cast(str,data.data().decode('utf-8'))
+            
+            entry = self.license_requests.get(index)
+
+            print('License loaded',index,code,entry)
+
+            if not entry:
+                return
+
+            text = text or entry[ 'license' ].name
+
+            entry[ 'text' ].setText(text)
+
     def _process_package_download(self, data: str):
         self.readme_data = data
         self.readme_data_type = ReadmeDataType.Markdown
@@ -122,6 +147,19 @@ class ReadmeController(QtCore.QObject):
     def _process_resource_download(self, resource_name: str, resource_data: bytes):
         image = QtGui.QImage.fromData(resource_data)
         self.widget.set_resource(resource_name, image)
+
+    def loadLicense ( self , license : License , text : QtWidgets.QTextEdit ):
+
+        url = utils.construct_git_url(self.addon,license.file)
+
+        manager = NetworkManager.AM_NETWORK_MANAGER
+
+        index = manager.submit_unmonitored_get(url)
+
+        self.license_requests[index] = {
+            'license' : license ,
+            'text' : text
+        }
 
     def loadResource(self, full_url: str):
         if full_url not in self.resource_failures:
@@ -199,39 +237,47 @@ class ReadmeController(QtCore.QObject):
 
             licenses = addon.license
 
-            if type(licenses) is list:
+            layout = self.widget.layout()
 
-                text = ""
+            if not layout:
+        
+                layout = QtWidgets.QVBoxLayout()
+
+                self.widget.setLayout(layout)
+
+
+            while layout.count():
+                
+                item = layout.takeAt(0)
+                widget = item.widget()
+                widget.setParent(None)
+
+
+            if type(licenses) is list:
 
                 licenses = cast(list[License | str], licenses)
 
                 for license in licenses:
-                    if type(license) is str:
-                        text += license
-                    elif type(license) is License:
 
-                        name = license.name
+                    text = QtWidgets.QTextEdit()
 
-                        url = utils.construct_git_url(addon, license.file)
+                    text.setText(
+                        translate("AddonsInstaller", "Loading license..")
+                    )
 
-                        try:
+                    layout.addWidget(text)
 
-                            response = fetch(url)
-
-                            if response.ok:
-                                text += response.text
-                            else:
-                                text += name
-
-                        except ConnectionError:
-
-                            text += name
-
-                self.widget.setText(text)
+                    if type(license) is License:
+                        self.loadLicense(license,text)
+                    elif type(license) is str:
+                        text.setText(license)
 
             elif type(licenses) is str:
 
-                self.widget.setText(licenses)
+                browser = QtWidgets.QTextBrowser()
+                browser.setText(licenses)
+
+                layout.addWidget(browser)
 
         elif view == TabView.Readme:
 

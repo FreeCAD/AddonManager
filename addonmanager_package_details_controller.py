@@ -89,14 +89,15 @@ class PackageDetailsController(QtCore.QObject):
 
         self.addon = addon
 
-        self.readme_controller.set_addon(addon, TabView.Readme)
-
         has_license = bool(self.addon.license)
 
         self.ui.tabs_widget.setTabVisible(self.ui.tabs[TabView.License], has_license)
 
         if has_license:
             self.license_controller.set_addon(addon, TabView.License)
+
+        self.readme_controller.set_addon(addon, TabView.Readme)
+        self.ui.tabs_widget.setCurrentIndex(TabView.Readme)
 
         self.original_disabled_state = self.addon.is_disabled()
 
