@@ -27,7 +27,7 @@ from Addon import Addon
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
-from typing import TypedDict, Optional, Dict ,cast
+from typing import TypedDict, Optional, Dict, cast
 from enum import IntEnum, auto
 
 import NetworkManager
@@ -50,9 +50,11 @@ class TabView(IntEnum):
     License = auto()
     Readme = 0
 
+
 class LicenseRequest(TypedDict):
-    license : License
-    text : QtWidgets.QTextEdit
+    license: License
+    text: QtWidgets.QTextEdit
+
 
 class ReadmeController(QtCore.QObject):
     """A class that can provide README data from an Addon, possibly loading external resources such
@@ -63,12 +65,12 @@ class ReadmeController(QtCore.QObject):
         NetworkManager.InitializeNetworkManager()
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self._download_completed)
         self.readme_request_index = 0
-        
+
         self.resource_requests = {}
         self.resource_failures = []
 
-        self.license_requests : Dict[ int , LicenseRequest ] = {}
-        
+        self.license_requests: Dict[int, LicenseRequest] = {}
+
         self.url = ""
         self.readme_data = None
         self.readme_data_type = None
@@ -126,18 +128,18 @@ class ReadmeController(QtCore.QObject):
             text = None
 
             if code == 200:
-                text = cast(str,data.data().decode('utf-8'))
-            
+                text = cast(str, data.data().decode("utf-8"))
+
             entry = self.license_requests.get(index)
 
-            print('License loaded',index,code,entry)
+            print("License loaded", index, code, entry)
 
             if not entry:
                 return
 
-            text = text or entry[ 'license' ].name
+            text = text or entry["license"].name
 
-            entry[ 'text' ].setText(text)
+            entry["text"].setText(text)
 
     def _process_package_download(self, data: str):
         self.readme_data = data
@@ -148,18 +150,15 @@ class ReadmeController(QtCore.QObject):
         image = QtGui.QImage.fromData(resource_data)
         self.widget.set_resource(resource_name, image)
 
-    def loadLicense ( self , license : License , text : QtWidgets.QTextEdit ):
+    def loadLicense(self, license: License, text: QtWidgets.QTextEdit):
 
-        url = utils.construct_git_url(self.addon,license.file)
+        url = utils.construct_git_url(self.addon, license.file)
 
         manager = NetworkManager.AM_NETWORK_MANAGER
 
         index = manager.submit_unmonitored_get(url)
 
-        self.license_requests[index] = {
-            'license' : license ,
-            'text' : text
-        }
+        self.license_requests[index] = {"license": license, "text": text}
 
     def loadResource(self, full_url: str):
         if full_url not in self.resource_failures:
@@ -240,18 +239,16 @@ class ReadmeController(QtCore.QObject):
             layout = self.widget.layout()
 
             if not layout:
-        
+
                 layout = QtWidgets.QVBoxLayout()
 
                 self.widget.setLayout(layout)
 
-
             while layout.count():
-                
+
                 item = layout.takeAt(0)
                 widget = item.widget()
                 widget.setParent(None)
-
 
             if type(licenses) is list:
 
@@ -261,14 +258,12 @@ class ReadmeController(QtCore.QObject):
 
                     text = QtWidgets.QTextEdit()
 
-                    text.setText(
-                        translate("AddonsInstaller", "Loading license..")
-                    )
+                    text.setText(translate("AddonsInstaller", "Loading license.."))
 
                     layout.addWidget(text)
 
                     if type(license) is License:
-                        self.loadLicense(license,text)
+                        self.loadLicense(license, text)
                     elif type(license) is str:
                         text.setText(license)
 
@@ -287,9 +282,7 @@ class ReadmeController(QtCore.QObject):
                 for url in self.addon.metadata.url:
                     if url.type == UrlType.readme:
                         if self.url != url.location:
-                            fci.Console.PrintLog(
-                                "README url does not match expected location\n"
-                            )
+                            fci.Console.PrintLog("README url does not match expected location\n")
                             fci.Console.PrintLog(f"Expected: {self.url}\n")
                             fci.Console.PrintLog(f"package.xml contents: {url.location}\n")
                             fci.Console.PrintLog(
