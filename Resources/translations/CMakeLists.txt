@@ -22,6 +22,7 @@ SET(AddonManagerResourceFilesTranslations
     AddonManager_ru.qm
     AddonManager_sr-CS.qm
     AddonManager_sr-SP.qm
+    AddonManager_sv.qm
     AddonManager_uk.qm
     AddonManager_zh-CN.qm
     AddonManager_zh-TW.qm
