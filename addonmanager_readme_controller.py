@@ -132,8 +132,6 @@ class ReadmeController(QtCore.QObject):
 
             entry = self.license_requests.get(index)
 
-            print("License loaded", index, code, entry)
-
             if not entry:
                 return
 
