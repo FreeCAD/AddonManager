@@ -135,7 +135,7 @@ class ReadmeController(QtCore.QObject):
             if code == 200:
                 text = cast(str, data.data().decode("utf-8"))
             else:
-                fci.Console().printLog(f'Failed to fetch license. Name : "{ entry["license"].name }" , File : "{ entry["license"].file }"')
+                fci.Console.PrintLog(f'Failed to fetch license. Name : "{ entry["license"].name }" ,File : "{ entry["license"].file }"')
 
             text = text or entry["license"].name
 
