@@ -125,15 +125,17 @@ class ReadmeController(QtCore.QObject):
 
         elif index in self.license_requests:
 
-            text = None
-
-            if code == 200:
-                text = cast(str, data.data().decode("utf-8"))
-
             entry = self.license_requests.get(index)
 
             if not entry:
                 return
+
+            text = None
+
+            if code == 200:
+                text = cast(str, data.data().decode("utf-8"))
+            else:
+                fci.Console().printLog(f'Failed to fetch license. Name : "{ entry["license"].name }" , File : "{ entry["license"].file }"')
 
             text = text or entry["license"].name
 
