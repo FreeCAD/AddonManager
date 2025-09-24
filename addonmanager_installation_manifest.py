@@ -38,6 +38,8 @@ def most_recent_update(directory_path: str) -> datetime.datetime:
 
     if not path.exists():
         raise FileNotFoundError(f"Directory not found: {path}")
+    if not path.is_dir():
+        raise NotADirectoryError(f"Path is not a directory: {path}")
 
     latest_time = datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc)
     for file_path in path.rglob("*"):
