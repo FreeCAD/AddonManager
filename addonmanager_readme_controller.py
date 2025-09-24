@@ -27,7 +27,7 @@ from Addon import Addon
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
-from typing import TypedDict, Optional, Dict, cast
+from typing import TypedDict, Optional, Dict
 from enum import IntEnum, auto
 
 import NetworkManager
