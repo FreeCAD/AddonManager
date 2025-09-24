@@ -84,24 +84,27 @@ class InstallationManifest:
             os.makedirs(fci.DataPaths().mod_dir)
         dirs_in_mod = os.listdir(fci.DataPaths().mod_dir)
         for addon_id in dirs_in_mod:
-            branches = []
-            if catalog:
-                branches = catalog.get_available_branches(addon_id)
-            if branches:
-                branch_display_name = branches[0]
-                self._manifest[addon_id] = {
-                    "addon_id": addon_id,
-                    "migrated": True,
-                    "first_installed": datetime.datetime.fromtimestamp(
-                        0, tz=datetime.timezone.utc
-                    ).isoformat(),
-                    "last_updated": most_recent_update(
-                        os.path.join(fci.DataPaths().mod_dir, addon_id)
-                    ).isoformat(),
-                    "branch_display_name": branch_display_name,
-                    "extra_files": [],
-                    "freecad_version": "",
-                }
+            if Path(os.path.join(fci.DataPaths().mod_dir, addon_id)).is_dir():
+                branches = []
+                if catalog:
+                    branches = catalog.get_available_branches(addon_id)
+                if branches:
+                    branch_display_name = branches[0]
+                    self._manifest[addon_id] = {
+                        "addon_id": addon_id,
+                        "migrated": True,
+                        "first_installed": datetime.datetime.fromtimestamp(
+                            0, tz=datetime.timezone.utc
+                        ).isoformat(),
+                        "last_updated": most_recent_update(
+                            os.path.join(fci.DataPaths().mod_dir, addon_id)
+                        ).isoformat(),
+                        "branch_display_name": branch_display_name,
+                        "extra_files": [],
+                        "freecad_version": "",
+                    }
+            else:
+                fci.Console.PrintMessage("Migrate to Manifest, skipping file: " + addon_id + "\n")
 
     def load_manifest(self):
         """Load the manifest from the disk"""
