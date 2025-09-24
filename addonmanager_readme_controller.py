@@ -130,7 +130,7 @@ class ReadmeController(QtCore.QObject):
             if not entry:
                 return
 
-            text : None | str = None
+            text: None | str = None
 
             if code == 200:
                 text = data.data().decode("utf-8")
@@ -235,7 +235,7 @@ class ReadmeController(QtCore.QObject):
         if view == TabView.License:
 
             addon = self.addon
-            
+
             if not addon:
                 return
 
