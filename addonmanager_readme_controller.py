@@ -27,11 +27,13 @@ from Addon import Addon
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
-from enum import IntEnum
-from typing import Optional
+from typing import TypedDict, Optional, Dict
+from enum import IntEnum, auto
 
 import NetworkManager
-from addonmanager_metadata import UrlType
+from Widgets.addonmanager_widget_readme_browser import WidgetReadmeBrowser
+from addonmanager_metadata import UrlType, License
+from PySideWrapper import QtWidgets
 
 translate = fci.translate
 
@@ -44,17 +46,31 @@ class ReadmeDataType(IntEnum):
     Html = 2
 
 
+class TabView(IntEnum):
+    License = auto()
+    Readme = 0
+
+
+class LicenseRequest(TypedDict):
+    license: License
+    text: QtWidgets.QTextEdit
+
+
 class ReadmeController(QtCore.QObject):
     """A class that can provide README data from an Addon, possibly loading external resources such
     as images"""
 
-    def __init__(self, widget):
+    def __init__(self, widget: WidgetReadmeBrowser):
         super().__init__()
         NetworkManager.InitializeNetworkManager()
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self._download_completed)
         self.readme_request_index = 0
+
         self.resource_requests = {}
         self.resource_failures = []
+
+        self.license_requests: Dict[int, LicenseRequest] = {}
+
         self.url = ""
         self.readme_data = None
         self.readme_data_type = None
@@ -64,16 +80,16 @@ class ReadmeController(QtCore.QObject):
         self.widget.load_resource.connect(self.loadResource)
         self.widget.follow_link.connect(self.follow_link)
 
-    def set_addon(self, repo: Addon):
+    def set_addon(self, addon: Addon, view: TabView):
         """Set which Addon's information is displayed"""
 
-        self.addon = repo
+        self.addon = addon
         self.stop = False
         self.readme_data = None
         if self.addon.repo_type == Addon.Kind.MACRO:
             self._create_wiki_display()
         else:
-            self._create_non_wiki_display()
+            self._create_non_wiki_display(view)
 
     def _download_completed(self, index: int, code: int, data: QtCore.QByteArray) -> None:
         """Callback for handling a completed README file download."""
@@ -103,7 +119,29 @@ class ReadmeController(QtCore.QObject):
                     else:
                         self.widget.setText(self.readme_data)
                 else:
-                    self.set_addon(self.addon)  # Trigger a reload of the page now with resources
+                    self.set_addon(
+                        self.addon, TabView.Readme
+                    )  # Trigger a reload of the page now with resources
+
+        elif index in self.license_requests:
+
+            entry = self.license_requests.get(index)
+
+            if not entry:
+                return
+
+            text: None | str = None
+
+            if code == 200:
+                text = data.data().decode("utf-8")
+            else:
+                fci.Console.PrintLog(
+                    f'Failed to fetch license. Name : "{ entry["license"].name }" , File : "{ entry["license"].file }"'
+                )
+
+            text = text or entry["license"].name
+
+            entry["text"].setText(text)
 
     def _process_package_download(self, data: str):
         self.readme_data = data
@@ -113,6 +151,16 @@ class ReadmeController(QtCore.QObject):
     def _process_resource_download(self, resource_name: str, resource_data: bytes):
         image = QtGui.QImage.fromData(resource_data)
         self.widget.set_resource(resource_name, image)
+
+    def loadLicense(self, license: License, text: QtWidgets.QTextEdit):
+
+        url = utils.construct_git_url(self.addon, license.file)
+
+        manager = NetworkManager.AM_NETWORK_MANAGER
+
+        index = manager.submit_unmonitored_get(url)
+
+        self.license_requests[index] = {"license": license, "text": text}
 
     def loadResource(self, full_url: str):
         if full_url not in self.resource_failures:
@@ -182,47 +230,96 @@ class ReadmeController(QtCore.QObject):
         self.readme_data_type = ReadmeDataType.Markdown
         self.widget.setMarkdown(markdown)
 
-    def _create_non_wiki_display(self):
-        self.url = utils.get_readme_url(self.addon)
-        if self.addon.metadata and self.addon.metadata.url:
-            for url in self.addon.metadata.url:
-                if url.type == UrlType.readme:
-                    if self.url != url.location:
-                        fci.Console.PrintLog("README url does not match expected location\n")
-                        fci.Console.PrintLog(f"Expected: {self.url}\n")
-                        fci.Console.PrintLog(f"package.xml contents: {url.location}\n")
-                        fci.Console.PrintLog(
-                            "Note to addon devs: package.xml now expects a"
-                            " url to the raw MD data, now that Qt can render"
-                            " it without having it transformed to HTML.\n"
-                        )
-                    self.url = url.location
-                    if "/blob/" in self.url:
-                        fci.Console.PrintLog("Attempting to replace 'blob' with 'raw'...\n")
-                        self.url = self.url.replace("/blob/", "/raw/")
-                    elif "/src/" in self.url and "codeberg" in self.url:
-                        fci.Console.PrintLog(
-                            "Attempting to replace 'src' with 'raw' in codeberg URL..."
-                        )
-                        self.url = self.url.replace("/src/", "/raw/")
+    def _create_non_wiki_display(self, view: TabView):
 
-        self.widget.setUrl(self.url)
+        if view == TabView.License:
 
-        self.widget.setText(
-            translate("AddonsInstaller", "Loading page for {} from {}...").format(
-                self.addon.display_name, self.url
+            addon = self.addon
+
+            if not addon:
+                return
+
+            licenses = addon.license
+
+            layout = self.widget.layout()
+
+            if not layout:
+
+                layout = QtWidgets.QVBoxLayout()
+
+                self.widget.setLayout(layout)
+
+            while layout.count():
+
+                item = layout.takeAt(0)
+                widget = item.widget()
+                widget.setParent(None)
+
+            if type(licenses) is list:
+
+                for license in licenses:
+
+                    text = QtWidgets.QTextEdit()
+
+                    text.setText(translate("AddonsInstaller", "Loading license.."))
+
+                    layout.addWidget(text)
+
+                    if type(license) is License:
+                        self.loadLicense(license, text)
+                    elif type(license) is str:
+                        text.setText(license)
+
+            elif type(licenses) is str:
+
+                browser = QtWidgets.QTextBrowser()
+                browser.setText(licenses)
+
+                layout.addWidget(browser)
+
+        elif view == TabView.Readme:
+
+            self.url = utils.get_readme_url(self.addon)
+
+            if self.addon.metadata and self.addon.metadata.url:
+                for url in self.addon.metadata.url:
+                    if url.type == UrlType.readme:
+                        if self.url != url.location:
+                            fci.Console.PrintLog("README url does not match expected location\n")
+                            fci.Console.PrintLog(f"Expected: {self.url}\n")
+                            fci.Console.PrintLog(f"package.xml contents: {url.location}\n")
+                            fci.Console.PrintLog(
+                                "Note to addon devs: package.xml now expects a"
+                                " url to the raw MD data, now that Qt can render"
+                                " it without having it transformed to HTML.\n"
+                            )
+                        self.url = url.location
+                        if "/blob/" in self.url:
+                            fci.Console.PrintLog("Attempting to replace 'blob' with 'raw'...\n")
+                            self.url = self.url.replace("/blob/", "/raw/")
+                        elif "/src/" in self.url and "codeberg" in self.url:
+                            fci.Console.PrintLog(
+                                "Attempting to replace 'src' with 'raw' in codeberg URL..."
+                            )
+                            self.url = self.url.replace("/src/", "/raw/")
+
+            self.widget.setUrl(self.url)
+
+            self.widget.setText(
+                translate("AddonsInstaller", "Loading page for {} from {}...").format(
+                    self.addon.display_name, self.url
+                )
             )
-        )
 
-        if self.url[0] == "/":
-            if self.url.lower().endswith(".md"):
-                self.readme_data_type = ReadmeDataType.Markdown
-            elif self.url.lower().endswith(".html"):
-                self.readme_data_type = ReadmeDataType.Html
+            if self.url[0] == "/":
+                if self.url.lower().endswith(".md"):
+                    self.readme_data_type = ReadmeDataType.Markdown
+                elif self.url.lower().endswith(".html"):
+                    self.readme_data_type = ReadmeDataType.Html
 
-            with open(self.url, "r") as fd:
-                self._process_package_download("".join(fd.readlines()))
-        else:
-            self.readme_request_index = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(
-                self.url
-            )
+                with open(self.url, "r") as fd:
+                    self._process_package_download("".join(fd.readlines()))
+            else:
+                self.readme_request_index = (
+                    NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(self.url)
+                )
