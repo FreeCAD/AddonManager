@@ -102,9 +102,7 @@ class InstallationManifest:
                         "freecad_version": "",
                     }
             else:
-                fci.Console.PrintMessage(
-                    "Migrate to Manifest, skipping file: " + addon_id + "\n"
-                )
+                fci.Console.PrintMessage("Migrate to Manifest, skipping file: " + addon_id + "\n")
 
     def load_manifest(self):
         """Load the manifest from the disk"""
