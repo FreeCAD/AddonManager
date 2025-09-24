@@ -47,6 +47,7 @@ import addonmanager_utilities as utils
 from addonmanager_metadata import (
     Metadata,
     MetadataReader,
+    License,
     UrlType,
     Version,
     DependencyType,
@@ -220,7 +221,7 @@ class Addon:
         self.python_min_version = Version(from_list=[3, 0, 0])
 
         self._icon_file = None
-        self._cached_license: str = ""
+        self._cached_license: str | List[License|str] = ""
         self._cached_update_date = None
 
     def __eq__(self, other):

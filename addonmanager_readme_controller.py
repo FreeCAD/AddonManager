@@ -130,10 +130,10 @@ class ReadmeController(QtCore.QObject):
             if not entry:
                 return
 
-            text = None
+            text : None | str = None
 
             if code == 200:
-                text = cast(str, data.data().decode("utf-8"))
+                text = data.data().decode("utf-8")
             else:
                 fci.Console.PrintLog(
                     f'Failed to fetch license. Name : "{ entry["license"].name }" , File : "{ entry["license"].file }"'
@@ -234,7 +234,10 @@ class ReadmeController(QtCore.QObject):
 
         if view == TabView.License:
 
-            addon = cast(Addon, self.addon)
+            addon = self.addon
+            
+            if not addon:
+                return
 
             licenses = addon.license
 
@@ -253,8 +256,6 @@ class ReadmeController(QtCore.QObject):
                 widget.setParent(None)
 
             if type(licenses) is list:
-
-                licenses = cast(list[License | str], licenses)
 
                 for license in licenses:
 
