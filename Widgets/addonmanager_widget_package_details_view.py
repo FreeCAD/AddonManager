@@ -98,11 +98,11 @@ class PackageDetailsView(QtWidgets.QWidget):
         self.tabs_widget = QtWidgets.QTabWidget(self)
 
         self.tabs[TabView.Readme] = self.tabs_widget.addTab(
-            self.readme_browser, translate("AddonsInstaller", "README")
+            self.readme_browser, translate("AddonsInstaller", "Overview")
         )
 
         self.tabs[TabView.License] = self.tabs_widget.addTab(
-            self.license_browser, translate("AddonsInstaller", "LICENSE")
+            self.license_browser, translate("AddonsInstaller", "License")
         )
 
         self.message_label = QtWidgets.QLabel(self)
