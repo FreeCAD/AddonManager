@@ -21,75 +21,80 @@
 # *                                                                         *
 # ***************************************************************************
 
-"""GUI for python dependency management."""
+'''
+UI for managing Python dependencies.
+'''
 
-import os
-
-import addonmanager_freecad_interface as fci
+from addonmanager_freecad_interface import loadUi
 from addonmanager_python_deps import PythonPackageListModel
-
 from PySideWrapper import QtWidgets
+from os.path import dirname , join
 
 
-translate = fci.translate
+ResizeToContents = QtWidgets.QHeaderView.ResizeMode.ResizeToContents
 
 
 class UI ( QtWidgets.QDialog ):
 
-    updateInProgressLabel : QtWidgets.QLabel
-    labelInstallationPath : QtWidgets.QLabel
-    buttonUpdateAll : QtWidgets.QPushButton
+    Installation_Path : QtWidgets.QLabel
+    Update_Progress : QtWidgets.QLabel
+    Update_All : QtWidgets.QPushButton
     tableView : QtWidgets.QTableView
 
 
 class DependenciesDialog :
 
+    model : PythonPackageListModel
     ui : UI
 
-    """GUI for managing Python packages"""
+    def __init__ ( self , addons : list[ object ] ):
 
-    def __init__(self, addons):
-        self.ui = fci.loadUi(
-            os.path.join(os.path.dirname(__file__),"Dependencies.ui")
-        ) # type: ignore
-        self.ui.setObjectName("AddonManager_Dependencies")
+        path = join(dirname(__file__),'Dependencies.ui')
+
+        self.ui = loadUi(path) # type: ignore
+
         self.model = PythonPackageListModel(addons)
-        self.ui.tableView.setModel(self.model)
 
-        self.ui.tableView.horizontalHeader().setStretchLastSection(True)
-        self.ui.tableView.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.ui.tableView.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.ui.tableView.horizontalHeader().setSectionResizeMode(
-            2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.ui.tableView.horizontalHeader().setSectionResizeMode(
-            3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
+        table = self.ui.tableView
+        table.setModel(self.model)
 
-        self.ui.buttonUpdateAll.clicked.connect(self._update_button_clicked)
-        self.model.modelReset.connect(self._model_was_reset)
-        self.model.update_complete.connect(self._update_complete)
+        header = table.horizontalHeader()
+        header.setStretchLastSection(True)
+        header.setSectionResizeMode(ResizeToContents)
 
-    def show(self):
-        self.ui.buttonUpdateAll.setEnabled(False)
-        self.ui.updateInProgressLabel.show()
+        self.ui.Update_All.clicked.connect(self._onUpdateAll)
+
+        self.model.update_complete.connect(self._onUpdateComplete)
+        self.model.modelReset.connect(self._onModelReset)
+
+    def show ( self ):
+        
+        self.ui.Update_Progress.show()
+        self.ui.Update_All.setEnabled(False)
+        
         self.model.reset_package_list()
-        self.ui.labelInstallationPath.setText(self.model.vendor_path)
+        
+        self.ui.Installation_Path.setText(self.model.vendor_path)
+        
         self.ui.exec()
 
-    def _update_button_clicked(self):
-        self.ui.buttonUpdateAll.setEnabled(False)
-        self.ui.updateInProgressLabel.show()
+    #   Events
+
+    def _onUpdateComplete ( self ):
+        self.ui.Update_Progress.hide()
+        self.model.reset_package_list()
+
+    def _onUpdateAll ( self ):
+        self.ui.Update_All.setEnabled(False)
+        self.ui.Update_Progress.show()
         self.model.update_all_packages()
 
-    def _model_was_reset(self):
-        self.ui.updateInProgressLabel.hide()
-        self.ui.buttonUpdateAll.setEnabled(self.model.updates_are_available())
+    def _onModelReset ( self ):
+        
+        self.ui.Update_Progress.hide()
+        
+        hasUpdates = self.model.updates_are_available()
+        
+        self.ui.Update_All.setEnabled(hasUpdates)
 
-    def _update_complete(self):
-        self.ui.updateInProgressLabel.hide()
-        self.model.reset_package_list()
+  
