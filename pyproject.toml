@@ -1,0 +1,17 @@
+
+[project]
+version = '0.0.0'
+name = 'AddonManager'
+
+requires-python = '>=3.10'
+
+dependencies = [
+    'freecad-stubs>=1.0.21' ,
+    'requests>=2.32.5' ,
+    'pyside6>=6.9.2'
+]
+
+[tool.uv]
+dev-dependencies = [
+    'pyfakefs>=5.10.1' ,
+]

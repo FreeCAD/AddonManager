@@ -1,0 +1,11 @@
+{
+    "qtForPython.uic.liveExecution.enabled" : false ,
+
+    "files.associations" : {
+        "*.ts" : "xml"
+    },
+
+    "search.exclude" : {
+        "uv.lock" : true
+    }
+}

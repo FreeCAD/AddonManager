@@ -53,9 +53,7 @@ from Widgets.addonmanager_widget_global_buttons import WidgetGlobalButtonBar
 from Widgets.addonmanager_widget_progress_bar import Progress
 from package_list import PackageListItemModel
 from Addon import Addon, cycle_to_sub_addon, MissingDependencies
-from addonmanager_python_deps_gui import (
-    PythonPackageManagerGui,
-)
+from Manager.Dependencies import DependenciesDialog
 from addonmanager_firstrun import FirstRunDialog
 from addonmanager_connection_checker import ConnectionCheckerGUI
 
@@ -480,7 +478,7 @@ class CommandAddonManager(QtCore.QObject):
 
     def show_python_updates_dialog(self) -> None:
         if not self.manage_python_packages_dialog:
-            self.manage_python_packages_dialog = PythonPackageManagerGui(self.item_model.repos)
+            self.manage_python_packages_dialog = DependenciesDialog(self.item_model.repos)
         self.manage_python_packages_dialog.show()
 
     def fetch_addon_stats(self) -> None:
