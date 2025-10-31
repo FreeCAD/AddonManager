@@ -4,7 +4,7 @@ import unittest
 from PySideWrapper import QtCore, QtWidgets
 
 
-from addonmanager_python_deps_gui import PythonPackageManagerGui
+from Manager.Dependencies import PythonPackageManagerGui
 
 
 class TestPythonPackageManagerGui(unittest.TestCase):

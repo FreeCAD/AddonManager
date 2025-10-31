@@ -35,13 +35,14 @@ translate = fci.translate
 
 
 class PythonPackageManagerGui:
+
     """GUI for managing Python packages"""
 
     def __init__(self, addons):
         self.dlg = fci.loadUi(
-            os.path.join(os.path.dirname(__file__), "PythonDependencyUpdateDialog.ui")
+            os.path.join(os.path.dirname(__file__),"Dependencies.ui")
         )
-        self.dlg.setObjectName("AddonManager_PythonDependencyUpdateDialog")
+        self.dlg.setObjectName("AddonManager_Dependencies")
         self.model = PythonPackageListModel(addons)
         self.dlg.tableView.setModel(self.model)
 

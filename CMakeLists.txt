@@ -63,13 +63,14 @@ SET(AddonManager_SRCS
     progress.ui
     proxy_authentication.ui
     PySideWrapper.py
-    PythonDependencyUpdateDialog.ui
     select_toolbar_dialog.ui
     TestAddonManagerApp.py
     TestAddonManagerGui.py
     toolbar_button.ui
     update_all_progress.ui
     update_all.ui
+    Manager/Dependencies.py
+    Manager/Dependencies.ui
 )
 
 SOURCE_GROUP("" FILES ${AddonManager_SRCS})
