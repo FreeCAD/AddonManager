@@ -27,16 +27,20 @@ UI for managing Python dependencies.
 
 from addonmanager_freecad_interface import loadUi
 from addonmanager_python_deps import PythonPackageListModel
-from PySideWrapper import QtWidgets
+from PySideWrapper import QtWidgets , QtGui
 from os.path import dirname , join
 
 
 ResizeToContents = QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+openUrl = QtGui.QDesktopServices.openUrl
 
 
 class UI ( QtWidgets.QDialog ):
 
-    Installation_Path : QtWidgets.QLabel
+    Location_Copy : QtWidgets.QPushButton
+    Location_Open : QtWidgets.QPushButton
+    Location_Path : QtWidgets.QLabel
+
     Update_Progress : QtWidgets.QLabel
     Update_All : QtWidgets.QPushButton
     tableView : QtWidgets.QTableView
@@ -62,6 +66,9 @@ class DependenciesDialog :
         header.setStretchLastSection(True)
         header.setSectionResizeMode(ResizeToContents)
 
+        self.ui.Location_Copy.clicked.connect(self._onLocationCopy)
+        self.ui.Location_Open.clicked.connect(self._onLocationOpen)
+
         self.ui.Update_All.clicked.connect(self._onUpdateAll)
 
         self.model.update_complete.connect(self._onUpdateComplete)
@@ -74,11 +81,30 @@ class DependenciesDialog :
         
         self.model.reset_package_list()
         
-        self.ui.Installation_Path.setText(self.model.vendor_path)
+        self.ui.Location_Path.setText(self.path)
         
         self.ui.exec()
 
+    #   Properties
+
+    @property
+    def path ( self ):
+        return self.model.vendor_path
+
     #   Events
+
+    def _onLocationCopy ( self ):
+
+        text = self.path
+
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.setText(text,mode = clipboard.Mode.Clipboard)
+
+        if clipboard.supportsSelection() :
+            clipboard.setText(text,mode = clipboard.Mode.Selection)
+
+    def _onLocationOpen ( self ):
+        openUrl(self.path)
 
     def _onUpdateComplete ( self ):
         self.ui.Update_Progress.hide()
