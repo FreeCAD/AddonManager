@@ -34,52 +34,62 @@ from PySideWrapper import QtWidgets
 translate = fci.translate
 
 
-class PythonPackageManagerGui:
+class UI ( QtWidgets.QDialog ):
+
+    updateInProgressLabel : QtWidgets.QLabel
+    labelInstallationPath : QtWidgets.QLabel
+    buttonUpdateAll : QtWidgets.QPushButton
+    tableView : QtWidgets.QTableView
+
+
+class DependenciesDialog :
+
+    ui : UI
 
     """GUI for managing Python packages"""
 
     def __init__(self, addons):
-        self.dlg = fci.loadUi(
+        self.ui = fci.loadUi(
             os.path.join(os.path.dirname(__file__),"Dependencies.ui")
-        )
-        self.dlg.setObjectName("AddonManager_Dependencies")
+        ) # type: ignore
+        self.ui.setObjectName("AddonManager_Dependencies")
         self.model = PythonPackageListModel(addons)
-        self.dlg.tableView.setModel(self.model)
+        self.ui.tableView.setModel(self.model)
 
-        self.dlg.tableView.horizontalHeader().setStretchLastSection(True)
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
+        self.ui.tableView.horizontalHeader().setStretchLastSection(True)
+        self.ui.tableView.horizontalHeader().setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
+        self.ui.tableView.horizontalHeader().setSectionResizeMode(
             1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
+        self.ui.tableView.horizontalHeader().setSectionResizeMode(
             2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
+        self.ui.tableView.horizontalHeader().setSectionResizeMode(
             3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
         )
 
-        self.dlg.buttonUpdateAll.clicked.connect(self._update_button_clicked)
+        self.ui.buttonUpdateAll.clicked.connect(self._update_button_clicked)
         self.model.modelReset.connect(self._model_was_reset)
         self.model.update_complete.connect(self._update_complete)
 
     def show(self):
-        self.dlg.buttonUpdateAll.setEnabled(False)
-        self.dlg.updateInProgressLabel.show()
+        self.ui.buttonUpdateAll.setEnabled(False)
+        self.ui.updateInProgressLabel.show()
         self.model.reset_package_list()
-        self.dlg.labelInstallationPath.setText(self.model.vendor_path)
-        self.dlg.exec()
+        self.ui.labelInstallationPath.setText(self.model.vendor_path)
+        self.ui.exec()
 
     def _update_button_clicked(self):
-        self.dlg.buttonUpdateAll.setEnabled(False)
-        self.dlg.updateInProgressLabel.show()
+        self.ui.buttonUpdateAll.setEnabled(False)
+        self.ui.updateInProgressLabel.show()
         self.model.update_all_packages()
 
     def _model_was_reset(self):
-        self.dlg.updateInProgressLabel.hide()
-        self.dlg.buttonUpdateAll.setEnabled(self.model.updates_are_available())
+        self.ui.updateInProgressLabel.hide()
+        self.ui.buttonUpdateAll.setEnabled(self.model.updates_are_available())
 
     def _update_complete(self):
-        self.dlg.updateInProgressLabel.hide()
+        self.ui.updateInProgressLabel.hide()
         self.model.reset_package_list()

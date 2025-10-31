@@ -4,13 +4,13 @@ import unittest
 from PySideWrapper import QtCore, QtWidgets
 
 
-from Manager.Dependencies import PythonPackageManagerGui
+from Manager.Dependencies import DependenciesDialog
 
 
 class TestPythonPackageManagerGui(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.manager = PythonPackageManagerGui([])
+        self.manager = DependenciesDialog([])
 
 
 if __name__ == "__main__":
