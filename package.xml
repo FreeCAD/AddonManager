@@ -12,7 +12,7 @@
     <author>Jonathan Wiedemann</author>
     <author>Kurt Kremitzki</author>
     <author>Gaël Écorchard</author>
-    <license file="LICENSE">LGPL-2.1-or-later</license>
+    <license file="LICENSE.md">LGPL-2.1-or-later</license>
     <url type='repository' branch='dev'>https://github.com/FreeCAD/AddonManager</url>
     <url type='bugtracker'>https://github.com/FreeCAD/AddonManager/issues</url>
     <url type='readme'>https://github.com/FreeCAD/AddonManager/blob/dev/README.md</url>
