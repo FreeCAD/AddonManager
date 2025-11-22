@@ -24,10 +24,13 @@
 """The MacroCacheCreator is an independent script run server-side to generate a cache of
 the macros and their metadata. Supports both git-based and wiki-based macros."""
 
+import contextlib
 import hashlib
+import io
 import json
 import os.path
 import re
+import sys
 import urllib.parse
 
 import requests
@@ -36,6 +39,9 @@ import zipfile
 
 from addonmanager_macro import Macro
 from AddonCatalogCacheCreator import CacheWriter  # Borrow the git utility method from this class
+import addonmanager_icon_utilities as icon_utils
+
+from PySideWrapper import QtGui
 
 GIT_MACROS_URL = "https://github.com/FreeCAD/FreeCAD-macros.git"
 GIT_MACROS_BRANCH = "master"
@@ -61,6 +67,7 @@ class MacroCatalog:
 
     def __init__(self):
         self.macros: Dict[str, Macro] = {}
+        self.macro_errors = {}
 
     def fetch_macros(self):
         print("Retrieving macros from git...")
@@ -85,6 +92,7 @@ class MacroCatalog:
             CacheWriter.clone_or_update(GIT_MACROS_CLONE_NAME, GIT_MACROS_URL, GIT_MACROS_BRANCH)
         except RuntimeError as e:
             print(f"Failed to clone git macros from {GIT_MACROS_URL}: {e}")
+            self.macro_errors["retrieve_macros_from_git"] = str(e)
             return
 
         for dirpath, _, filenames in os.walk(os.path.join(os.getcwd(), GIT_MACROS_CLONE_NAME)):
@@ -114,7 +122,8 @@ class MacroCatalog:
 
         p = requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
         if not p.status_code == 200:
-            print(f"Failed to fetch {WIKI_MACROS_URL}, response code was {p.status_code}")
+            message = f"Failed to fetch {WIKI_MACROS_URL}, response code was {p.status_code}"
+            self.macro_errors["retrieve_macros_from_wiki"] = message
             return
 
         macros = re.findall(r'title="(Macro.*?)"', p.text)
@@ -141,8 +150,7 @@ class MacroCatalog:
         url = "https://wiki.freecad.org/Macro_" + wiki_page_name
         macro.fill_details_from_wiki(url)
 
-    @staticmethod
-    def get_icon(macro: Macro):
+    def get_icon(self, macro: Macro):
         """Downloads the macro's icon from whatever source is specified and stores its binary
         contents in self.icon_data"""
         if macro.icon.startswith("http://") or macro.icon.startswith("https://"):
@@ -152,19 +160,18 @@ class MacroCatalog:
                 _, _, filename = parsed_url.path.rpartition("/")
                 base, _, extension = filename.rpartition(".")
                 if base.lower().startswith("file:"):
-                    print(
-                        f"Cannot use specified icon for {macro.name}, {macro.icon} "
-                        "is not a direct download link"
-                    )
+                    message = f"Cannot use specified icon for {macro.name}, {macro.icon} is not a direct download link"
+                    self.macro_errors[macro.name] = message
                     macro.icon = ""
                     return
                 macro.icon_data = p.content
                 macro.icon_extension = extension
             else:
-                print(
+                message = (
                     f"MACRO DEVELOPER WARNING: failed to download icon from {macro.icon}"
-                    f" for macro {macro.name}. Status code returned: {p.status_code}\n"
+                    + f" for macro {macro.name}. Status code returned: {p.status_code}\n"
                 )
+                self.macro_errors[macro.name] = message
                 macro.icon = ""
         elif macro.on_git:
             relative_path_to_macro_directory = os.path.dirname(macro.src_filename)
@@ -180,8 +187,35 @@ class MacroCatalog:
                     macro.icon_data = icon_file.read()
                     macro.icon_extension = relative_path_to_icon.rpartition(".")[-1]
 
+        class StderrAsError(io.StringIO):
+            def write(self, s):
+                raise RuntimeError(f"Function wrote to stderr: {s!r}")
+
+        # Do some tests on the icon data to make sure it's valid
+        throw_on_write = StderrAsError()
+        if macro.icon and not macro.icon_data:
+            if macro.name not in self.macro_errors:
+                self.macro_errors[macro.name] = "There is no data for the icon"
+        elif macro.icon.lower().endswith(".svg"):
+            try:
+                if not icon_utils.is_svg_bytes(macro.icon_data):
+                    self.macro_errors[macro.name] = "SVG file does not have valid XML header"
+            except icon_utils.BadIconData as e:
+                self.macro_errors[macro.name] = str(e)
+        elif macro.icon:
+            try:
+                with contextlib.redirect_stderr(throw_on_write):
+                    test_icon = icon_utils.icon_from_bytes(macro.icon_data)
+                    if test_icon.isNull():
+                        self.macro_errors[macro.name] = "Icon data is invalid"
+            except icon_utils.BadIconData as e:
+                self.macro_errors[macro.name] = str(e)
+            except RuntimeError as e:
+                self.macro_errors[macro.name] = str(e)
+
 
 if __name__ == "__main__":
+    app = QtGui.QGuiApplication(sys.argv)
     catalog = MacroCatalog()
     catalog.fetch_macros()
     cache = catalog.create_cache()
@@ -198,4 +232,9 @@ if __name__ == "__main__":
     with open("macro_cache.zip.sha256", "w", encoding="utf-8") as hash_file:
         hash_file.write(sha256)
 
+    # Finally, write out the errors as JSON data:
+    with open(os.path.join(os.getcwd(), "macro_errors.json"), "w", encoding="utf-8") as f:
+        json.dump(catalog.macro_errors, f, indent="  ")
+
     print("Cache written to macro_cache.zip and macro_cache.zip.sha256")
+    app.quit()
