@@ -28,6 +28,7 @@
     "alwaysAskForToolbar": true,
     "dontShowAddMacroButtonDialog": false,
     "force_git_in_repos": "parts_library",
+    "ignored_missing_deps": "",
     "last_fetched_addon_catalog_cache_hash": "Cache never fetched, no hash available",
     "last_fetched_macro_cache_hash": "Cache never fetched, no hash available",
     "macro_cache_url": "https://addons.freecad.org/macro_cache.zip",
