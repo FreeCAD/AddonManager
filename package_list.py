@@ -389,19 +389,29 @@ class PackageListItemDelegate(QtWidgets.QStyledItemDelegate):
             self.widget.ui.labelDescription.setText("")
 
     def _set_package_maintainer_label(self, addon: Addon):
+
         maintainers = addon.metadata.maintainer
-        maintainers_string = ""
-        if len(maintainers) == 1:
-            maintainers_string = (
-                translate("AddonsInstaller", "Maintainer")
-                + f": {maintainers[0].name} <{maintainers[0].email}>"
-            )
-        elif len(maintainers) > 1:
-            n = len(maintainers)
-            maintainers_string = translate("AddonsInstaller", "Maintainers:", "", n)
+
+        text = ""
+
+        count = len(maintainers)
+
+        if count > 0:
+
+            text = translate("AddonsInstaller", "Maintainer(s)", "", count)
+            text = f"{ text }: "
+
             for maintainer in maintainers:
-                maintainers_string += f"\n{maintainer.name} <{maintainer.email}>"
-        self.widget.ui.labelMaintainer.setText(maintainers_string)
+
+                if count > 1:
+                    text += "\n"
+
+                text += maintainer.name
+
+                if maintainer.email:
+                    text += f" <{ maintainer.email }>"
+
+        self.widget.ui.labelMaintainer.setText(text)
 
     def _set_macro_maintainer_label(self, repo: Addon):
         if repo.macro.author:
