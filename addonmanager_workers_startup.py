@@ -276,7 +276,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 )
                 continue
             primary_branch_name = (
-                installed_branch_name if installed_branch_name else name_of_first_entry
+                installed_branch_name if installed_branch_name in branches else name_of_first_entry
             )
             for branch_display_name in branches:
                 if branch_display_name != primary_branch_name:
