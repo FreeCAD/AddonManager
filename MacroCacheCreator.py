@@ -112,8 +112,7 @@ class MacroCatalog:
         Reads only the page https://wiki.freecad.org/Macros_recipes
         """
 
-        requests.get(WIKI_MACROS_URL, headers=headers)
-        p = requests.get(WIKI_MACROS_URL, headers=headers)
+        p = requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
         if not p.status_code == 200:
             print(f"Failed to fetch {WIKI_MACROS_URL}, response code was {p.status_code}")
             return
@@ -148,7 +147,7 @@ class MacroCatalog:
         contents in self.icon_data"""
         if macro.icon.startswith("http://") or macro.icon.startswith("https://"):
             parsed_url = urllib.parse.urlparse(macro.icon)
-            p = requests.get(macro.icon, headers=headers)
+            p = requests.get(macro.icon, headers=headers, timeout=10.0)
             if p.status_code == 200:
                 _, _, filename = parsed_url.path.rpartition("/")
                 base, _, extension = filename.rpartition(".")
