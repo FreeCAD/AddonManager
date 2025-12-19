@@ -112,7 +112,6 @@ class MacroCatalog:
         Reads only the page https://wiki.freecad.org/Macros_recipes
         """
 
-        requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
         p = requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
         if not p.status_code == 200:
             print(f"Failed to fetch {WIKI_MACROS_URL}, response code was {p.status_code}")
