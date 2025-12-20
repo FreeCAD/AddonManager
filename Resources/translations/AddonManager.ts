@@ -339,7 +339,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_python_deps.py" line="+299"/>
+        <location filename="../../addonmanager_python_deps.py" line="+302"/>
         <source>Package</source>
         <translation type="unfinished"></translation>
     </message>
@@ -734,17 +734,12 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+46"/>
-        <source>Maintainer</source>
+        <location line="+51"/>
+        <source>Maintainer(s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>Maintainers:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location line="+17"/>
         <source>Author</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1118,22 +1113,22 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+3"/>
+        <location line="+3"/>
         <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+1"/>
+        <location line="+1"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+3"/>
+        <location line="+3"/>
         <source>Description</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+3"/>
+        <location line="+3"/>
         <source>Update available</source>
         <translation type="unfinished"></translation>
     </message>
