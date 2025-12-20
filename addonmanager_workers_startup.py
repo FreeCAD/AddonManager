@@ -276,7 +276,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 )
                 continue
             primary_branch_name = (
-                installed_branch_name if installed_branch_name else name_of_first_entry
+                installed_branch_name if installed_branch_name in branches else name_of_first_entry
             )
             for branch_display_name in branches:
                 if branch_display_name != primary_branch_name:
@@ -513,8 +513,14 @@ class UpdateChecker:
             macro_wrapper.set_status(Addon.Status.CANNOT_CHECK)
             return
 
-        hasher1 = hashlib.sha1()
-        hasher2 = hashlib.sha1()
+        try:
+            hasher1 = hashlib.sha1(usedforsecurity=False)
+            hasher2 = hashlib.sha1(usedforsecurity=False)
+        except TypeError:
+            # To continue to support Python 3.8, we need to fall back if the usedforsecurity
+            # is not available. This code should be removed when we drop support for 3.8.
+            hasher1 = hashlib.sha1()
+            hasher2 = hashlib.sha1()
         hasher1.update(macro_wrapper.macro.code.encode("utf-8"))
         new_sha1 = hasher1.hexdigest()
         test_file_one = os.path.join(fci.DataPaths().macro_dir, macro_wrapper.macro.filename)

@@ -132,22 +132,22 @@
     <message>
       <location line="-441"/>
       <source>Installing &apos;{}&apos;</source>
-      <translation type="unfinished"/>
+      <translation>Installation de « {} »</translation>
     </message>
     <message>
       <location line="+407"/>
       <source>These addons require Python packages that are not installed, and cannot be installed automatically. To use them you must install the following Python packages manually:</source>
-      <translation type="unfinished"/>
+      <translation>Ces extensions nécessitent des paquets Python qui ne sont pas installés et ne peuvent pas être installés automatiquement. Pour les utiliser, vous devez installer manuellement les paquets Python suivants :</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Requirement Cannot be Installed</source>
-      <translation type="unfinished"/>
+      <translation>Impossible d'installer la condition requise</translation>
     </message>
     <message>
       <location line="+27"/>
       <source>These addons require &apos;{}&apos;, which is not available in your copy of FreeCAD.</source>
-      <translation type="unfinished"/>
+      <translation>Ces extensions nécessitent « {} », qui n'est pas disponible dans votre copie de FreeCAD.</translation>
     </message>
     <message>
       <location line="+9"/>
@@ -157,7 +157,7 @@
     <message>
       <location line="+11"/>
       <source>These addons require the following workbenches, which are not available in your copy of FreeCAD:</source>
-      <translation type="unfinished"/>
+      <translation>Ces extensions nécessitent les ateliers suivants, non disponibles dans votre copie de FreeCAD :</translation>
     </message>
     <message>
       <location line="+7"/>
@@ -172,34 +172,35 @@
     <message>
       <location line="+5"/>
       <source>This addon (or one of its dependencies) requires Python {}, and your system is running {}. Installation cancelled.</source>
-      <translation type="unfinished"/>
+      <translation>Cette extension (ou l'une de ses dépendances) nécessite Python {}, et votre système utilise {}.
+L'installation est annulée.</translation>
     </message>
     <message>
       <location line="+53"/>
       <source>Installing Dependencies</source>
       <comment>Window title</comment>
-      <translation type="unfinished"/>
+      <translation>Installation des dépendances</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Installing dependencies…</source>
       <comment>Window text</comment>
-      <translation type="unfinished"/>
+      <translation>Installation des dépendances…</translation>
     </message>
     <message>
       <location line="+29"/>
       <source>Dependencies could not be installed. Continue with installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>Les dépendances n'ont pas pu être installées. Faut-il poursuivre l'installation ?</translation>
     </message>
     <message>
       <location line="+25"/>
       <source>Continue with addon installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>Faut-il poursuivre l'installation de l'extension ?</translation>
     </message>
     <message>
       <location line="+26"/>
       <source>Continue with installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>Faut-il poursuivre l'installation ?</translation>
     </message>
     <message>
       <location line="-117"/>
@@ -409,12 +410,12 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+23"/>
       <source>Could not find addon {} to remove it</source>
-      <translation type="unfinished"/>
+      <translation>Impossible de trouver l'extension {} pour la supprimer</translation>
     </message>
     <message>
       <location line="+26"/>
       <source>Execution of addon&apos;s uninstall.py script failed. Proceeding with uninstall…</source>
-      <translation type="unfinished"/>
+      <translation>Le script uninstall.py de l'extension n'a pas pu être exécuté. La désinstallation se poursuit…</translation>
     </message>
     <message>
       <location line="+19"/>
@@ -468,13 +469,13 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <location line="+1"/>
       <source>Update?</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Mettre à jour?</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Done</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Fait</translation>
     </message>
     <message>
       <location filename="../../addonmanager_workers_startup.py" line="+117"/>
@@ -485,7 +486,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <location line="+119"/>
       <source>WARNING: Custom addon &apos;{}&apos; is overriding the one in the official addon catalog
 </source>
-      <translation type="unfinished"/>
+      <translation>ATTENTION : l'extension personnalisée « {} » remplace celle du catalogue officiel des extensions.</translation>
     </message>
     <message>
       <location line="+115"/>
@@ -528,7 +529,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <location line="+42"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
-      <translation type="unfinished"/>
+      <translation>Recherche des dépendances manquantes</translation>
     </message>
     <message>
       <location filename="../../addonmanager_workers_utility.py" line="+82"/>
@@ -549,27 +550,27 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="-125"/>
       <source>version</source>
-      <translation type="unfinished"/>
+      <translation>version</translation>
     </message>
     <message>
       <location line="+133"/>
       <source>Restart FreeCAD for changes to take effect</source>
-      <translation type="unfinished"/>
+      <translation>Redémarrer FreeCAD pour que les modifications prennent effet.</translation>
     </message>
     <message>
       <location line="+9"/>
       <source>Restart Now</source>
-      <translation type="unfinished"/>
+      <translation>Redémarrer maintenant</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Restart Later</source>
-      <translation type="unfinished"/>
+      <translation>Redémarrer plus tard</translation>
     </message>
     <message>
       <location line="+33"/>
       <source>Continuing startup</source>
-      <translation type="unfinished"/>
+      <translation>Poursuite du démarrage</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -585,50 +586,50 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+13"/>
       <source>Checking dependencies</source>
-      <translation type="unfinished"/>
+      <translation>Recherche des dépendances</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Fetching addon stats</source>
-      <translation type="unfinished"/>
+      <translation>Récupération des statistiques des extensions</translation>
     </message>
     <message>
       <location line="+17"/>
       <source>Fetching addon score</source>
-      <translation type="unfinished"/>
+      <translation>Récupération du score des extensions</translation>
     </message>
     <message>
       <location line="+74"/>
       <location line="+27"/>
       <location line="+126"/>
       <source>Cannot launch a new installer until the previous one has finished</source>
-      <translation type="unfinished"/>
+      <translation>Impossible de lancer un nouveau programme d'installation tant que le précédent n'est pas terminé</translation>
     </message>
     <message>
       <location line="-66"/>
       <source>Some installed addons are missing dependencies. Would you like to install them now?</source>
-      <translation type="unfinished"/>
+      <translation>Certaines extensions installées ont des dépendances manquantes. Voulez-vous les installer maintenant ?</translation>
     </message>
     <message>
       <location line="+51"/>
       <source>Temporary installation of macro failed</source>
-      <translation type="unfinished"/>
+      <translation>L'installation temporaire de la macro a échoué.</translation>
     </message>
     <message>
       <location line="+44"/>
       <source>The following auto-generated backups were found in your Mod directory:</source>
-      <translation type="unfinished"/>
+      <translation>Les sauvegardes générées automatiquement suivantes ont été trouvées dans votre répertoire Mod :</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>Delete them now?</source>
-      <translation type="unfinished"/>
+      <translation>Les supprimer maintenant ?</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Always</source>
       <comment>&apos;Always&apos; delete old backups</comment>
-      <translation type="unfinished"/>
+      <translation>Toujours</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -791,12 +792,12 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+6"/>
       <source>Checking for Updates…</source>
-      <translation type="unfinished"/>
+      <translation>Recherche de mises à jour…</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Revert to Built-In</source>
-      <translation type="unfinished"/>
+      <translation>Revenir à la configuration par défaut</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -811,12 +812,12 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="-5"/>
       <source>Switch to Branch</source>
-      <translation type="unfinished"/>
+      <translation>Basculer de branche</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Override Built-In</source>
-      <translation type="unfinished"/>
+      <translation>Remplacer la configuration par défaut</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -867,7 +868,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+4"/>
       <source>Preference pack</source>
-      <translation type="unfinished"/>
+      <translation>Kit de préférences</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -917,7 +918,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+8"/>
       <source>See %n Update(s)…</source>
-      <translation type="unfinished"/>
+      <translation>Voir %n mise(s) à jour…</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -932,17 +933,17 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+55"/>
       <source>This addon will be disabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>Cette extension sera désactivée lors du redémarrage de FreeCAD.</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>This addon will be enabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>Cette extension sera activée lors du redémarrage de FreeCAD.</translation>
     </message>
     <message>
       <location line="+9"/>
       <source>Changed to branch &apos;{}&apos; -- restart FreeCAD to use the addon</source>
-      <translation type="unfinished"/>
+      <translation>Changé vers la branche « {} ». Redémarrer FreeCAD pour utiliser l'extension.</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -1022,7 +1023,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
     <message>
       <location line="+13"/>
       <source>Search…</source>
-      <translation type="unfinished"/>
+      <translation>Rechercher…</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_view_control_bar.py" line="+144"/>
@@ -1034,19 +1035,19 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <location line="+3"/>
       <source>Last updated</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Dernière mise à jour</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>Date created</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Date de création</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>GitHub stars</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Étoiles GitHub</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -1116,7 +1117,10 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <source>This installation/update has the following required and optional dependencies.
 
 Do you want the Addon Manager to install them automatically? Choose &quot;Ignore&quot; to install/update without installing the dependencies.</source>
-      <translation type="unfinished"/>
+      <translation>Cette installation/mise à jour comporte les dépendances obligatoires et facultatives suivantes.
+
+Voulez-vous que le gestionnaire d'extensions les installe automatiquement ? Choisissez « Ignorer »
+pour installer/mettre à jour sans installer les dépendances.</translation>
     </message>
     <message>
       <source>FreeCAD Addons</source>
@@ -1155,27 +1159,28 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Updating Addons</source>
-      <translation type="unfinished"/>
+      <translation>Mise à jour des extensions</translation>
     </message>
     <message>
       <source>Updating Addons…</source>
-      <translation type="unfinished"/>
+      <translation>Mettre à jour les extensions…</translation>
     </message>
     <message>
       <source>Update Addons</source>
-      <translation type="unfinished"/>
+      <translation>Mise à jour des extensions</translation>
     </message>
     <message>
       <source>Addons with available updates</source>
-      <translation type="unfinished"/>
+      <translation>Extensions avec mises à jour disponibles</translation>
     </message>
     <message>
       <source>Update Selected Addons</source>
-      <translation type="unfinished"/>
+      <translation>Mettre à jour les extensions sélectionnées</translation>
     </message>
     <message>
       <source>(Note that addon authors sometimes do not update the version number on each update, so the available and installed versions may appear the same.)</source>
-      <translation type="unfinished"/>
+      <translation>(Notez que les auteurs d'extensions ne mettent parfois pas à jour le numéro de version à chaque
+mise à jour, de sorte que les versions disponibles et installées peuvent sembler identiques.)</translation>
     </message>
   </context>
   <context>

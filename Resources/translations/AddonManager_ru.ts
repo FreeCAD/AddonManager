@@ -5,7 +5,7 @@
     <name>AddCustomRepositoryDialog</name>
     <message>
       <source>Custom Repository</source>
-      <translation type="unfinished"/>
+      <translation>Пользовательский репозиторий</translation>
     </message>
     <message>
       <source>Repository URL</source>
@@ -21,7 +21,7 @@
     <message>
       <location filename="../../addonmanager_uninstaller_gui.py" line="+126"/>
       <source>Finished removing {}</source>
-      <translation>Завершено удаление {}</translation>
+      <translation>Удаление {} завершено</translation>
     </message>
     <message>
       <location line="+14"/>
@@ -34,7 +34,7 @@
     <message>
       <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="+96"/>
       <source>Open Addons Folder</source>
-      <translation type="unfinished"/>
+      <translation>Открыть директорию дополнений</translation>
     </message>
   </context>
   <context>
@@ -62,7 +62,7 @@
     <message>
       <location line="+1"/>
       <source>Checking for connection to addons.freecad.org...</source>
-      <translation type="unfinished"/>
+      <translation>Проверка соединения с addons.freecad.org...</translation>
     </message>
     <message>
       <location line="+26"/>
@@ -87,12 +87,12 @@
     <message>
       <location line="+10"/>
       <source>Installation of addon {} failed</source>
-      <translation type="unfinished"/>
+      <translation>Не удалось установить дополнение {}</translation>
     </message>
     <message>
       <location filename="../../addonmanager_git.py" line="+153"/>
       <source>Basic Git update failed with the following message:</source>
-      <translation type="unfinished"/>
+      <translation>Ошибка обновления git со следующим сообщением:</translation>
     </message>
     <message>
       <location line="+8"/>
@@ -102,7 +102,7 @@
     <message>
       <location line="+105"/>
       <source>Failed to clone {} into {} using Git</source>
-      <translation type="unfinished"/>
+      <translation>Не удалось получить {} в {} используя git</translation>
     </message>
     <message>
       <location line="+141"/>
@@ -132,22 +132,22 @@
     <message>
       <location line="-441"/>
       <source>Installing &apos;{}&apos;</source>
-      <translation type="unfinished"/>
+      <translation>Установка &apos;{}&apos;</translation>
     </message>
     <message>
       <location line="+407"/>
       <source>These addons require Python packages that are not installed, and cannot be installed automatically. To use them you must install the following Python packages manually:</source>
-      <translation type="unfinished"/>
+      <translation>Это дополнение требует неустановленные пакеты Python, которые не могут быть установлены автоматически. Для использования этого дополнения вы должны вручную установить следующие пакеты Python:</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Requirement Cannot be Installed</source>
-      <translation type="unfinished"/>
+      <translation>Зависимости не могут быть установлены</translation>
     </message>
     <message>
       <location line="+27"/>
       <source>These addons require &apos;{}&apos;, which is not available in your copy of FreeCAD.</source>
-      <translation type="unfinished"/>
+      <translation>Дополнению {} необходима зависимость &apos;{}&apos;, которая недоступна в этой копии FreeCAD.</translation>
     </message>
     <message>
       <location line="+9"/>
@@ -157,7 +157,7 @@
     <message>
       <location line="+11"/>
       <source>These addons require the following workbenches, which are not available in your copy of FreeCAD:</source>
-      <translation type="unfinished"/>
+      <translation>Дополнению {} необходимы следующие верстаки, недоступные в этой копии FreeCAD:</translation>
     </message>
     <message>
       <location line="+7"/>
@@ -172,34 +172,34 @@
     <message>
       <location line="+5"/>
       <source>This addon (or one of its dependencies) requires Python {}, and your system is running {}. Installation cancelled.</source>
-      <translation type="unfinished"/>
+      <translation>Этому дополнению или его зависимостям необходим Python {}, но установлен: {}. Установка отменена.</translation>
     </message>
     <message>
       <location line="+53"/>
       <source>Installing Dependencies</source>
       <comment>Window title</comment>
-      <translation type="unfinished"/>
+      <translation>Установка зависимостей</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Installing dependencies…</source>
       <comment>Window text</comment>
-      <translation type="unfinished"/>
+      <translation>Установка зависимостей…</translation>
     </message>
     <message>
       <location line="+29"/>
       <source>Dependencies could not be installed. Continue with installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>Зависимости не могут быть установлены. Всё равно продолжить установку?</translation>
     </message>
     <message>
       <location line="+25"/>
       <source>Continue with addon installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>Всё равно продолжить установку дополнения?</translation>
     </message>
     <message>
       <location line="+26"/>
       <source>Continue with installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>Всё равно продолжить установку?</translation>
     </message>
     <message>
       <location line="-117"/>
@@ -337,27 +337,31 @@ Moved
 from: {}
 to: {}
 Please restart to use the new version.</source>
-      <translation type="unfinished"/>
+      <translation>Ветка успешно изменена.
+переключено
+с: {}
+на: {}
+Пожалуйста перезапустите для использования новой версии.</translation>
     </message>
     <message>
       <location filename="../../addonmanager_python_deps.py" line="+300"/>
       <source>Package</source>
-      <translation type="unfinished"/>
+      <translation>Пакет</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Installed Version</source>
-      <translation type="unfinished"/>
+      <translation>Установленная версия</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Available Version</source>
-      <translation type="unfinished"/>
+      <translation>Доступная версия</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Dependencies</source>
-      <translation type="unfinished"/>
+      <translation>Зависимости</translation>
     </message>
     <message>
       <location filename="../../addonmanager_readme_controller.py" line="+212"/>
@@ -407,12 +411,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+23"/>
       <source>Could not find addon {} to remove it</source>
-      <translation type="unfinished"/>
+      <translation>Не удалось найти дополнение {}, чтобы удалить его</translation>
     </message>
     <message>
       <location line="+26"/>
       <source>Execution of addon&apos;s uninstall.py script failed. Proceeding with uninstall…</source>
-      <translation type="unfinished"/>
+      <translation>Выполнение скрипта uninstall.py из дополнения не удалось. Продолжение удаления…</translation>
     </message>
     <message>
       <location line="+19"/>
@@ -454,25 +458,25 @@ Please restart to use the new version.</source>
       <location line="+1"/>
       <source>Installed Version</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Установленная версия</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Available Version</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Доступная версия</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Update?</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Обновить?</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Done</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Готово</translation>
     </message>
     <message>
       <location filename="../../addonmanager_workers_startup.py" line="+117"/>
@@ -483,22 +487,23 @@ Please restart to use the new version.</source>
       <location line="+119"/>
       <source>WARNING: Custom addon &apos;{}&apos; is overriding the one in the official addon catalog
 </source>
-      <translation type="unfinished"/>
+      <translation>ВНИМАНИЕ: Пользовательское дополнение &apos;{}&apos; переопределяет дополнение, которое было получено из официального каталога дополнений
+</translation>
     </message>
     <message>
       <location line="+115"/>
       <source>Checking {} for update</source>
-      <translation type="unfinished"/>
+      <translation>Поиск обновлений для {}</translation>
     </message>
     <message>
       <location line="+55"/>
       <source>Unable to fetch Git updates for workbench {}</source>
-      <translation type="unfinished"/>
+      <translation>Не удалось получить обновления через git для верстака {}</translation>
     </message>
     <message>
       <location line="+13"/>
       <source>Git status failed for {}</source>
-      <translation type="unfinished"/>
+      <translation>Сбой проверки статуса git для {}</translation>
     </message>
     <message>
       <location line="+68"/>
@@ -514,119 +519,121 @@ Please restart to use the new version.</source>
       <location line="+61"/>
       <source>Failed to get addon statistics from {} -- only sorting alphabetically will be accurate
 </source>
-      <translation type="unfinished"/>
+      <translation>Не удалось получить статистику дополнения из {}. Корректно будет работать только сортировка по алфавиту
+</translation>
     </message>
     <message>
       <location line="+41"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
-      <translation type="unfinished"/>
+      <translation>Не удалось получить оценку дополнения из &apos;{}&apos; - сортировка по оценкам не будет работать
+</translation>
     </message>
     <message>
       <location line="+42"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
-      <translation type="unfinished"/>
+      <translation>Проверка недостающих зависимостей</translation>
     </message>
     <message>
       <location filename="../../addonmanager_workers_utility.py" line="+82"/>
       <source>Unable to read data from addons.freecad.org. The server may be down, or you may not be connected to the internet.</source>
-      <translation type="unfinished"/>
+      <translation>Не удается получить данные с сервера addons.freecad.org. Возможно сервер не отвечает или пропало ваше соединение с интернетом.</translation>
     </message>
     <message>
       <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
-      <translation type="unfinished"/>
+      <translation>Работающий процесс {} занимает много времени при остановке…</translation>
     </message>
     <message>
       <location line="-86"/>
       <location line="+126"/>
       <source>Addon Manager</source>
-      <translation type="unfinished"/>
+      <translation>Менеджер дополнений</translation>
     </message>
     <message>
       <location line="-125"/>
       <source>version</source>
-      <translation type="unfinished"/>
+      <translation>версия</translation>
     </message>
     <message>
       <location line="+133"/>
       <source>Restart FreeCAD for changes to take effect</source>
-      <translation type="unfinished"/>
+      <translation>Чтобы изменения вступили в силу, вам необходимо перезапустить FreeCAD</translation>
     </message>
     <message>
       <location line="+9"/>
       <source>Restart Now</source>
-      <translation type="unfinished"/>
+      <translation>Перезапустить сейчас</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Restart Later</source>
-      <translation type="unfinished"/>
+      <translation>Перезапустить позже</translation>
     </message>
     <message>
       <location line="+33"/>
       <source>Continuing startup</source>
-      <translation type="unfinished"/>
+      <translation>Запуск все еще в процессе</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Creating addon list</source>
-      <translation type="unfinished"/>
+      <translation>Создание списка дополнений</translation>
     </message>
     <message>
       <location line="+44"/>
       <location line="+35"/>
       <source>Checking for updates…</source>
-      <translation type="unfinished"/>
+      <translation>Проверка обновлений…</translation>
     </message>
     <message>
       <location line="+13"/>
       <source>Checking dependencies</source>
-      <translation type="unfinished"/>
+      <translation>Проверка зависимостей</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Fetching addon stats</source>
-      <translation type="unfinished"/>
+      <translation>Получение статистики дополнения</translation>
     </message>
     <message>
       <location line="+17"/>
       <source>Fetching addon score</source>
-      <translation type="unfinished"/>
+      <translation>Получение оценки дополнения</translation>
     </message>
     <message>
       <location line="+74"/>
       <location line="+27"/>
       <location line="+126"/>
       <source>Cannot launch a new installer until the previous one has finished</source>
-      <translation type="unfinished"/>
+      <translation>Невозможно запустить новую установку, пока не завершена предыдущая</translation>
     </message>
     <message>
       <location line="-66"/>
       <source>Some installed addons are missing dependencies. Would you like to install them now?</source>
-      <translation type="unfinished"/>
+      <translation>У некоторых установленных дополнений отсутствуют необходимые зависимости. Хотите установить их сейчас?</translation>
     </message>
     <message>
       <location line="+51"/>
       <source>Temporary installation of macro failed</source>
-      <translation type="unfinished"/>
+      <translation>Не удалось установить макрокоманду</translation>
     </message>
     <message>
       <location line="+44"/>
       <source>The following auto-generated backups were found in your Mod directory:</source>
-      <translation type="unfinished"/>
+      <translation>В вашем каталоге Mod обнаружены следующие автоматически сгенерированные резервные копии:</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>Delete them now?</source>
-      <translation type="unfinished"/>
+      <translation>Удалить их сейчас?</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Always</source>
       <comment>&apos;Always&apos; delete old backups</comment>
-      <translation type="unfinished"/>
+      <translation>Всегда</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -649,7 +656,7 @@ Please restart to use the new version.</source>
     <message>
       <location filename="../../NetworkManager.py" line="+213"/>
       <source>Failed to parse proxy URL &apos;{}&apos;</source>
-      <translation type="unfinished"/>
+      <translation>Не удалось проанализировать URL-адрес прокси-сервера &apos;{}&apos;</translation>
     </message>
     <message>
       <location line="+32"/>
@@ -789,12 +796,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+6"/>
       <source>Checking for Updates…</source>
-      <translation type="unfinished"/>
+      <translation>Проверка обновлений…</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Revert to Built-In</source>
-      <translation type="unfinished"/>
+      <translation>Вернуться к встроенному</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -809,12 +816,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="-5"/>
       <source>Switch to Branch</source>
-      <translation type="unfinished"/>
+      <translation>Переключиться на ветку</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Override Built-In</source>
-      <translation type="unfinished"/>
+      <translation>Переопределить встроенный</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -834,12 +841,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>Return to Package List</source>
-      <translation type="unfinished"/>
+      <translation>Вернуться к списку пакетов</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_filter_selector.py" line="-42"/>
       <source>Filter By…</source>
-      <translation type="unfinished"/>
+      <translation>Фильтр по…</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -865,17 +872,17 @@ Please restart to use the new version.</source>
     <message>
       <location line="+4"/>
       <source>Preference pack</source>
-      <translation type="unfinished"/>
+      <translation>Пакет настроек</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Bundle</source>
-      <translation type="unfinished"/>
+      <translation>Набор</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Other</source>
-      <translation type="unfinished"/>
+      <translation>Другое</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -895,17 +902,17 @@ Please restart to use the new version.</source>
     <message>
       <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="-3"/>
       <source>Update All Addons</source>
-      <translation type="unfinished"/>
+      <translation>Обновить все дополнения</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Check for Updates</source>
-      <translation type="unfinished"/>
+      <translation>Проверить обновления</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Open Python Dependencies</source>
-      <translation type="unfinished"/>
+      <translation>Управление зависимостями Python</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -915,7 +922,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+8"/>
       <source>See %n Update(s)…</source>
-      <translation type="unfinished"/>
+      <translation>Смотреть %n обновлений…</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -930,22 +937,22 @@ Please restart to use the new version.</source>
     <message>
       <location line="+55"/>
       <source>This addon will be disabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>Это дополнение будет отключено при перезапуске FreeCAD</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>This addon will be enabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>Это дополнение будет включено при перезапуске FreeCAD</translation>
     </message>
     <message>
       <location line="+9"/>
       <source>Changed to branch &apos;{}&apos; -- restart FreeCAD to use the addon</source>
-      <translation type="unfinished"/>
+      <translation>Изменено на ветку &apos;{}&apos; -- перезапустите FreeCAD, для использования дополнения</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>This addon has been updated. Restart FreeCAD to see changes.</source>
-      <translation type="unfinished"/>
+      <translation>Это дополнение было обновлено. Перезапустите FreeCAD, чтобы увидеть изменения.</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -1020,7 +1027,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+13"/>
       <source>Search…</source>
-      <translation type="unfinished"/>
+      <translation>Поиск…</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_view_control_bar.py" line="+144"/>
@@ -1032,19 +1039,19 @@ Please restart to use the new version.</source>
       <location line="+3"/>
       <source>Last updated</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Последнее обновление</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>Date created</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Дата создания</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>GitHub stars</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>звёзды на GitHub</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -1097,7 +1104,7 @@ Please restart to use the new version.</source>
     </message>
     <message>
       <source>&lt;b&gt;Package name&lt;/b&gt;</source>
-      <translation type="unfinished"/>
+      <translation>&lt;b&gt;Название пакета&lt;/b&gt;</translation>
     </message>
     <message>
       <source>UpdateAvailable</source>
@@ -1114,7 +1121,9 @@ Please restart to use the new version.</source>
       <source>This installation/update has the following required and optional dependencies.
 
 Do you want the Addon Manager to install them automatically? Choose &quot;Ignore&quot; to install/update without installing the dependencies.</source>
-      <translation type="unfinished"/>
+      <translation>Эта установка/обновление содержит следующие обязательные и необязательные зависимости.
+
+Хотите, чтобы менеджер дополнений установил их автоматически? Выберите &quot;Игнорировать&quot;, чтобы выполнить установку/обновление без установки зависимостей.</translation>
     </message>
     <message>
       <source>FreeCAD Addons</source>
@@ -1122,11 +1131,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Required Python Modules</source>
-      <translation type="unfinished"/>
+      <translation>Необходимые Python модули</translation>
     </message>
     <message>
       <source>Optional Python Modules</source>
-      <translation type="unfinished"/>
+      <translation>Необязательные модули Python</translation>
     </message>
   </context>
   <context>
@@ -1137,11 +1146,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Addon Manager Warning</source>
-      <translation type="unfinished"/>
+      <translation>Предупреждение менеджера дополнений</translation>
     </message>
     <message>
       <source>The Addon Manager provides access to an extensive library of useful third-party FreeCAD extensions. No guarantees can be made regarding their safety or functionality.</source>
-      <translation type="unfinished"/>
+      <translation>Менеджер дополнений предоставляет доступ к обширной библиотеке полезных сторонних расширений FreeCAD. Не может быть никаких гарантий относительно их безопасности или функциональности.</translation>
     </message>
     <message>
       <source>Continue</source>
@@ -1153,27 +1162,27 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Updating Addons</source>
-      <translation type="unfinished"/>
+      <translation>Обновление дополнений</translation>
     </message>
     <message>
       <source>Updating Addons…</source>
-      <translation type="unfinished"/>
+      <translation>Обновление дополнений…</translation>
     </message>
     <message>
       <source>Update Addons</source>
-      <translation type="unfinished"/>
+      <translation>Обновить дополнения</translation>
     </message>
     <message>
       <source>Addons with available updates</source>
-      <translation type="unfinished"/>
+      <translation>Дополнения с доступными обновлениями</translation>
     </message>
     <message>
       <source>Update Selected Addons</source>
-      <translation type="unfinished"/>
+      <translation>Обновить выбранные дополнения</translation>
     </message>
     <message>
       <source>(Note that addon authors sometimes do not update the version number on each update, so the available and installed versions may appear the same.)</source>
-      <translation type="unfinished"/>
+      <translation>(Обратите внимание, что авторы дополнений иногда не обновляют номер версии при каждом обновлении, поэтому доступные и установленные номера версий могут совпадать.)</translation>
     </message>
   </context>
   <context>
@@ -1215,7 +1224,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>&lt;h1&gt;Package name&lt;/h1&gt;</source>
-      <translation type="unfinished"/>
+      <translation>&lt;h1&gt;Название пакета&lt;/h1&gt;</translation>
     </message>
     <message>
       <source>labelSort</source>
@@ -1230,19 +1239,19 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>Gui::Dialog::DlgSettingsAddonManager</name>
     <message>
       <source>Addon Manager Options</source>
-      <translation type="unfinished"/>
+      <translation>Настройки менеджера дополнений</translation>
     </message>
     <message>
       <source>Hide addons without a license</source>
-      <translation type="unfinished"/>
+      <translation>Скрыть дополнения без лицензии</translation>
     </message>
     <message>
       <source>Hide addons with non-FSF free/libre license</source>
-      <translation type="unfinished"/>
+      <translation>Скрыть дополнения с лицензией отличной от СПО Free/Libre</translation>
     </message>
     <message>
       <source>Hide addons with non-OSI-approved license</source>
-      <translation type="unfinished"/>
+      <translation>Скрыть дополнения с лицензией, не одобренной OSI</translation>
     </message>
     <message>
       <source>Custom repositories</source>
@@ -1262,7 +1271,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>User-defined proxy</source>
-      <translation type="unfinished"/>
+      <translation>Заданный пользователем прокси-сервер</translation>
     </message>
     <message>
       <source>Score source URL</source>
@@ -1270,14 +1279,14 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</source>
-      <translation type="unfinished"/>
+      <translation>URL-адрес для данных о баллах дополнений (подробности о форматировании и хостинге см. на вики странице менеджера дополнений)</translation>
     </message>
   </context>
   <context>
     <name>PackageDetails</name>
     <message>
       <source>Installs a macro or workbench</source>
-      <translation type="unfinished"/>
+      <translation>Установка выбранного верстака или макрокомнды</translation>
     </message>
     <message>
       <source>Install</source>
@@ -1297,7 +1306,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Change Branch</source>
-      <translation type="unfinished"/>
+      <translation>Изменить ветку</translation>
     </message>
   </context>
   <context>
@@ -1308,19 +1317,19 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>The following Python packages have been installed locally by the Addon Manager to satisfy addon dependencies. Installation location</source>
-      <translation type="unfinished"/>
+      <translation>Следующие Python пакеты были установлены локально Менеджером дополнений для удовлетворения зависимостей. Место установки</translation>
     </message>
     <message>
       <source>Update in progress…</source>
-      <translation type="unfinished"/>
+      <translation>Выполняется обновление…</translation>
     </message>
     <message>
       <source>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that &apos;Used by&apos; only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</source>
-      <translation type="unfinished"/>
+      <translation>Знак (*) в столбце &quot;Используется в&quot; указывает на необязательную зависимость. Заметьте, что в столбце &apos;Используется в&apos; показаны прямо импортированные пакеты. Также могут быть установлены другие Python пакеты, необходимые для этих пакетов.</translation>
     </message>
     <message>
       <source>Update All</source>
-      <translation type="unfinished"/>
+      <translation>Обновить все</translation>
     </message>
   </context>
   <context>
@@ -1336,12 +1345,12 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <message>
       <location line="+43"/>
       <source>&amp;Addon Manager</source>
-      <translation type="unfinished"/>
+      <translation>&amp;Менеджер дополнений</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Manages external workbenches, macros, and preference packs</source>
-      <translation type="unfinished"/>
+      <translation>Управление внешними верстаками, макрокомандами и пакетами настроек</translation>
     </message>
   </context>
   <context>
@@ -1356,7 +1365,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>add_toolbar_button_dialog</name>
     <message>
       <source>Add Button</source>
-      <translation type="unfinished"/>
+      <translation>Добавить кнопку</translation>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>
@@ -1379,7 +1388,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>proxy_authentication</name>
     <message>
       <source>Proxy Login Required</source>
-      <translation type="unfinished"/>
+      <translation>Требуется вход на прокси</translation>
     </message>
     <message>
       <source>Proxy requires authentication</source>
@@ -1395,7 +1404,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Realm</source>
-      <translation type="unfinished"/>
+      <translation>Домен</translation>
     </message>
     <message>
       <source>Placeholder for proxy realm</source>
@@ -1418,7 +1427,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Select a toolbar to add this macro to</source>
-      <translation type="unfinished"/>
+      <translation>Выберите панель инструментов, на которую добавить эту макрокоманду</translation>
     </message>
     <message>
       <source>Ask every time</source>
@@ -1429,7 +1438,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>toolbar_button</name>
     <message>
       <source>Add Button</source>
-      <translation type="unfinished"/>
+      <translation>Добавить кнопку</translation>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>

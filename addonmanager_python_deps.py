@@ -73,7 +73,7 @@ def call_pip(args: List[str]) -> List[str]:
         raise PipFailed() from exception
 
     try:
-        proc = run_interruptable_subprocess(call_args)
+        proc = run_interruptable_subprocess(call_args, 120)
     except subprocess.CalledProcessError as exception:
         raise PipFailed(f"pip call failed:\n{exception}") from exception
 
@@ -194,13 +194,16 @@ class AsynchronousUpdateWorker(QtCore.QObject):
         update_string = " ".join(self.package_list)
         try:
             fci.Console.PrintLog(
-                f"Running 'pip install --upgrade --target {self.vendor_path} {update_string}'\n"
+                f"Running pip to upgrade the following packages in {self.vendor_path}: {update_string}\n"
             )
             command = ["install", "--upgrade", "--target", self.vendor_path]
             command.extend(self.package_list)
-            call_pip(command)
+            upgrade_stdout = call_pip(command)
+            for line in upgrade_stdout:
+                fci.Console.PrintLog(line + "\n")
         except PipFailed as e:
             self.error = str(e)
+            fci.Console.PrintError(self.error + "\n")
 
         try:
             outdated_packages_stdout = call_pip(["list", "-o", "--path", self.vendor_path])

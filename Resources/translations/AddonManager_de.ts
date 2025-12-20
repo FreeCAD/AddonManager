@@ -831,7 +831,7 @@ Bitte neu starten, um die neue Version zu verwenden.</translation>
     <message>
       <location line="+1"/>
       <source>Update</source>
-      <translation>Aktualisierung</translation>
+      <translation>Aktualisieren</translation>
     </message>
     <message>
       <location line="+1"/>
@@ -1298,7 +1298,7 @@ Soll der Addon-Manager sie automatisch installieren? &quot;Ignorieren&quot; ausw
     </message>
     <message>
       <source>Update</source>
-      <translation>Aktualisierung</translation>
+      <translation>Aktualisieren</translation>
     </message>
     <message>
       <source>Run Macro</source>

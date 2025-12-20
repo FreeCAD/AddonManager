@@ -438,7 +438,7 @@ def blocking_get(url: str, method=None) -> bytes:
             if hasattr(p, "data"):
                 p = p.data()
     elif requests and method is None or method == "requests":
-        response = requests.get(url)
+        response = requests.get(url, timeout=10.0)
         if response.status_code == 200:
             p = response.content
     else:

@@ -510,7 +510,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+61"/>
+        <location line="+67"/>
         <source>Failed to get addon statistics from {} -- only sorting alphabetically will be accurate
 </source>
         <translation type="unfinished"></translation>
@@ -660,7 +660,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+80"/>
+        <location line="+102"/>
         <source>Invalid hostname</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1118,22 +1118,22 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../../compact_view.py" line="+3"/>
         <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location filename="../../compact_view.py" line="+1"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../../compact_view.py" line="+3"/>
         <source>Description</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../../compact_view.py" line="+3"/>
         <source>Update available</source>
         <translation type="unfinished"></translation>
     </message>

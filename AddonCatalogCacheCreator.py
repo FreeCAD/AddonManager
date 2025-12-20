@@ -92,7 +92,7 @@ class CatalogFetcher:
 
     def fetch_catalog(self) -> AddonCatalog.AddonCatalog:
         """Fetch the addon catalog from the given URL and return an AddonCatalog object."""
-        response = requests.get(self.addon_catalog_url)
+        response = requests.get(self.addon_catalog_url, timeout=10.0)
         if response.status_code != 200:
             raise RuntimeError(
                 f"ERROR: Failed to fetch addon catalog from {self.addon_catalog_url}"
@@ -272,7 +272,7 @@ class CacheWriter:
     def create_local_copy_of_single_addon_with_zip(
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
     ):
-        response = requests.get(catalog_entry.zip_url)
+        response = requests.get(catalog_entry.zip_url, timeout=10.0)
         if response.status_code != 200:
             print(f"ERROR: Failed to fetch zip data for {addon_id} from {catalog_entry.zip_url}.")
             return
