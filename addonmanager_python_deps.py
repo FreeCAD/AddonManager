@@ -357,6 +357,57 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
         self.update_complete.emit()
         if not using_system_pip_installation_location():
             shutil.rmtree(self.vendor_path + ".old")
+            # Clean up old package versions that may remain after update
+            self._cleanup_old_package_versions()
+
+    def _cleanup_old_package_versions(self):
+        """Remove old package version metadata directories after an update.
+    
+        When pip updates packages with --target, it doesn't always remove old
+        version metadata (.dist-info directories). This can cause version detection
+        to find the old version instead of the new one, especially in Flatpak
+        installations where multiple versions accumulate.
+        """
+        if not os.path.exists(self.vendor_path):
+            return
+        
+        # Group all dist-info directories by package name
+        package_versions = {}
+        for item in os.listdir(self.vendor_path):
+            item_path = os.path.join(self.vendor_path, item)
+            if os.path.isdir(item_path) and item.endswith('.dist-info'):
+                # Extract package name and version from directory name
+                # Format is typically: package_name-version.dist-info
+                match = re.match(r'^(.+?)-(\d+.+?)\.dist-info$', item)
+                if match:
+                    package_name = match.group(1).lower().replace('_', '-')
+                    version_str = match.group(2)
+                
+                    if package_name not in package_versions:
+                        package_versions[package_name] = []
+                    package_versions[package_name].append((version_str, item_path))
+    
+        # For each package with multiple versions, keep only the newest
+        for package_name, versions in package_versions.items():
+            if len(versions) > 1:
+                # Sort by version, newest last
+                try:
+                    versions.sort(key=lambda x: Version(x[0]))
+                    # Remove all but the newest version
+                    for version_str, path in versions[:-1]:
+                        try:
+                            shutil.rmtree(path)
+                            fci.Console.PrintLog(
+                                f"Removed old version metadata for {package_name}: {version_str}\n"
+                            )
+                        except (OSError, PermissionError) as e:
+                            fci.Console.PrintWarning(
+                                f"Could not remove old version metadata {path}: {e}\n"
+                            )
+                except Exception as e:
+                    fci.Console.PrintWarning(
+                        f"Error processing versions for {package_name}: {e}\n"
+                    )
 
     def determine_new_python_dependencies(self, addons) -> Set[str]:
         """Given a list of Addon objects, finds the Python dependencies for those addons. Also
