@@ -362,7 +362,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
 
     def _cleanup_old_package_versions(self):
         """Remove old package version metadata directories after an update.
-    
+
         When pip updates packages with --target, it doesn't always remove old
         version metadata (.dist-info directories). This can cause version detection
         to find the old version instead of the new one, especially in Flatpak
@@ -370,23 +370,23 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
         """
         if not os.path.exists(self.vendor_path):
             return
-        
+
         # Group all dist-info directories by package name
         package_versions = {}
         for item in os.listdir(self.vendor_path):
             item_path = os.path.join(self.vendor_path, item)
-            if os.path.isdir(item_path) and item.endswith('.dist-info'):
+            if os.path.isdir(item_path) and item.endswith(".dist-info"):
                 # Extract package name and version from directory name
                 # Format is typically: package_name-version.dist-info
-                match = re.match(r'^(.+?)-(\d+.+?)\.dist-info$', item)
+                match = re.match(r"^(.+?)-(\d+.+?)\.dist-info$", item)
                 if match:
-                    package_name = match.group(1).lower().replace('_', '-')
+                    package_name = match.group(1).lower().replace("_", "-")
                     version_str = match.group(2)
-                
+
                     if package_name not in package_versions:
                         package_versions[package_name] = []
                     package_versions[package_name].append((version_str, item_path))
-    
+
         # For each package with multiple versions, keep only the newest
         for package_name, versions in package_versions.items():
             if len(versions) > 1:
@@ -405,9 +405,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
                                 f"Could not remove old version metadata {path}: {e}\n"
                             )
                 except Exception as e:
-                    fci.Console.PrintWarning(
-                        f"Error processing versions for {package_name}: {e}\n"
-                    )
+                    fci.Console.PrintWarning(f"Error processing versions for {package_name}: {e}\n")
 
     def determine_new_python_dependencies(self, addons) -> Set[str]:
         """Given a list of Addon objects, finds the Python dependencies for those addons. Also
