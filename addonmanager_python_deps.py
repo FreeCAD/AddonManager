@@ -67,6 +67,8 @@ def call_pip(args: List[str]) -> List[str]:
 
     try:
         call_args = create_pip_call(args)
+        fci.Console.PrintLog(f"Running pip with the following command:\n")
+        fci.Console.PrintLog(" ".join(call_args) + "\n")
     except RuntimeError as exception:
         raise PipFailed() from exception
 
