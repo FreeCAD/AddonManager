@@ -41,6 +41,11 @@ except ImportError:
 
 
 @dataclass
+class Contains:
+    generated_content: None | bool = True
+
+
+@dataclass
 class Contact:
     name: str
     email: str = ""
@@ -215,6 +220,7 @@ class Metadata:
     freecadmax: Version = None
     pythonmin: Version = None
     content: Dict[str, List[Metadata]] = field(default_factory=dict)  # Recursive def.
+    contains: None | Contains = None
 
 
 def get_first_supported_freecad_version(metadata: Metadata) -> Optional[Version]:
@@ -313,6 +319,8 @@ class MetadataReader:
             metadata.__dict__[tag].append(MetadataReader._parse_dependency(child))
         elif tag == "content":
             MetadataReader._parse_content(namespace, metadata, child)
+        elif tag == "contains":
+            metadata.contains = MetadataReader._parse_contains(child, metadata.name)
 
     @staticmethod
     def _parse_contact(child: ET.Element) -> Contact:
@@ -386,6 +394,19 @@ class MetadataReader:
         for content_child in child:
             MetadataReader._parse_child_element(namespace, content_child, new_content_item)
         return new_content_item
+
+    @staticmethod
+    def _parse_contains(child: ET.Element, name: str) -> Contains:
+        value = child.attrib["generated_content"] if "generated_content" in child.attrib else None
+
+        state = None
+
+        if value in ["true", "false"]:
+            state = value == "true"
+        else:
+            print(f"Unrecognized value ( '{ value }' ) for generated_content for addon '{ name }'")
+
+        return Contains(generated_content=state)
 
 
 class MetadataWriter:
