@@ -297,12 +297,12 @@ class TestPythonPackageListModel(unittest.TestCase):
             # Should remove old versions but keep newest
             self.assertEqual(mock_rmtree.call_count, 3)
             removed_paths = [call[0][0] for call in mock_rmtree.call_args_list]
-        
+
             # Check old versions were removed
             self.assertIn("/fake/path/requests-2.28.0.dist-info", removed_paths)
             self.assertIn("/fake/path/numpy-1.24.0.dist-info", removed_paths)
             self.assertIn("/fake/path/numpy-1.25.2.dist-info", removed_paths)
-        
+
             # Verify logging happened
             self.assertEqual(mock_print_log.call_count, 3)
 
@@ -341,7 +341,7 @@ class TestPythonPackageListModel(unittest.TestCase):
             """Test handling of empty vendor directory"""
             mock_exists.return_value = True
             mock_listdir.return_value = []
-    
+
             model = PythonPackageListModel([])
             model.vendor_path = "/fake/path"
             model._cleanup_old_package_versions()
@@ -363,7 +363,7 @@ class TestPythonPackageListModel(unittest.TestCase):
             ]
             mock_isdir.return_value = True
             mock_rmtree.side_effect = PermissionError("Permission denied")
-    
+
             model = PythonPackageListModel([])
             model.vendor_path = "/fake/path"
             model._cleanup_old_package_versions()
@@ -380,7 +380,7 @@ class TestPythonPackageListModel(unittest.TestCase):
             mock_exists.return_value = True
             mock_listdir.return_value = [
                 "my_package-1.0.0.dist-info",
-                "my-package-2.0.0.dist-info", 
+                "my-package-2.0.0.dist-info",
             ]
             mock_isdir.return_value = True
 
@@ -403,7 +403,7 @@ class TestPythonPackageListModel(unittest.TestCase):
             mock_listdir.return_value = [
                 "requests-2.28.0.dist-info",
                 "requests-2.31.0.dist-info",
-                "some_package",   
+                "some_package",
                 "__pycache__",
                 "random_file.txt",
             ]
