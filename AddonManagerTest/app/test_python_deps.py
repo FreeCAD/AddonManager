@@ -387,7 +387,9 @@ class TestPythonPackageListModel(unittest.TestCase):
             model._cleanup_old_package_versions()
 
             # Should remove old version (they're the same package after normalization)
-            mock_rmtree.assert_called_once_with(os.path.join("/fake/path", "my_package-1.0.0.dist-info"))
+            mock_rmtree.assert_called_once_with(
+                os.path.join("/fake/path", "my_package-1.0.0.dist-info")
+            )
 
         @patch("addonmanager_python_deps.os.path.exists")
         @patch("addonmanager_python_deps.os.listdir")
@@ -410,7 +412,9 @@ class TestPythonPackageListModel(unittest.TestCase):
             model = PythonPackageListModel([])
             model.vendor_path = "/fake/path"
             model._cleanup_old_package_versions()
-            mock_rmtree.assert_called_once_with(os.path.join("/fake/path", "requests-2.28.0.dist-info"))
+            mock_rmtree.assert_called_once_with(
+                os.path.join("/fake/path", "requests-2.28.0.dist-info")
+            )
 
         @patch("addonmanager_python_deps.os.path.exists")
         @patch("addonmanager_python_deps.os.listdir")
@@ -432,4 +436,6 @@ class TestPythonPackageListModel(unittest.TestCase):
             model = PythonPackageListModel([])
             model.vendor_path = "/fake/path"
             model._cleanup_old_package_versions()
-            mock_rmtree.assert_called_once_with(os.path.join("/fake/path", "goodpackage-1.0.0.dist-info"))
+            mock_rmtree.assert_called_once_with(
+                os.path.join("/fake/path", "goodpackage-1.0.0.dist-info")
+            )
