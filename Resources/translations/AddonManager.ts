@@ -339,7 +339,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_python_deps.py" line="+302"/>
+        <location filename="../../addonmanager_python_deps.py" line="+304"/>
         <source>Package</source>
         <translation type="unfinished"></translation>
     </message>
@@ -516,13 +516,31 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+41"/>
+        <location line="+42"/>
         <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+42"/>
+        <location line="+11"/>
+        <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+39"/>
         <location line="+13"/>
         <source>Checking for missing dependencies</source>
         <translation type="unfinished"></translation>
@@ -1113,22 +1131,22 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../../compact_view.py" line="+3"/>
         <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location filename="../../compact_view.py" line="+1"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../../compact_view.py" line="+3"/>
         <source>Description</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location filename="../../compact_view.py" line="+3"/>
         <source>Update available</source>
         <translation type="unfinished"></translation>
     </message>
