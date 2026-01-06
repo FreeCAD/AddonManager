@@ -116,28 +116,32 @@ class TestCacheWriter(TestCase):
 
     def test_get_directory_name_with_branch_name(self):
         """If a branch display name is present, that should be appended to the name."""
+        writer = accc.CacheWriter()
         ace = AddonCatalog.AddonCatalogEntry({"branch_display_name": "test_branch"})
-        result = accc.CacheWriter.get_directory_name("test_addon", 99, ace)
+        result = writer.get_directory_name("test_addon", 99, ace)
         self.assertEqual(result, os.path.join("test_addon", "99-test_branch"))
 
     def test_get_directory_name_with_git_ref(self):
         """If a branch display name is present, that should be appended to the name."""
+        writer = accc.CacheWriter()
         ace = AddonCatalog.AddonCatalogEntry({"git_ref": "test_ref"})
-        result = accc.CacheWriter.get_directory_name("test_addon", 99, ace)
+        result = writer.get_directory_name("test_addon", 99, ace)
         self.assertEqual(result, os.path.join("test_addon", "99-test_ref"))
 
     def test_get_directory_name_with_branch_and_ref(self):
         """If a branch and git ref are both present, then the branch display name is used."""
+        writer = accc.CacheWriter()
         ace = AddonCatalog.AddonCatalogEntry(
             {"branch_display_name": "test_branch", "git_ref": "test_ref"}
         )
-        result = accc.CacheWriter.get_directory_name("test_addon", 99, ace)
+        result = writer.get_directory_name("test_addon", 99, ace)
         self.assertEqual(result, os.path.join("test_addon", "99-test_branch"))
 
     def test_get_directory_name_with_no_information(self):
         """If there is no branch name or git ref information, a valid directory name is still generated."""
+        writer = accc.CacheWriter()
         ace = AddonCatalog.AddonCatalogEntry({})
-        result = accc.CacheWriter.get_directory_name("test_addon", 99, ace)
+        result = writer.get_directory_name("test_addon", 99, ace)
         self.assertTrue(result.startswith(os.path.join("test_addon", "99")))
 
     def test_find_file_with_existing_file(self):
@@ -191,8 +195,7 @@ class TestCacheWriter(TestCase):
     @patch("AddonCatalogCacheCreator.addonmanager_metadata.MetadataReader.from_bytes")
     @patch("AddonCatalogCacheCreator.CacheWriter.get_icon_from_metadata")
     def test_generate_cache_entry_from_package_xml_with_icon(self, mock_icon, _):
-        """Given a metadata file that contains an icon, that icon's contents are
-        base64-encoded and embedded in the cache."""
+        """Given a metadata file that contains an icon, that icon's contents are base64-encoded and embedded in the cache."""
 
         file_path = os.path.abspath(
             os.path.join("home", "cache", "TestMod", "1-main", "package.xml")
@@ -200,14 +203,15 @@ class TestCacheWriter(TestCase):
         icon_path = os.path.abspath(
             os.path.join("home", "cache", "TestMod", "1-main", "icons", "TestMod.svg")
         )
+        icon_data = "<svg xmlns='http://www.w3.org/2000/svg'/>"
         self.fake_fs().create_file(file_path, contents="test data")
-        self.fake_fs().create_file(icon_path, contents="test icon data")
+        self.fake_fs().create_file(icon_path, contents=icon_data)
         mock_icon.return_value = os.path.join("icons", "TestMod.svg")
         writer = accc.CacheWriter()
         writer.cwd = os.path.abspath(os.path.join("home", "cache"))
         cache_entry = writer.generate_cache_entry_from_package_xml(file_path)
         self.assertEqual(
-            base64.b64encode("test icon data".encode("utf-8")).decode("utf-8"),
+            base64.b64encode(icon_data.encode("utf-8")).decode("utf-8"),
             cache_entry.icon_data,
         )
 
