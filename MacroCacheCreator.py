@@ -61,6 +61,13 @@ class MacroCatalog:
 
     def __init__(self):
         self.macros: Dict[str, Macro] = {}
+        self.macro_errors = {}
+        self.macro_stats = {
+            "macros_on_wiki": 0,
+            "macros_on_git": 0,
+            "duplicated_macros": 0,
+            "errors": 0,
+        }
 
     def fetch_macros(self):
         print("Retrieving macros from git...")
@@ -70,6 +77,7 @@ class MacroCatalog:
         print("Downloading icons...")
         for macro in self.macros.values():
             self.get_icon(macro)
+        self.macro_stats["errors"] = len(self.macro_errors)
 
     def create_cache(self) -> str:
         """Create a cache from the macros in this catalog"""
@@ -92,6 +100,7 @@ class MacroCatalog:
                 continue
             for filename in filenames:
                 if filename.lower().endswith(".fcmacro"):
+                    self.macro_stats["macros_on_git"] += 1
                     self.add_git_macro_to_cache(dirpath, filename)
 
     def add_git_macro_to_cache(self, dirpath: str, filename: str):
@@ -112,7 +121,12 @@ class MacroCatalog:
         Reads only the page https://wiki.freecad.org/Macros_recipes
         """
 
-        p = requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
+        try:
+            p = requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
+        except requests.exceptions.RequestException as e:
+            message = f"Failed to fetch {WIKI_MACROS_URL}: {e}"
+            self.macro_errors["retrieve_macros_from_wiki"] = message
+            return
         if not p.status_code == 200:
             print(f"Failed to fetch {WIKI_MACROS_URL}, response code was {p.status_code}")
             return
@@ -125,12 +139,14 @@ class MacroCatalog:
             if not macro_name:
                 continue
             if (macro_name not in MACROS_REJECT_LIST) and ("recipes" not in macro_name.lower()):
+                self.macro_stats["macros_on_wiki"] += 1
                 self.add_wiki_macro_to_cache(macro_name)
 
     def add_wiki_macro_to_cache(self, macro_name):
         macro = Macro(macro_name)
         if macro.name in self.macros:
-            print(f"Ignoring second macro named {macro.name} (found on wiki)")
+            self.macro_stats["duplicated_macros"] += 1
+            print(f"Ignoring duplicate of '{macro.name}' (using git repo copy instead of wiki)")
             return
         macro.on_wiki = True
         macro.parsed = False
@@ -147,7 +163,13 @@ class MacroCatalog:
         contents in self.icon_data"""
         if macro.icon.startswith("http://") or macro.icon.startswith("https://"):
             parsed_url = urllib.parse.urlparse(macro.icon)
-            p = requests.get(macro.icon, headers=headers, timeout=10.0)
+            try:
+                p = requests.get(macro.icon, headers=headers, timeout=10.0)
+            except requests.exceptions.RequestException as e:
+                message = f"Failed to get data from icon URL {macro.icon}: {e}"
+                self.macro_errors[macro.name] = message
+                macro.icon = ""
+                return
             if p.status_code == 200:
                 _, _, filename = parsed_url.path.rpartition("/")
                 base, _, extension = filename.rpartition(".")
@@ -197,5 +219,11 @@ if __name__ == "__main__":
     sha256 = hashlib.sha256(cache_file_content).hexdigest()
     with open("macro_cache.zip.sha256", "w", encoding="utf-8") as hash_file:
         hash_file.write(sha256)
+
+    # Finally, write out the errors and stats as JSON data:
+    with open(os.path.join(os.getcwd(), "macro_errors.json"), "w", encoding="utf-8") as f:
+        json.dump(catalog.macro_errors, f, indent="  ")
+    with open(os.path.join(os.getcwd(), "macro_stats.json"), "w", encoding="utf-8") as f:
+        json.dump(catalog.macro_stats, f, indent="  ")
 
     print("Cache written to macro_cache.zip and macro_cache.zip.sha256")
