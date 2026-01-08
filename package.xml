@@ -5,8 +5,8 @@
     <name>Addon Manager</name>
     <description>Development branch of a tool to install workbenches, macros, themes, etc.</description>
     <icon>Resources/icons/addon_manager.svg</icon>
-    <version>2025.12.19dev</version>
-    <date>2025-12-19</date>
+    <version>2026.1.8dev</version>
+    <date>2026-1-8</date>
     <maintainer email='chennes@freecad.org'>Chris Hennes</maintainer>
     <author email = 'yorik@uncreated.net'>Yorik van Havre</author>
     <author>Jonathan Wiedemann</author>
