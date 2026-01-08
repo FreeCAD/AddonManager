@@ -385,7 +385,7 @@ class CacheWriter:
         """Determine if the given branch, tag, or hash is a tag, branch, or hash. Returns the type
         if determinable, otherwise raises a RuntimeError."""
         command = ["git", "show-ref", "--verify", f"refs/remotes/origin/{branch}"]
-        completed_process = subprocess.run(command)
+        completed_process = subprocess.run(command, capture_output=True)
         if completed_process.returncode == 0:
             return GitRefType.BRANCH
         command = ["git", "show-ref", "--tags"]
