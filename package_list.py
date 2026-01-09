@@ -23,6 +23,7 @@
 
 """Defines the PackageList QWidget for displaying a list of Addons."""
 import threading
+from typing import Set
 
 import addonmanager_freecad_interface as fci
 from PySideWrapper import QtCore, QtGui, QtWidgets
@@ -35,7 +36,7 @@ from expanded_view import Ui_ExpandedView
 import addonmanager_utilities as utils
 from Widgets.addonmanager_widget_view_control_bar import WidgetViewControlBar, SortOptions
 from Widgets.addonmanager_widget_view_selector import AddonManagerDisplayStyle
-from Widgets.addonmanager_widget_filter_selector import StatusFilter, Filter
+from Widgets.addonmanager_widget_filter_selector import StatusFilter, Filter, ContainsFilter
 from Widgets.addonmanager_widget_progress_bar import Progress, WidgetProgressBar
 from addonmanager_licenses import get_license_manager
 
@@ -73,12 +74,21 @@ class PackageList(QtWidgets.QWidget):
 
         # Set up the view the same as the last time:
         package_type = fci.Preferences().get("PackageTypeSelection")
+        contains: str = fci.Preferences().get("ContainsSelection")
         status = fci.Preferences().get("StatusSelection")
         search_string = fci.Preferences().get("SearchString")
+
+        contains_filter = set()
+
+        if len(contains) > 0:
+            contains_filter = set([ContainsFilter(int(value)) for value in contains.split(",")])
+
         self.ui.view_bar.filter_selector.set_contents_filter(package_type)
+        self.ui.view_bar.filter_selector.set_contains_filter(contains_filter)
         self.ui.view_bar.filter_selector.set_status_filter(status)
         if search_string:
             self.ui.view_bar.search.filter_line_edit.setText(search_string)
+        self.item_filter.setContainsFilter(contains_filter)
         self.item_filter.setPackageFilter(package_type)
         self.item_filter.setStatusFilter(status)
 
@@ -126,8 +136,13 @@ class PackageList(QtWidgets.QWidget):
 
         self.item_filter.setStatusFilter(new_filter.status_filter)
         self.item_filter.setPackageFilter(new_filter.content_filter)
+        self.item_filter.setContainsFilter(new_filter.contains_filter)
+
+        contains = ",".join([str(value) for value in new_filter.contains_filter])
+
         fci.Preferences().set("StatusSelection", new_filter.status_filter)
         fci.Preferences().set("PackageTypeSelection", new_filter.content_filter)
+        fci.Preferences().set("ContainsSelection", contains)
         self.item_filter.invalidateFilter()
 
     def set_view_style(self, style: AddonManagerDisplayStyle) -> None:
@@ -573,11 +588,15 @@ class PackageListItemDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class PackageListFilter(QtCore.QSortFilterProxyModel):
+
+    contains: Set[ContainsFilter]
+
     """Handle filtering the item list on various criteria"""
 
     def __init__(self):
         super().__init__()
         self.package_type = 0  # Default to showing everything
+        self.contains = set()
         self.status = 0  # Default to showing any
         self.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.hide_non_OSI_approved = False
@@ -590,6 +609,10 @@ class PackageListFilter(QtCore.QSortFilterProxyModel):
     ) -> None:  # 0=All, 1=Workbenches, 2=Macros, 3=Preference Packs, 4=Bundles, 5=Other
         """Set the package filter to package_type and refreshes."""
         self.package_type = package_type
+        self.invalidateFilter()
+
+    def setContainsFilter(self, filter: Set[ContainsFilter]) -> None:
+        self.contains = filter
         self.invalidateFilter()
 
     def setStatusFilter(
@@ -643,6 +666,10 @@ class PackageListFilter(QtCore.QSortFilterProxyModel):
                 return False
         elif self.status == StatusFilter.UPDATE_AVAILABLE:
             if data.status() != Addon.Status.UPDATE_AVAILABLE:
+                return False
+
+        if ContainsFilter.NO_GENERATED_CONTENT in self.contains:
+            if not data.contains_no_generated_content():
                 return False
 
         license_manager = get_license_manager()
