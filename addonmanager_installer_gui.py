@@ -434,6 +434,11 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         self.installer: AddonInstaller = None
         self.dependency_installer: DependencyInstaller = None
 
+        self.dependency_dialog = fci.loadUi(
+            os.path.join(os.path.dirname(__file__), "dependency_resolution_dialog.ui")
+        )
+        self.dependency_dialog.setObjectName("AddonManager_DependencyResolutionDialog")
+
     def shutdown(self):
         try:
             self._stop_thread(self.dependency_worker_thread)
@@ -606,10 +611,6 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
 
     def _resolve_dependencies_then_continue(self) -> None:
         """Ask the user how they want to handle dependencies, do that, then install."""
-        self.dependency_dialog = fci.loadUi(
-            os.path.join(os.path.dirname(__file__), "dependency_resolution_dialog.ui")
-        )
-        self.dependency_dialog.setObjectName("AddonManager_DependencyResolutionDialog")
 
         for addon in self.deps.external_addons:
             self.dependency_dialog.listWidgetAddons.addItem(addon.display_name)
