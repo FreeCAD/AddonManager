@@ -344,7 +344,7 @@ nach: {}
 Bitte neu starten, um die neue Version zu verwenden.</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+302"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
       <translation>Paket</translation>
     </message>
@@ -523,14 +523,35 @@ Bitte neu starten, um die neue Version zu verwenden.</translation>
 </translation>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
       <translation>Fehler beim Abrufen der Addon-Bewertung von „{}“ – Sortierung nach Bewertung wird fehlschlagen
 </translation>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Das Dekodieren der Addon-Bewertung von &apos;{}&apos; ist fehlgeschlagen - Sortieren nach Bewertungen wird fehlschlagen
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Das Analysieren der Addon-Bewertung von &apos;{}&apos; ist fehlgeschlagen - Sortieren nach Bewertungen wird fehlschlagen
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Das Lesen der Addon-Bewertung von &apos;{}&apos; ist fehlgeschlagen - Sortieren nach Bewertungen wird fehlschlagen
+</translation>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
       <translation>Auf fehlende Abhängigkeiten prüfen</translation>
@@ -1122,22 +1143,22 @@ Bitte neu starten, um die neue Version zu verwenden.</translation>
       <translation>Symbol</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;Paketname&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>Version</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>Beschreibung</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>Aktualisierung verfügbar</translation>
     </message>

@@ -551,7 +551,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../AddonManager.py" line="+281"/>
+        <location filename="../../AddonManager.py" line="+282"/>
         <source>Worker process {} is taking a long time to stop…</source>
         <translation type="unfinished"></translation>
     </message>
