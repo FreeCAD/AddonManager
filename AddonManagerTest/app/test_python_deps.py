@@ -20,6 +20,7 @@
 # *   <https://www.gnu.org/licenses/>.                                      *
 # *                                                                         *
 # ***************************************************************************
+import os
 import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
@@ -268,3 +269,173 @@ class TestPythonPackageListModel(unittest.TestCase):
 
             mock_call_pip.assert_called_once()
             mock_print_error.assert_called_once_with("upgrade failed\n")
+
+    class TestCleanupOldPackageVersions(unittest.TestCase):
+        """Tests for the _cleanup_old_package_versions method"""
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        @patch("addonmanager_python_deps.fci.Console.PrintLog")
+        def test_cleanup_removes_old_versions_keeps_newest(
+            self, mock_print_log, mock_rmtree, mock_listdir, mock_exists
+        ):
+            """Test that old package versions are removed and newest is kept"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = [
+                "requests-2.28.0.dist-info",
+                "requests-2.31.0.dist-info",
+                "numpy-1.24.0.dist-info",
+                "numpy-1.26.0.dist-info",
+                "numpy-1.25.2.dist-info",
+                "other_file.txt",
+            ]
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+
+            # Should remove old versions but keep newest
+            self.assertEqual(mock_rmtree.call_count, 3)
+            removed_paths = [call[0][0] for call in mock_rmtree.call_args_list]
+
+            # Check old versions were removed (works on all platforms)
+            self.assertIn(os.path.join("/fake/path", "requests-2.28.0.dist-info"), removed_paths)
+            self.assertIn(os.path.join("/fake/path", "numpy-1.24.0.dist-info"), removed_paths)
+            self.assertIn(os.path.join("/fake/path", "numpy-1.25.2.dist-info"), removed_paths)
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        def test_cleanup_single_version_no_removal(self, mock_rmtree, mock_listdir, mock_exists):
+            """Test that packages with only one version are not touched"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = [
+                "requests-2.31.0.dist-info",
+                "numpy-1.26.0.dist-info",
+                "pandas-2.1.0.dist-info",
+            ]
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+
+            # No removals should happen when only one version exists per package
+            mock_rmtree.assert_not_called()
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        def test_cleanup_nonexistent_directory(self, mock_exists):
+            """Test graceful handling when vendor path doesn't exist"""
+            mock_exists.return_value = False
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/nonexistent/path"
+            model._cleanup_old_package_versions()
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        def test_cleanup_empty_directory(self, mock_rmtree, mock_listdir, mock_exists):
+            """Test handling of empty vendor directory"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = []
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+            mock_rmtree.assert_not_called()
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.os.path.isdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        @patch("addonmanager_python_deps.fci.Console.PrintWarning")
+        def test_cleanup_handles_permission_error(
+            self, mock_print_warning, mock_rmtree, mock_isdir, mock_listdir, mock_exists
+        ):
+            """Test that permission errors are handled gracefully"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = [
+                "requests-2.28.0.dist-info",
+                "requests-2.31.0.dist-info",
+            ]
+            mock_isdir.return_value = True
+            mock_rmtree.side_effect = PermissionError("Permission denied")
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+            mock_print_warning.assert_called()
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.os.path.isdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        def test_cleanup_normalizes_package_names(
+            self, mock_rmtree, mock_isdir, mock_listdir, mock_exists
+        ):
+            """Test that package names are normalized per PEP 503 (underscores to dashes)"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = [
+                "my_package-1.0.0.dist-info",
+                "my-package-2.0.0.dist-info",
+            ]
+            mock_isdir.return_value = True
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+
+            # Should remove old version (they're the same package after normalization)
+            mock_rmtree.assert_called_once_with(
+                os.path.join("/fake/path", "my_package-1.0.0.dist-info")
+            )
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.os.path.isdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        def test_cleanup_ignores_non_dist_info_directories(
+            self, mock_rmtree, mock_isdir, mock_listdir, mock_exists
+        ):
+            """Test that only .dist-info directories are processed"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = [
+                "requests-2.28.0.dist-info",
+                "requests-2.31.0.dist-info",
+                "some_package",
+                "__pycache__",
+                "random_file.txt",
+            ]
+            mock_isdir.return_value = True
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+            mock_rmtree.assert_called_once_with(
+                os.path.join("/fake/path", "requests-2.28.0.dist-info")
+            )
+
+        @patch("addonmanager_python_deps.os.path.exists")
+        @patch("addonmanager_python_deps.os.listdir")
+        @patch("addonmanager_python_deps.os.path.isdir")
+        @patch("addonmanager_python_deps.shutil.rmtree")
+        @patch("addonmanager_python_deps.fci.Console.PrintWarning")
+        def test_cleanup_handles_invalid_version_format(
+            self, mock_print_warning, mock_rmtree, mock_isdir, mock_listdir, mock_exists
+        ):
+            """Test handling of malformed version strings"""
+            mock_exists.return_value = True
+            mock_listdir.return_value = [
+                "badpackage-invalid.version.dist-info",
+                "goodpackage-1.0.0.dist-info",
+                "goodpackage-2.0.0.dist-info",
+            ]
+            mock_isdir.return_value = True
+
+            model = PythonPackageListModel([])
+            model.vendor_path = "/fake/path"
+            model._cleanup_old_package_versions()
+            mock_rmtree.assert_called_once_with(
+                os.path.join("/fake/path", "goodpackage-1.0.0.dist-info")
+            )
