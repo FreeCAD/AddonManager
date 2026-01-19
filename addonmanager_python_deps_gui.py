@@ -30,7 +30,6 @@ from addonmanager_python_deps import PythonPackageListModel
 
 from PySideWrapper import QtWidgets
 
-
 translate = fci.translate
 
 

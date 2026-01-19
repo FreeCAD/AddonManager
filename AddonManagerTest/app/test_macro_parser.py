@@ -30,7 +30,6 @@ import unittest
 from addonmanager_macro_parser import MacroParser
 from AddonManagerTest.app.mocks import MockConsole, CallCatcher, MockThread
 
-
 # pylint: disable=protected-access, too-many-public-methods
 
 

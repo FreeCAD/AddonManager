@@ -24,6 +24,7 @@
 """Contains the classes to manage Addon installation: intended as a stable API, safe for external
 code to call and to rely upon existing. See classes AddonInstaller and MacroInstaller for details.
 """
+
 import json
 from datetime import datetime, timezone
 from enum import IntEnum, auto

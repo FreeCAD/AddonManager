@@ -24,6 +24,7 @@
 """Classes to manage the GUI presentation of installing an Addon (e.g., the sequence of dialog boxes
 that do dependency resolution, error handling, etc.). See AddonInstallerGUI and MacroInstallerGUI
 classes for details."""
+
 import os
 import sys
 from typing import List

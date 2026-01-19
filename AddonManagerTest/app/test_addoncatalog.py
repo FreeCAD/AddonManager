@@ -3,6 +3,7 @@
 # pylint: import-outside-toplevel,
 
 """Tests for the AddonCatalog and AddonCatalogEntry classes."""
+
 from unittest import mock, main, TestCase
 from unittest.mock import patch
 
@@ -304,8 +305,7 @@ class TestAddonCatalog(TestCase):
                 _ = catalog.get_addon_from_id("AnAddon")
 
     def test_get_addon_from_id_with_package_xml(self):
-        metadata_dict = {
-            "package_xml": """<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+        metadata_dict = {"package_xml": """<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>Test Workbench</name>
   <description>A package.xml file for unit testing.</description>
@@ -321,33 +321,28 @@ class TestAddonCatalog(TestCase):
     </other>
   </content>
 
-</package>"""
-        }
+</package>"""}
         addon = self._get_addon_for_test(metadata_dict)
         self.assertEqual(addon.metadata.name, "Test Workbench")
 
     def test_get_addon_from_id_with_metadata_txt(self):
-        metadata_dict = {
-            "metadata_txt": """
+        metadata_dict = {"metadata_txt": """
 workbenches=bim,fem,part,partdesign
 pylibs=first_lib,second_lib,third_lib
 optionalpylibs=fourth_lib,fifth_lib,sixth_lib,seventh_lib
-        """
-        }
+        """}
         addon = self._get_addon_for_test(metadata_dict)
         self.assertEqual(3, len(addon.python_requires))
         self.assertEqual(4, len(addon.python_optional))
         self.assertEqual(4, len(addon.requires))
 
     def test_get_addon_from_id_with_requirements_txt(self):
-        metadata_dict = {
-            "requirements_txt": """
+        metadata_dict = {"requirements_txt": """
 some_requirement=1.0
 some_other_requirement<=2.0
 third_requirement>=3.0
 final_requirement #yeah, some requirement
-        """
-        }
+        """}
         addon = self._get_addon_for_test(metadata_dict)
         self.assertEqual(4, len(addon.python_requires))
 

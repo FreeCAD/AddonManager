@@ -24,6 +24,7 @@
 """Classes and utility functions to generate a remotely hosted cache of all addon catalog entries.
 Intended to be run by a server-side systemd timer to generate a file that is then loaded by the
 Addon Manager in each FreeCAD installation."""
+
 import datetime
 from dataclasses import is_dataclass, fields
 from typing import Any, List, Optional, Dict

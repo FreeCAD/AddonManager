@@ -44,7 +44,6 @@ from PySideWrapper import QtCore, QtGui, QtWidgets, QtNetwork
 
 import addonmanager_freecad_interface as fci
 
-
 if fci.FreeCADGui:
 
     # If the GUI is up, we can use the NetworkManager to handle our downloads. If there is no event

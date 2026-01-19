@@ -249,14 +249,12 @@ class TestAddonUninstaller(unittest.TestCase):
             toplevel_path = self.setup_dummy_installation(temp_dir)
             with open(os.path.join(toplevel_path, "uninstall.py"), "w", encoding="utf-8") as f:
                 double_escaped = temp_dir.replace("\\", "\\\\")
-                f.write(
-                    f"""# Mock uninstaller script
+                f.write(f"""# Mock uninstaller script
 import os
 path = '{double_escaped}'
 with open(os.path.join(path,"RAN_UNINSTALLER.txt"),"w",encoding="utf-8") as f:
     f.write("File created by uninstall.py from unit tests")
-"""
-                )
+""")
             self.test_object.run_uninstall_script(toplevel_path)  # The exception does not leak out
             self.assertTrue(os.path.exists(os.path.join(temp_dir, "RAN_UNINSTALLER.txt")))
 
@@ -265,11 +263,9 @@ with open(os.path.join(path,"RAN_UNINSTALLER.txt"),"w",encoding="utf-8") as f:
         with tempfile.TemporaryDirectory() as temp_dir:
             toplevel_path = self.setup_dummy_installation(temp_dir)
             with open(os.path.join(toplevel_path, "uninstall.py"), "w", encoding="utf-8") as f:
-                f.write(
-                    f"""# Mock uninstaller script
+                f.write(f"""# Mock uninstaller script
 raise RuntimeError("Fake exception for unit testing")
-"""
-                )
+""")
             self.test_object.run_uninstall_script(toplevel_path)  # The exception does not leak out
 
 
