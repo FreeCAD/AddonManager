@@ -1,5 +1,10 @@
 # FreeCAD Addon Manager
 
+NOTE: This is the Qt5 and Python 3.8 compatibility branch of the Addon Manager. You should only use this branch if
+the version of FreeCAD you are running needs compatibility of one (or both) of those packages. This includes versions
+of FreeCAD 0.21 and earlier, and self-compiled versions of later versions that rely on those packages. Most users
+should use the "main" branch (or "dev").
+
 Install and update third-party addons to FreeCAD, including Workbenches, Macros, Preference Packs, and more. FreeCAD
 ships with a point-in-time snapshot of this Addon: by the time you install FreeCAD it is possible that version of the
 Addon Manager is no longer the most recent version. Install *this* addon to update the internal Addon Manager to the
