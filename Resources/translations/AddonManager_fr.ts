@@ -343,7 +343,7 @@ vers : {}
 Redémarrer pour utiliser la nouvelle version.</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+302"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
       <translation>Paquet</translation>
     </message>
@@ -520,13 +520,31 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <translation>Échec de la récupération des statistiques de l'extension {}, seul le tri par ordre alphabétique sera exact.</translation>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
       <translation>Échec de la récupération du score de l'extension {}, le tri par score échouera.</translation>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Impossible de décoder le score de l'extension à partir de « {} ». Le tri par score échouera.</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Impossible d'analyser le score de l'extension à partir de « {} ». Le tri par score échouera.</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Impossible de lire le score de l'extension à partir de « {} ». Le tri par score échouera.</translation>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
       <translation>Recherche des dépendances manquantes</translation>
@@ -1117,22 +1135,22 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <translation>Icône</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;Nom du paquet&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>Version</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>Description</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>Mise à jour disponible</translation>
     </message>

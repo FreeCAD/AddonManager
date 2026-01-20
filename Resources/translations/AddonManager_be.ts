@@ -350,7 +350,7 @@ Please restart to use the new version.</source>
 Запусціце нанова, каб ужыць новую версію.</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+302"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
       <translation>Пакет</translation>
     </message>
@@ -530,14 +530,35 @@ Please restart to use the new version.</source>
 </translation>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
       <translation>Не атрымалася атрымаць ацэнкі дадаткаў з '{}' -- упарадкаванне па ацэнках завяршылася памылкай
 </translation>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Не атрымалася расшыфраваць ацэнкі дадаткаў з '{}' -- упарадкаванне па ацэнках завяршылася памылкай
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Не атрымалася прааналізаваць ацэнкі дадаткаў з '{}' -- упарадкаванне па ацэнках завяршылася памылкай
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Не атрымалася прачытаць ацэнкі дадаткаў з '{}' -- упарадкаванне па ацэнках завяршылася памылкай
+</translation>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
       <translation>Праверка адсутных залежнасцяў</translation>
@@ -1133,22 +1154,22 @@ Please restart to use the new version.</source>
       <translation>Гузік</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;Назва пакета&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>Версія</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>Апісанне</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>Даступна абнаўленне</translation>
     </message>
