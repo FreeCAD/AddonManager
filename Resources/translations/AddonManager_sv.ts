@@ -344,7 +344,7 @@ till: {}
 Starta om för att använda den nya versionen.</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+302"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
       <translation>Paket</translation>
     </message>
@@ -523,14 +523,35 @@ Starta om för att använda den nya versionen.</translation>
 </translation>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
-      <translation>Misslyckades med att hämta tilläggsbetyg från &apos;{}&apos; – sortering efter betyg kommer att misslyckas
+      <translation>Misslyckades med att hämta tilläggets betyg från &apos;{}&apos; – sortering efter betyg kommer att misslyckas
 </translation>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Misslyckades med att avkoda tilläggets betyg från &apos;{}&apos; -- sortering efter betyg kommer att misslyckas
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Misslyckades med att tolka tilläggets betyg från &apos;{}&apos; -- sortering efter betyg kommer att misslyckas
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Misslyckades med att läsa tilläggets betyg från &apos;{}&apos; -- sortering efter betyg kommer att misslyckas
+</translation>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
       <translation>Kontrollerar saknade beroenden</translation>
@@ -1122,22 +1143,22 @@ Starta om för att använda den nya versionen.</translation>
       <translation>Ikon</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;Paketets namn&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>Version</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>Beskrivning</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>Uppdatering tillgänglig</translation>
     </message>
