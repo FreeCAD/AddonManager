@@ -38,7 +38,6 @@ from Addon import Addon
 
 import addonmanager_freecad_interface as fci
 
-
 INVALID_TIME = datetime.datetime.fromtimestamp(0, tz=datetime.timezone.utc).astimezone()
 
 

@@ -22,6 +22,7 @@
 # ***************************************************************************
 
 """Class to manage the display of an Update All dialog."""
+
 import threading
 from enum import IntEnum, auto
 import os
@@ -34,7 +35,6 @@ import addonmanager_freecad_interface as fci
 from Addon import Addon, MissingDependencies
 from addonmanager_installer_gui import AddonDependencyInstallerGUI
 from addonmanager_installer import AddonInstaller, MacroInstaller
-
 
 translate = fci.translate
 

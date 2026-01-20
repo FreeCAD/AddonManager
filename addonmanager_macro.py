@@ -23,6 +23,7 @@
 # ***************************************************************************
 
 """Unified handler for FreeCAD macros that can be obtained from different sources."""
+
 import base64
 import binascii
 import os

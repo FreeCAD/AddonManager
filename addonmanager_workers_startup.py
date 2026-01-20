@@ -23,6 +23,7 @@
 # ***************************************************************************
 
 """Worker thread classes for Addon Manager startup"""
+
 import hashlib
 import io
 import json

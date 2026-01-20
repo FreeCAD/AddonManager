@@ -23,6 +23,7 @@
 
 """The AddonCatalogCacheCreator is an independent script that is run server-side to generate a
 cache of the addon metadata and icons. These tests verify the functionality of its methods."""
+
 import base64
 import dataclasses
 from unittest import mock
