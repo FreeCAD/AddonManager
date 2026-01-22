@@ -389,3 +389,33 @@ class TestAddon(unittest.TestCase):
 
                     # Assert
                     self.assertEqual(wb_name, "TestWorkbench")
+
+    def test_addon_less_than(self):
+        a = Addon("A")
+        b = Addon("B")
+        self.assertLess(a, b)
+
+        aa = Addon("A", branch="A")
+        ab = Addon("A", branch="B")
+        self.assertLess(aa, ab)
+
+        same = Addon("A", branch="A")
+        self.assertGreaterEqual(same, aa)
+        self.assertGreaterEqual(aa, same)
+
+    def test_addon_less_than_or_equal_to(self):
+        a = Addon("A")
+        b = Addon("B")
+        self.assertLessEqual(a, b)
+
+        aa = Addon("A", branch="A")
+        ab = Addon("A", branch="B")
+        self.assertLessEqual(aa, ab)
+
+        same = Addon("A", branch="A")
+        self.assertLessEqual(same, aa)
+        self.assertLessEqual(aa, same)
+
+        same = Addon("A", branch="A")
+        self.assertTrue(same <= aa)
+        self.assertTrue(aa <= same)
