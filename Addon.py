@@ -231,6 +231,18 @@ class Addon:
             return NotImplemented
         return self.name == other.name and self.branch_display_name == other.branch_display_name
 
+    def __lt__(self, other):
+        if not isinstance(other, Addon):
+            return NotImplemented
+        if self.name == other.name:
+            return self.branch_display_name < other.branch_display_name
+        return self.name < other.name
+
+    def __le__(self, other):
+        if not isinstance(other, Addon):
+            return NotImplemented
+        return self == other or self < other
+
     def __hash__(self):
         return hash((self.name, self.branch_display_name))
 
