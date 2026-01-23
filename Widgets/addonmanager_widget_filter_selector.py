@@ -24,6 +24,7 @@
 """Defines a QWidget-derived class for displaying the view selection buttons."""
 
 from enum import IntEnum
+from typing import Set
 
 from addonmanager_freecad_interface import translate
 
@@ -35,6 +36,7 @@ class FilterType(IntEnum):
 
     PACKAGE_CONTENTS = 0
     INSTALLATION_STATUS = 1
+    CONTAINS = 2
 
 
 class StatusFilter(IntEnum):
@@ -57,10 +59,16 @@ class ContentFilter(IntEnum):
     OTHER = 5
 
 
+class ContainsFilter(IntEnum):
+
+    NO_GENERATED_CONTENT = 0
+
+
 class Filter:
     def __init__(self):
         self.status_filter = StatusFilter.ANY
         self.content_filter = ContentFilter.ANY
+        self.contains_filter: Set[ContainsFilter] = set()
 
 
 class WidgetFilterSelector(QtWidgets.QComboBox):
@@ -71,6 +79,7 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
     def __init__(self, parent: QtWidgets.QWidget = None):
         super().__init__(parent)
         self.addon_type_index = 0
+        self.contains_index = 0
         self.installation_status_index = 0
         self.extra_padding = 64
         self._setup_ui()
@@ -128,6 +137,13 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
             translate("AddonsInstaller", "Update available"),
             (FilterType.INSTALLATION_STATUS, StatusFilter.UPDATE_AVAILABLE),
         )
+        self.insertSeparator(self.count())
+        self.addItem(translate("AddonsInstaller", "Contains"))
+        self.contains_index = self.count() - 1
+        self.addItem(
+            translate("AddonsInstaller", "No generated content"),
+            (FilterType.CONTAINS, ContainsFilter.NO_GENERATED_CONTENT),
+        )
         model: QtCore.QAbstractItemModel = self.model()
         for row in range(model.rowCount()):
             if row <= self.addon_type_index:
@@ -136,6 +152,11 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
                 item = model.item(row)
                 item.setCheckState(QtCore.Qt.Unchecked)
             elif row == self.installation_status_index:
+                model.item(row).setEnabled(False)
+            elif row < self.contains_index:
+                item = model.item(row)
+                item.setCheckState(QtCore.Qt.Unchecked)
+            elif row == self.contains_index:
                 model.item(row).setEnabled(False)
             else:
                 item = model.item(row)
@@ -176,6 +197,18 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
                     item.setCheckState(QtCore.Qt.Unchecked)
         self._update_first_row_text()
 
+    def set_contains_filter(self, filter: Set[ContainsFilter]):
+        model = self.model()
+        for row in range(model.rowCount()):
+            item = model.item(row)
+            user_data = self.itemData(row)
+            if user_data and user_data[0] == FilterType.CONTAINS:
+                if user_data[1] in filter:
+                    item.setCheckState(QtCore.Qt.Checked)
+                else:
+                    item.setCheckState(QtCore.Qt.Unchecked)
+        self._update_first_row_text()
+
     def _setup_connections(self):
         self.activated.connect(self._selected)
 
@@ -194,7 +227,11 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
     def _selected(self, row: int):
         if row == 0:
             return
-        if row == self.installation_status_index or row == self.addon_type_index:
+        if (
+            row == self.installation_status_index
+            or row == self.addon_type_index
+            or row == self.contains_index
+        ):
             self.setCurrentIndex(0)
             return
         model = self.model()
@@ -207,10 +244,18 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
             item = model.item(row)
             user_data = self.itemData(row)
             if user_data and user_data[0] == selected_row_type:
-                if user_data[1] == selected_data[1]:
-                    item.setCheckState(QtCore.Qt.Checked)
+
+                if selected_row_type == FilterType.CONTAINS:
+                    if user_data[1] == selected_data[1]:
+                        if item.checkState() == QtCore.Qt.Checked:
+                            item.setCheckState(QtCore.Qt.Unchecked)
+                        else:
+                            item.setCheckState(QtCore.Qt.Checked)
                 else:
-                    item.setCheckState(QtCore.Qt.Unchecked)
+                    if user_data[1] == selected_data[1]:
+                        item.setCheckState(QtCore.Qt.Checked)
+                    else:
+                        item.setCheckState(QtCore.Qt.Unchecked)
         self._emit_current_filter()
         self.setCurrentIndex(0)
         self._update_first_row_text()
@@ -221,11 +266,22 @@ class WidgetFilterSelector(QtWidgets.QComboBox):
         for row in range(model.rowCount()):
             item = model.item(row)
             data = self.itemData(row)
-            if data and item.checkState() == QtCore.Qt.Checked:
-                if data[0] == FilterType.INSTALLATION_STATUS:
-                    new_filter.status_filter = data[1]
-                elif data[0] == FilterType.PACKAGE_CONTENTS:
-                    new_filter.content_filter = data[1]
+            if data:
+
+                if item.checkState() == QtCore.Qt.Checked:
+                    if data[0] == FilterType.INSTALLATION_STATUS:
+                        new_filter.status_filter = data[1]
+                    elif data[0] == FilterType.PACKAGE_CONTENTS:
+                        new_filter.content_filter = data[1]
+
+                if data[0] == FilterType.CONTAINS:
+                    if item.checkState() == QtCore.Qt.Checked:
+                        if data[1] not in new_filter.contains_filter:
+                            new_filter.contains_filter.add(data[1])
+                    else:
+                        if data[1] in new_filter.contains_filter:
+                            new_filter.contains_filter.remove(data[1])
+
         self.filter_changed.emit(new_filter)
 
     def _update_first_row_text(self):

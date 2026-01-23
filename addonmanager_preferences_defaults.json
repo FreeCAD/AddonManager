@@ -15,6 +15,7 @@
     "MacroUpdateStatsURL": "https://addons.freecad.org/macro_update_stats.json",
     "NoProxyCheck": false,
     "PackageTypeSelection": 0,
+    "ContainsSelection": "" ,
     "ProxyUrl": "",
     "SearchString": "",
     "SelectedAddon": "",
