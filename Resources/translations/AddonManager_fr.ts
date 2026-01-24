@@ -555,7 +555,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <translation>Impossible de lire les données à partir de addons.freecad.org. Il se peut que le serveur soit en panne ou que vous ne soyez pas connecté à internet.</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="+281"/>
+      <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
       <translation>Le processus {} met du temps à s'arrêter…</translation>
     </message>
