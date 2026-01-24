@@ -562,7 +562,7 @@ Starta om för att använda den nya versionen.</translation>
       <translation>Kunde inte läsa data från addons.freecad.org. Servern kan vara nere eller så kanske du inte är ansluten till internet.</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="+281"/>
+      <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
       <translation>Arbetsprocessen {} tar lång tid att stoppa…</translation>
     </message>

@@ -562,7 +562,7 @@ Bitte neu starten, um die neue Version zu verwenden.</translation>
       <translation>Es können keine Daten von addons.freecad.org gelesen werden. Der Server ist möglicherweise ausgefallen oder es besteht keine Verbindung mit dem Internet.</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="+281"/>
+      <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
       <translation>„worker“-Prozess {} benötigt sehr lange zum Beenden…</translation>
     </message>

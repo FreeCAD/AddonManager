@@ -807,6 +807,7 @@ Please restart to use the new version.</source>
         <location filename="../../Widgets/addonmanager_widget_package_details_view.py" line="+33"/>
         <location line="+8"/>
         <source>Update available</source>
+        <extracomment>the descriptive information name Map of parameter names to their parsed values. Parameters with ``expose_value=False`` are not stored.</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1030,11 +1031,13 @@ Please restart to use the new version.</source>
     <message>
         <location line="+7"/>
         <source>Git tag &apos;{}&apos; checked out, no updates possible</source>
+        <extracomment>The formatter class to create with :meth:`make_formatter`.</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Currently on branch {}, name changed to {}</source>
+        <extracomment>.. versionadded:: 8.0</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1045,6 +1048,7 @@ Please restart to use the new version.</source>
     <message>
         <location line="+6"/>
         <source>Update available to version {}</source>
+        <extracomment>the parent context or `None` if none exists. the :class:`Command` for this context.</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1055,11 +1059,13 @@ Please restart to use the new version.</source>
     <message>
         <location line="+16"/>
         <source>WARNING: This addon is currently installed, but disabled. Use the &apos;enable&apos; button to re-enable.</source>
+        <extracomment>the leftover arguments. protected arguments.  These are arguments that are prepended to `args` when certain parsing scenarios are encountered but must be never propagated to another arguments.  This is used to implement nested parsing. the collected prefixes of the command&apos;s options.</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
         <source>WARNING: This addon requires FreeCAD {}</source>
+        <extracomment>the user object stored.</extracomment>
         <translation type="unfinished"></translation>
     </message>
     <message>
