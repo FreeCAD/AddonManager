@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileNotice: Part of the AddonManager.
+
 IF (BUILD_GUI)
     add_subdirectory(Widgets)
 ENDIF (BUILD_GUI)
