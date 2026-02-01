@@ -1,12 +1,9 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2015 Yorik van Havre <yorik@uncreated.net> 
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
 # SPDX-FileNotice: Part of the AddonManager.
 
 # ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2025 The FreeCAD project association AISBL         *
-# *   Copyright (c) 2015 Yorik van Havre <yorik@uncreated.net>              *
-# *                                                                         *
-
 # *   FreeCAD is free software: you can redistribute it and/or modify it    *
 # *   under the terms of the GNU Lesser General Public License as           *
 # *   published by the Free Software Foundation, either version 2.1 of the  *
