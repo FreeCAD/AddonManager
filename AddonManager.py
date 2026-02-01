@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# SPDX-FileCopyrightText: 2015 Yorik van Havre <yorik@uncreated.net> 
+# SPDX-FileCopyrightText: 2015 Yorik van Havre <yorik@uncreated.net>
 # SPDX-FileCopyrightText: 2022 FreeCAD Project Association
 # SPDX-FileNotice: Part of the AddonManager.
 
