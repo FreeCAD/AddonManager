@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileNotice: Part of the AddonManager.
+
+
 SET(AddonManagerWidget_SRCS
     __init__.py
     addonmanager_colors.py
