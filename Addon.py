@@ -185,6 +185,7 @@ class Addon:
         self.tags = set()  # Just a cache, loaded from Metadata
         self.remote_last_updated: Optional[datetime.datetime] = None
         self.stats = AddonStats()
+        self.curated = True
         self.score = 0
 
         # In cases where there are multiple versions/branches/installations available for an addon,
