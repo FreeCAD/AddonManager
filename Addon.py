@@ -65,6 +65,7 @@ INTERNAL_WORKBENCHES = {
     "import": "Import",
     "material": "Material",
     "mesh": "Mesh",
+    "meshpart": "MeshPart",
     "openscad": "OpenSCAD",
     "part": "Part",
     "partdesign": "PartDesign",
@@ -404,7 +405,7 @@ class Addon:
                     fci.Console.PrintWarning(
                         translate(
                             "AddonsInstaller",
-                            "{}: Unrecognized internal workbench '{}'",
+                            "{}: Unrecognized internal workbench '{}'\n",
                         ).format(self.name, dep.package)
                     )
             elif dep.dependency_type == DependencyType.addon:
