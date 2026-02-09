@@ -174,7 +174,10 @@ class Macro:
             code = self._read_code_from_wiki(p)
         if not code:
             self._console.PrintWarning(
-                translate("AddonsInstaller", "Unable to fetch the code of this macro.") + "\n"
+                translate("AddonsInstaller", "Unable to fetch the code of macro '{}'").format(
+                    self.name
+                )
+                + "\n"
             )
             return
 
