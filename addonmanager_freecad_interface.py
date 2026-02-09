@@ -241,7 +241,9 @@ class DataPaths:
             if self.mod_dir is None:
                 self.mod_dir = os.path.join(getUserAppDataDir(), "Mod")
             if self.cache_dir is None:
-                self.cache_dir = getUserCachePath()
+                # Anytime the cache format changes, increment this version number so we don't
+                # interfere with old versions.
+                self.cache_dir = os.path.join(getUserCachePath(), "AddonManager2026-1")
             if self.macro_dir is None:
                 self.macro_dir = getUserMacroDir(True)
             if self.home_dir is None:
