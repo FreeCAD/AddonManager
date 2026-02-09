@@ -80,7 +80,10 @@ class MacroCatalog:
         self.retrieve_macros_from_wiki()
         print("Downloading icons...")
         for macro in self.macros.values():
-            self.get_icon(macro)
+            try:
+                self.get_icon(macro)
+            except RuntimeError as e:
+                self.macro_errors[macro.name] = str(e)
         self.macro_stats["errors"] = len(self.macro_errors)
 
     def create_cache(self) -> str:
@@ -167,6 +170,8 @@ class MacroCatalog:
         """Downloads the macro's icon from whatever source is specified and stores its binary
         contents in self.icon_data"""
         if macro.icon.startswith("http://") or macro.icon.startswith("https://"):
+            if "freecadweb" in macro.icon:
+                macro.icon = macro.icon.replace("freecadweb", "freecad")
             parsed_url = urllib.parse.urlparse(macro.icon)
             try:
                 p = requests.get(macro.icon, headers=headers, timeout=10.0)
