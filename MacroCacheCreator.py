@@ -94,7 +94,8 @@ class MacroCatalog:
         """Retrieve macros from GIT_MACROS_URL"""
 
         try:
-            CacheWriter.clone_or_update(GIT_MACROS_CLONE_NAME, GIT_MACROS_URL, GIT_MACROS_BRANCH)
+            writer = CacheWriter()
+            writer.clone_or_update(GIT_MACROS_CLONE_NAME, GIT_MACROS_URL, GIT_MACROS_BRANCH)
         except RuntimeError as e:
             print(f"Failed to clone git macros from {GIT_MACROS_URL}: {e}")
             self.macro_errors["retrieve_macros_from_git"] = str(e)
