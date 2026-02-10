@@ -758,6 +758,13 @@ class MissingDependencies:
                         # Plot might fail for a number of reasons
                         self.wbs.append(dep)
                         fci.Console.PrintLog("Failed to import Plot module\n")
+                elif dep.lower() == "meshpart":
+                    # MeshPart is strange: it doesn't ever appear in the listWorkbenches() output
+                    try:
+                        __import__("MeshPart")
+                    except ImportError:
+                        self.wbs.append(dep)
+                        fci.Console.PrintLog("Failed to import MeshPart module\n")
                 else:
                     self.wbs.append(dep)
 
