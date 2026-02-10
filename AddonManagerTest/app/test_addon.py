@@ -415,7 +415,3 @@ class TestAddon(unittest.TestCase):
         same = Addon("A", branch="A")
         self.assertLessEqual(same, aa)
         self.assertLessEqual(aa, same)
-
-        same = Addon("A", branch="A")
-        self.assertTrue(same <= aa)
-        self.assertTrue(aa <= same)
