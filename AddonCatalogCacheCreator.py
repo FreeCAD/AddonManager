@@ -308,22 +308,31 @@ class CacheWriter:
                         print(f"ERROR: Unknown error while reading icon file {absolute_icon_path}")
                         print(e)
                         icon_data_is_good = False
-                    if absolute_icon_path.lower().endswith(".svg"):
-                        try:
-                            if not icon_utils.is_svg_bytes(icon_data):
+                    if icon_data is not None:
+                        if absolute_icon_path.lower().endswith(".svg"):
+                            try:
+                                if not icon_utils.is_svg_bytes(icon_data):
+                                    self.icon_errors[metadata.name] = {
+                                        "valid_icon_path": relative_icon_path,
+                                        "error_message": "SVG file does not have valid XML header",
+                                    }
+                                    icon_data_is_good = False
+                            except icon_utils.BadIconData as e:
                                 self.icon_errors[metadata.name] = {
                                     "valid_icon_path": relative_icon_path,
-                                    "error_message": "SVG file does not have valid XML header",
+                                    "error_message": str(e),
                                 }
                                 icon_data_is_good = False
-                        except icon_utils.BadIconData as e:
-                            self.icon_errors[metadata.name] = {
-                                "valid_icon_path": relative_icon_path,
-                                "error_message": str(e),
-                            }
-                            icon_data_is_good = False
-                    if icon_data_is_good:
-                        cache_entry.icon_data = base64.b64encode(icon_data).decode("utf-8")
+                        elif absolute_icon_path.lower().endswith(".png"):
+                            if icon_utils.png_has_duplicate_iccp(icon_data):
+                                self.icon_errors[metadata.name] = {
+                                    "valid_icon_path": relative_icon_path,
+                                    "error_message": "PNG data has duplicate iCCP chunk",
+                                }
+                                icon_data_is_good = False
+
+                        if icon_data_is_good:
+                            cache_entry.icon_data = base64.b64encode(icon_data).decode("utf-8")
             else:
                 self.icon_errors[metadata.name] = {"bad_icon_path": relative_icon_path}
                 print(f"ERROR: Could not find icon file {absolute_icon_path}")

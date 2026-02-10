@@ -23,6 +23,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from MacroCacheCreator import MacroCatalog, CacheWriter
+import addonmanager_freecad_interface as fci
 
 
 class TestMacroCatalog(unittest.TestCase):
@@ -84,3 +85,30 @@ class TestMacroCatalog(unittest.TestCase):
         instance.retrieve_macros_from_wiki()
 
         mock_add_macro.assert_not_called()
+
+    def test_log_error(self):
+        instance = MacroCatalog()
+        instance.log_error("macro", "Test error")
+        instance.log_error("macro", "Test error 2")
+        self.assertIn("macro", instance.macro_errors)
+        self.assertEqual(len(instance.macro_errors["macro"]), 2)
+
+    def test_fetch_macros_logs_errors(self):
+
+        def fake_git(self):
+            fci.Console.PrintError("git failure")
+
+        def fake_wiki(self):
+            fci.Console.PrintWarning("wiki failure")
+
+        instance = MacroCatalog()
+        with patch.object(type(instance), "retrieve_macros_from_git", fake_git), patch.object(
+            type(instance), "retrieve_macros_from_wiki", fake_wiki
+        ):
+            instance.fetch_macros()
+
+        messages = [record["msg"] for record in instance.log_buffer]
+
+        self.assertIn("git failure", messages)
+        self.assertIn("wiki failure", messages)
+        self.assertEqual(len(messages), 2)

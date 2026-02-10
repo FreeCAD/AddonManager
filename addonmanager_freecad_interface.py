@@ -107,6 +107,8 @@ except ImportError:
     getUserMacroDir = None
     loadUi = None
 
+    logger = logging.getLogger("addonmanager")
+
     try:
         from PySide6 import QtCore, QtWidgets
 
@@ -154,19 +156,19 @@ except ImportError:
 
         @staticmethod
         def PrintLog(arg: str) -> None:
-            logging.log(logging.DEBUG, arg)
+            logger.log(logging.DEBUG, arg)
 
         @staticmethod
         def PrintMessage(arg: str) -> None:
-            logging.info(arg)
+            logger.info(arg)
 
         @staticmethod
         def PrintWarning(arg: str) -> None:
-            logging.warning(arg)
+            logger.warning(arg)
 
         @staticmethod
         def PrintError(arg: str) -> None:
-            logging.error(arg)
+            logger.error(arg)
 
     Console = ConsoleReplacement()
 

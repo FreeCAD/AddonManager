@@ -21,7 +21,8 @@
 
 import re
 import os
-from typing import Optional
+import struct
+from typing import Optional, List
 
 from PySideWrapper import QtCore, QtGui, QtSvg
 
@@ -136,6 +137,33 @@ def scalable_icon_from_svg_bytes(svg_bytes: bytes) -> QtGui.QIcon:
 
 
 cached_default_icons = {}
+
+
+def get_png_chunk_types(data) -> List[bytes] | None:
+    PNG_SIG = b"\x89PNG\r\n\x1a\n"
+    if not data.startswith(PNG_SIG):
+        return None  # not a PNG
+    i = 8
+    out = []
+    # PNG structure: [len:4][type:4][data:len][crc:4] repeating
+    while i + 12 <= len(data):
+        (length,) = struct.unpack(">I", data[i : i + 4])
+        chunk_total = 8 + length + 4  # length+type + data + crc
+        if i + chunk_total > len(data):
+            return None
+        ctype = data[i + 4 : i + 8]
+        out.append(ctype)
+        i += chunk_total
+        if ctype == b"IEND":
+            break
+    return out
+
+
+def png_has_duplicate_iccp(data) -> bool:
+    """Returns True if the PNG contains multiple ICCP chunks. Returns false if the iCCP is OK or
+    if this is not a PNG at all."""
+    chunk_types = get_png_chunk_types(data)
+    return chunk_types is not None and chunk_types.count(b"iCCP") > 1
 
 
 def get_icon_for_addon(addon: Addon, update: bool = False) -> QtGui.QIcon:
