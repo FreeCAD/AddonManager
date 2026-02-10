@@ -635,15 +635,15 @@ def create_pip_call(args: List[str]) -> List[str]:
             parsed_url = urlparse(constraints)
             major = sys.version_info.major
             minor = sys.version_info.minor
-            expected_filename = f"constraints-py{major}{minor}.txt"
+            expected_rel_path = f"{major}.{minor}/constraints.txt"
             if parsed_url.scheme == "https":
                 # The only supported remote scheme is https, and this is the default setup
                 if not constraints.endswith("/"):
                     constraints += "/"
-                constraints += expected_filename
+                constraints += expected_rel_path
             else:
                 # If it wasn't https, treat it like it's a local path
-                constraints = os.path.join(constraints, expected_filename)
+                constraints = os.path.join(constraints, expected_rel_path.replace("/", os.path.sep))
             args.extend(["--constraint", constraints])
 
     call_args.extend(args)

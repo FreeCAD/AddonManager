@@ -33,7 +33,7 @@
     "last_fetched_macro_cache_hash": "Cache never fetched, no hash available",
     "macro_cache_url": "https://addons.freecad.org/macro_cache.zip",
     "old_backup_handling": "ask",
-    "pip_constraints_path": "https://raw.githubusercontent.com/FreeCAD/FreeCAD-addons/refs/heads/master/constraints/",
+    "pip_constraints_path": "https://raw.githubusercontent.com/FreeCAD/Addons/refs/heads/main/Data/Python/",
     "proxy_settings_migrated_2025": false,
     "proxy_type": "system",
     "proxy_host": "none",
