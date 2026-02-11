@@ -3,9 +3,11 @@
 
 import gzip
 import io
+import struct
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
+import zlib
 
 import addonmanager_icon_utilities as iu
 
@@ -435,3 +437,85 @@ class TestGetIconForAddon(unittest.TestCase):
         )
         a3 = iu.get_icon_for_addon(addon3)  # type: ignore[arg-type]
         self.assertIs(a3, iu.cached_default_icons["package"])
+
+
+def build_png_data(chunk_types: list[bytes]):
+
+    def chunk(typ, data):
+        return (
+            struct.pack(">I", len(data))
+            + typ
+            + data
+            + struct.pack(">I", zlib.crc32(typ + data) & 0xFFFFFFFF)
+        )
+
+    png = b"\x89PNG\r\n\x1a\n"
+
+    for chunk_type in chunk_types:
+        if chunk_type == b"IHDR":
+            # IHDR: 1x1 RGBA
+            ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0)
+            png += chunk(b"IHDR", ihdr)
+
+        elif chunk_type == b"iCCP":
+            # iCCP: profile name + compression method + compressed ICC data
+            icc_profile = b"FakeICCProfile"
+            icc_compressed = zlib.compress(icc_profile)
+            iccp = b"icc\x00" + b"\x00" + icc_compressed
+            png += chunk(b"iCCP", iccp)
+
+        elif chunk_type == b"pHYs":
+            # 72 DPI
+            phys = struct.pack(">IIB", 2835, 2835, 1)
+            png += chunk(b"pHYs", phys)
+
+        elif chunk_type == b"tEXt":
+            text = b"Comment\x00PNG test file"
+            png += chunk(b"tEXt", text)
+
+        elif chunk_type == b"IDAT":
+            # IDAT: white pixel
+            raw = b"\x00\xff\xff\xff\xff"  # filter + RGBA
+            png += chunk(b"IDAT", zlib.compress(raw))
+
+        elif chunk_type == b"IEND":
+            # IEND
+            png += chunk(b"IEND", b"")
+
+    return png
+
+
+class TestPNGAnalysis(unittest.TestCase):
+
+    def test_get_chunk_types_simplest_possible_png(self):
+        simple_chunks = [b"IHDR", b"IDAT", b"IEND"]
+        png_data = build_png_data(simple_chunks)
+        chunks = iu.get_png_chunk_types(png_data)
+        self.assertEqual(chunks, simple_chunks)
+
+    def test_get_chunk_types_more_complete_png(self):
+        more_chunks = [b"IHDR", b"iCCP", b"pHYs", b"tEXt", b"IDAT", b"IEND"]
+        png_data = build_png_data(more_chunks)
+        chunks = iu.get_png_chunk_types(png_data)
+        self.assertEqual(chunks, more_chunks)
+
+    def test_get_chunk_types_extra_elements(self):
+        more_chunks = [b"IHDR", b"iCCP", b"iCCP", b"pHYs", b"tEXt", b"tEXt", b"IDAT", b"IEND"]
+        png_data = build_png_data(more_chunks)
+        chunks = iu.get_png_chunk_types(png_data)
+        self.assertEqual(chunks, more_chunks)
+
+    def test_valid_no_iccp(self):
+        simple_chunks = [b"IHDR", b"IDAT", b"IEND"]
+        png_data = build_png_data(simple_chunks)
+        self.assertFalse(iu.png_has_duplicate_iccp(png_data))
+
+    def test_good_iccp(self):
+        chunks_with_iccp = [b"IHDR", b"iCCP", b"pHYs", b"tEXt", b"IDAT", b"IEND"]
+        png_data = build_png_data(chunks_with_iccp)
+        self.assertFalse(iu.png_has_duplicate_iccp(png_data))
+
+    def test_duplicate_iccp(self):
+        chunks_with_iccp = [b"IHDR", b"iCCP", b"iCCP", b"pHYs", b"tEXt", b"IDAT", b"IEND"]
+        png_data = build_png_data(chunks_with_iccp)
+        self.assertTrue(iu.png_has_duplicate_iccp(png_data))

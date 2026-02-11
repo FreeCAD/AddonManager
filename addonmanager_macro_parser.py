@@ -203,17 +203,23 @@ class MacroParser:
             self.parse_results["comment"] = self.parse_results["comment"][:511] + "…"
 
     def _cleanup_license(self):
+        if len(self.parse_results["license"].strip()) == 0:
+            fci.Console.PrintWarning(
+                f"No license specified for macro {self.name} -- assuming 'All rights reserved'.\n"
+            )
+            self.parse_results["license"] = "All rights reserved"
+            return
         if get_license_manager is not None:
             lm = get_license_manager()
             normed_license = lm.normalize(self.parse_results["license"])
             if not normed_license:
                 fci.Console.PrintWarning(
-                    f"Failed to normalize license {self.parse_results['license']} for macro '{self.name}'\n"
+                    f"Failed to normalize license '{self.parse_results['license']}' for macro '{self.name}'\n"
                 )
                 return
             elif normed_license != self.parse_results["license"]:
                 fci.Console.PrintMessage(
-                    f"Normalized license {self.parse_results['license']} for macro '{self.name}' to {normed_license}\n"
+                    f"Normalized license '{self.parse_results['license']}' for macro '{self.name}' to {normed_license}\n"
                 )
                 self.parse_results["license"] = normed_license
 

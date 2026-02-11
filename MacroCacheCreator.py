@@ -22,10 +22,12 @@
 """The MacroCacheCreator is an independent script run server-side to generate a cache of
 the macros and their metadata. Supports both git-based and wiki-based macros."""
 
+from collections import deque
 import contextlib
 import hashlib
 import io
 import json
+import logging
 import os.path
 import re
 import sys
@@ -70,21 +72,39 @@ class MacroCatalog:
             "macros_on_wiki": 0,
             "macros_on_git": 0,
             "duplicated_macros": 0,
-            "errors": 0,
+            "macros_with_errors": 0,
         }
+        self.log_buffer = deque(maxlen=100)
 
     def fetch_macros(self):
-        print("Retrieving macros from git...")
-        self.retrieve_macros_from_git()
-        print("Retrieving macros from wiki...")
-        self.retrieve_macros_from_wiki()
-        print("Downloading icons...")
-        for macro in self.macros.values():
-            try:
-                self.get_icon(macro)
-            except RuntimeError as e:
-                self.macro_errors[macro.name] = str(e)
-        self.macro_stats["errors"] = len(self.macro_errors)
+        logger = logging.getLogger("addonmanager")
+        with capture_console_output(
+            logger,
+            handlers=[DequeHandler(self.log_buffer)],
+            level=logging.INFO,
+            propagate=False,
+        ):
+            print("Retrieving macros from git...")
+            self.retrieve_macros_from_git()
+            print("Retrieving macros from wiki...")
+            self.retrieve_macros_from_wiki()
+            print("Downloading icons...")
+            for number, macro in enumerate(self.macros.values()):
+                try:
+                    if macro.icon.startswith("/* XPM */"):
+                        macro.xpm = macro.icon
+                        macro.icon = ""
+                        print(
+                            f"{number+1}/{len(self.macros)}: {macro.name} has an XPM icon, skipping download..."
+                        )
+                        continue
+                    print(
+                        f"{number+1}/{len(self.macros)}: Downloading icon for {macro.name} from {macro.icon}..."
+                    )
+                    self.get_icon(macro)
+                except RuntimeError as e:
+                    self.log_error(macro.name, str(e))
+            self.macro_stats["macros_with_errors"] = len(self.macro_errors)
 
     def create_cache(self) -> str:
         """Create a cache from the macros in this catalog"""
@@ -101,7 +121,7 @@ class MacroCatalog:
             writer.clone_or_update(GIT_MACROS_CLONE_NAME, GIT_MACROS_URL, GIT_MACROS_BRANCH)
         except RuntimeError as e:
             print(f"Failed to clone git macros from {GIT_MACROS_URL}: {e}")
-            self.macro_errors["retrieve_macros_from_git"] = str(e)
+            self.log_error("**INTERNAL**", str(e))
             return
 
         for dirpath, _, filenames in os.walk(os.path.join(os.getcwd(), GIT_MACROS_CLONE_NAME)):
@@ -115,13 +135,19 @@ class MacroCatalog:
     def add_git_macro_to_cache(self, dirpath: str, filename: str):
         macro = Macro(filename[:-8])  # Remove ".FCMacro".
         if macro.name in self.macros:
-            print(f"Ignoring second macro named {macro.name} (found on git)\n")
+            self.log_error(macro.name, f"Ignoring second macro named {macro.name} (found on git)")
             return
         macro.on_git = True
         absolute_path_to_fcmacro = os.path.join(dirpath, filename)
+        self.log_buffer.clear()
         macro.fill_details_from_file(absolute_path_to_fcmacro)
         macro.src_filename = os.path.relpath(absolute_path_to_fcmacro, os.getcwd())
         self.macros[macro.name] = macro
+        for log_entry in self.log_buffer:
+            level = log_entry.get("level", logging.INFO)
+            if level >= logging.WARNING:
+                self.log_error(macro.name, log_entry["msg"])
+        self.log_buffer.clear()
 
     def retrieve_macros_from_wiki(self):
         """Retrieve macros from the wiki
@@ -134,16 +160,17 @@ class MacroCatalog:
             p = requests.get(WIKI_MACROS_URL, headers=headers, timeout=10.0)
         except requests.exceptions.RequestException as e:
             message = f"Failed to fetch {WIKI_MACROS_URL}: {e}"
-            self.macro_errors["retrieve_macros_from_wiki"] = message
+            self.log_error("**INTERNAL**", message)
             return
         if not p.status_code == 200:
             message = f"Failed to fetch {WIKI_MACROS_URL}, response code was {p.status_code}"
-            self.macro_errors["retrieve_macros_from_wiki"] = message
+            self.log_error("**INTERNAL**", message)
             return
 
         macros = re.findall(r'title="(Macro.*?)"', p.text)
         macros = [mac for mac in macros if "translated" not in mac]
-        for _, wiki_page_name in enumerate(macros):
+        for number, wiki_page_name in enumerate(macros):
+            print(f"{number+1}/{len(macros)}: {wiki_page_name}")
             macro_name = wiki_page_name[6:]  # Remove "Macro ".
             macro_name = macro_name.replace("&amp;", "&")
             if not macro_name:
@@ -156,7 +183,7 @@ class MacroCatalog:
         macro = Macro(macro_name)
         if macro.name in self.macros:
             self.macro_stats["duplicated_macros"] += 1
-            print(f"Ignoring duplicate of '{macro.name}' (using git repo copy instead of wiki)")
+            self.log_error(macro.name, "Using git repo copy instead of duplicate found on wiki")
             return
         macro.on_wiki = True
         macro.parsed = False
@@ -165,7 +192,13 @@ class MacroCatalog:
         wiki_page_name = wiki_page_name.replace("&", "%26")
         wiki_page_name = wiki_page_name.replace("+", "%2B")
         url = "https://wiki.freecad.org/Macro_" + wiki_page_name
+        self.log_buffer.clear()
         macro.fill_details_from_wiki(url)
+        for log_entry in self.log_buffer:
+            level = log_entry.get("level", logging.INFO)
+            if level >= logging.WARNING:
+                self.log_error(macro.name, log_entry["msg"])
+        self.log_buffer.clear()
 
     def get_icon(self, macro: Macro):
         """Downloads the macro's icon from whatever source is specified and stores its binary
@@ -178,7 +211,7 @@ class MacroCatalog:
                 p = requests.get(macro.icon, headers=headers, timeout=10.0)
             except requests.exceptions.RequestException as e:
                 message = f"Failed to get data from icon URL {macro.icon}: {e}"
-                self.macro_errors[macro.name] = message
+                self.log_error(macro.name, message)
                 macro.icon = ""
                 return
             if p.status_code == 200:
@@ -186,17 +219,23 @@ class MacroCatalog:
                 base, _, extension = filename.rpartition(".")
                 if base.lower().startswith("file:"):
                     message = f"Cannot use specified icon for {macro.name}, {macro.icon} is not a direct download link"
-                    self.macro_errors[macro.name] = message
+                    self.log_error(macro.name, message)
                     macro.icon = ""
                     return
                 macro.icon_data = p.content
                 macro.icon_extension = extension
+
+                if icon_utils.png_has_duplicate_iccp(macro.icon_data):
+                    message = f"MACRO DEVELOPER WARNING: multiple iCCP chunks found in PNG icon for {macro.name}"
+                    self.log_error(macro.name, message)
+                    macro.icon_data = None
+                    macro.icon = ""
             else:
                 message = (
                     f"MACRO DEVELOPER WARNING: failed to download icon from {macro.icon}"
                     + f" for macro {macro.name}. Status code returned: {p.status_code}\n"
                 )
-                self.macro_errors[macro.name] = message
+                self.log_error(macro.name, message)
                 macro.icon = ""
         elif macro.on_git:
             relative_path_to_macro_directory = os.path.dirname(macro.src_filename)
@@ -219,24 +258,64 @@ class MacroCatalog:
         # Do some tests on the icon data to make sure it's valid
         throw_on_write = StderrAsError()
         if macro.icon and not macro.icon_data:
-            if macro.name not in self.macro_errors:
-                self.macro_errors[macro.name] = "There is no data for the icon"
+            self.log_error(macro.name, "There is no data for the icon")
         elif macro.icon.lower().endswith(".svg"):
             try:
                 if not icon_utils.is_svg_bytes(macro.icon_data):
-                    self.macro_errors[macro.name] = "SVG file does not have valid XML header"
+                    self.log_error(macro.name, "SVG file does not have valid XML header")
             except icon_utils.BadIconData as e:
-                self.macro_errors[macro.name] = str(e)
+                self.log_error(macro.name, str(e))
         elif macro.icon:
             try:
                 with contextlib.redirect_stderr(throw_on_write):
                     test_icon = icon_utils.icon_from_bytes(macro.icon_data)
                     if test_icon.isNull():
-                        self.macro_errors[macro.name] = "Icon data is invalid"
-            except icon_utils.BadIconData as e:
-                self.macro_errors[macro.name] = str(e)
-            except RuntimeError as e:
-                self.macro_errors[macro.name] = str(e)
+                        self.log_error(macro.name, "Icon data is invalid")
+            except (icon_utils.BadIconData, RuntimeError) as e:
+                self.log_error(macro.name, str(e))
+
+    def log_error(self, macro_name: str, error_message: str):
+        if macro_name not in self.macro_errors:
+            self.macro_errors[macro_name] = []
+        self.macro_errors[macro_name].append(error_message)
+
+
+class DequeHandler(logging.Handler):
+    def __init__(self, store: deque, level=logging.NOTSET):
+        super().__init__(level)
+        self.store = store
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.store.append(
+            {
+                "name": record.name,
+                "level": record.levelno,
+                "msg": record.getMessage(),
+                "time": record.created,
+                "pathname": record.pathname,
+                "lineno": record.lineno,
+                "funcName": record.funcName,
+            }
+        )
+
+
+@contextlib.contextmanager
+def capture_console_output(logger: logging.Logger, *, handlers, level=None, propagate=None):
+    old_handlers = list(logger.handlers)
+    old_level = logger.level
+    old_propagate = logger.propagate
+
+    logger.handlers = list(handlers)
+    try:
+        if level is not None:
+            logger.setLevel(level)
+        if propagate is not None:
+            logger.propagate = propagate
+        yield
+    finally:
+        logger.handlers = old_handlers
+        logger.setLevel(old_level)
+        logger.propagate = old_propagate
 
 
 if __name__ == "__main__":
