@@ -75,10 +75,12 @@ class CreateAddonListWorker(QtCore.QThread):
             self._get_custom_addons()
             self.progress_made.emit("Custom addons loaded", 5, 100)
 
-            addon_cache = self.get_cache("addon_catalog")
+            CreateAddonListWorker.migrate_catalog_to_index()
+
+            addon_cache = self.get_cache("addon_index")
             if addon_cache:
                 self.process_addon_cache(addon_cache)
-            self.progress_made.emit("Addon catalog loaded", 20, 100)
+            self.progress_made.emit("Addon index loaded", 20, 100)
 
             macro_cache = self.get_cache("macro")
             if macro_cache:
@@ -89,6 +91,15 @@ class CreateAddonListWorker(QtCore.QThread):
             fci.Console.PrintError("Failed to connect to FreeCAD addon remote resource:\n")
             fci.Console.PrintError(str(e) + "\n")
             return
+
+    @staticmethod
+    def migrate_catalog_to_index():
+        old_catalog_url = fci.Preferences().get("addon_catalog_cache_url")
+        if old_catalog_url.startswith("obsolete"):
+            return  # Nothing to migrate, it was never set to anything else
+        fci.Console.PrintWarning("Custom catalog URL was detected: using as the index URL now\n")
+        fci.Console.PrintWarning(f"URL: {old_catalog_url}\n")
+        fci.Preferences().set("addon_index_cache_url", old_catalog_url)
 
     def _get_custom_addons(self):
 

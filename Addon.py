@@ -688,7 +688,7 @@ class Addon:
         else:
             # The ZIP url is based on the location of the main cache file:
             if self.relative_cache_path:
-                cache_file_url = fci.Preferences().get("addon_catalog_cache_url")
+                cache_file_url = fci.Preferences().get("addon_index_cache_url")
                 parsed_url = urlparse(cache_file_url)
                 path_parts = parsed_url.path.rpartition("/")
                 new_path = path_parts[0] + "/" + self.relative_cache_path
