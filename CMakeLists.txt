@@ -54,7 +54,7 @@ SET(AddonManager_SRCS
     first_run.ui
     Init.py
     InitGui.py
-    LICENSE.md
+    LICENSE
     MacroCacheCreator.py
     NetworkManager.py
     package_details.ui
