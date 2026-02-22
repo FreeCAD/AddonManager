@@ -27,7 +27,7 @@ import datetime
 import shutil
 import sys
 from dataclasses import is_dataclass, fields
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional, Dict, Tuple
 
 import base64
 import enum
@@ -229,7 +229,34 @@ class CacheWriter:
                 continue
             metadata = self.generate_cache_entry(addon_id, index, catalog_entry)
             self.catalog.add_metadata_to_entry(addon_id, index, metadata)
+            git_hash, git_tag = self.get_git_info(addon_id, index, catalog_entry)
+            self.catalog.add_git_info_to_entry(addon_id, index, git_hash, git_tag)
             self.create_zip_of_entry(addon_id, index, catalog_entry)
+
+    def get_git_info(
+        self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
+    ) -> Tuple[str | None, str | None]:
+        """Get git commit hash and tag if available."""
+        dirname = self.get_directory_name(addon_id, index, catalog_entry)
+        if not os.path.exists(os.path.join(self.cwd, dirname, ".git")):
+            return None, None
+        repo = os.path.join(self.cwd, dirname)
+        hash_cmd = ["git", "rev-parse", "HEAD"]
+        tag_cmd = ["git", "describe", "--tags", "--exact-match"]
+        results = []
+        for cmd in (hash_cmd, tag_cmd):
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    cwd=repo,
+                )
+                results.append(result.stdout.strip())
+            except (subprocess.CalledProcessError, OSError, FileNotFoundError):
+                results.append(None)
+        return tuple(results)
 
     def generate_cache_entry(
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
