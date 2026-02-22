@@ -39,7 +39,7 @@ import re
 import requests
 import subprocess
 from typing import List
-import xml.etree.ElementTree
+from xml.etree.ElementTree import ParseError as XmlParseError
 import zipfile
 
 import AddonCatalog
@@ -282,7 +282,7 @@ class CacheWriter:
             metadata = addonmanager_metadata.MetadataReader.from_bytes(
                 cache_entry.package_xml.encode("utf-8")
             )
-        except xml.etree.ElementTree.ParseError:
+        except XmlParseError:
             print(f"ERROR: Failed to parse XML from {path_to_package_xml}")
             return None
         except RuntimeError:
