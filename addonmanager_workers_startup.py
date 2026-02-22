@@ -27,7 +27,7 @@ import io
 import json
 import os
 from typing import List
-import xml.etree.ElementTree
+from xml.etree.ElementTree import ParseError as XmlParseError
 import zipfile
 
 from PySideWrapper import QtCore
@@ -134,7 +134,7 @@ class CreateAddonListWorker(QtCore.QThread):
                         repo.installed_version = repo.installed_metadata.version
                         repo.updated_timestamp = os.path.getmtime(md_file)
                         repo.verify_url_and_branch(addon["url"], addon["branch"])
-                    except xml.etree.ElementTree.ParseError:
+                    except XmlParseError:
                         fci.Console.PrintWarning(
                             f"An invalid or corrupted package.xml file was installed for custom addon {name}... ignoring the bad data.\n"
                         )
@@ -512,14 +512,8 @@ class UpdateChecker:
             macro_wrapper.set_status(Addon.Status.CANNOT_CHECK)
             return
 
-        try:
-            hasher1 = hashlib.sha1(usedforsecurity=False)
-            hasher2 = hashlib.sha1(usedforsecurity=False)
-        except TypeError:
-            # To continue to support Python 3.8, we need to fall back if the usedforsecurity
-            # is not available. This code should be removed when we drop support for 3.8.
-            hasher1 = hashlib.sha1()
-            hasher2 = hashlib.sha1()
+        hasher1 = hashlib.sha1(usedforsecurity=False)
+        hasher2 = hashlib.sha1(usedforsecurity=False)
         hasher1.update(macro_wrapper.macro.code.encode("utf-8"))
         new_sha1 = hasher1.hexdigest()
         test_file_one = os.path.join(fci.DataPaths().macro_dir, macro_wrapper.macro.filename)

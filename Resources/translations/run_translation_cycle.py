@@ -36,7 +36,7 @@ import tempfile
 import time
 from functools import lru_cache
 from urllib.parse import quote_plus
-from urllib.request import Request, urlopen, urlretrieve
+from urllib.request import Request, urlopen, urlretrieve, urlparse
 
 CROWDIN_API_URL = "https://api.crowdin.com/api/v2"
 CROWDIN_API_PROJECT_ID = "freecad-addons"
@@ -85,6 +85,9 @@ class CrowdinUpdater:
             headers["Content-Type"] = "application/json"
             data = json.dumps(data).encode("utf-8")
 
+        parsed_url = urlparse(url)
+        if parsed_url.scheme != "https":
+            raise Exception("API requests must be made over HTTPS")
         request = Request(url, headers=headers, method=method, data=data)
         request_result = urlopen(request)
         if request_result.getcode() >= 300:
@@ -136,6 +139,11 @@ class CrowdinUpdater:
     def download(self, build_id):
         filename = f"{self.project_identifier}.zip"
         response = self._make_project_api_req(f"/translations/builds/{build_id}/download")
+
+        parsed_url = urlparse(response["url"])
+        if parsed_url.scheme != "https":
+            raise Exception("API requests must be made over HTTPS")
+
         urlretrieve(response["url"], filename)
         print("download of " + filename + " complete")
 

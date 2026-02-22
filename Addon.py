@@ -29,7 +29,7 @@ from urllib.parse import urlparse, urlunparse
 from typing import Dict, Set, List, Optional
 from threading import Lock
 from enum import IntEnum, auto
-import xml.etree.ElementTree
+from xml.etree.ElementTree import ParseError as XmlParseError
 
 try:
     import importlib.metadata as importlib_metadata
@@ -320,7 +320,7 @@ class Addon:
         if os.path.exists(file):
             try:
                 metadata = MetadataReader.from_file(file)
-            except xml.etree.ElementTree.ParseError:
+            except XmlParseError:
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in the cache for"
                 )
@@ -339,7 +339,7 @@ class Addon:
         if os.path.isfile(installed_metadata_path):
             try:
                 self.installed_metadata = MetadataReader.from_file(installed_metadata_path)
-            except xml.etree.ElementTree.ParseError:
+            except XmlParseError:
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in installation of"
                 )
