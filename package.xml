@@ -22,6 +22,7 @@
             FreeCAD prior to 1.1 can see the InitGui.py file and run it. -->
             <name>AddonManager</name>
             <subdirectory>./</subdirectory>
+            <depend optional="false" type="python">defusedxml</depend>
         </workbench>
     </content>
 </package>
