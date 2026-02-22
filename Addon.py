@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Defines the Addon class to encapsulate information about FreeCAD Addons"""
 
@@ -28,7 +26,7 @@ import importlib.util
 import os
 import re
 from urllib.parse import urlparse, urlunparse
-from typing import Set, List, Optional
+from typing import Dict, Set, List, Optional
 from threading import Lock
 from enum import IntEnum, auto
 import xml.etree.ElementTree
@@ -65,6 +63,7 @@ INTERNAL_WORKBENCHES = {
     "import": "Import",
     "material": "Material",
     "mesh": "Mesh",
+    "meshpart": "MeshPart",
     "openscad": "OpenSCAD",
     "part": "Part",
     "partdesign": "PartDesign",
@@ -115,6 +114,9 @@ class Addon:
                 return self.value < other.value
             return NotImplemented
 
+        def __le__(self, other):
+            return self < other or self == other
+
         def __str__(self) -> str:
             if self.value == 0:
                 result = "Not installed"
@@ -136,9 +138,9 @@ class Addon:
         """Addon dependency information"""
 
         def __init__(self):
-            self.required_external_addons = []  # A list of Addons
-            self.blockers = []  # A list of Addons
-            self.replaces = []  # A list of Addons
+            self.required_external_addons: List["Addon"] = []
+            self.blockers: List["Addon"] = []
+            self.replaces: List["Addon"] = []
             self.internal_workbenches: Set[str] = set()  # Required internal workbenches
             self.python_requires: Set[str] = set()
             self.python_optional: Set[str] = set()
@@ -184,6 +186,7 @@ class Addon:
         self.tags = set()  # Just a cache, loaded from Metadata
         self.remote_last_updated: Optional[datetime.datetime] = None
         self.stats = AddonStats()
+        self.curated = True
         self.score = 0
 
         # In cases where there are multiple versions/branches/installations available for an addon,
@@ -227,6 +230,18 @@ class Addon:
         if not isinstance(other, Addon):
             return NotImplemented
         return self.name == other.name and self.branch_display_name == other.branch_display_name
+
+    def __lt__(self, other):
+        if not isinstance(other, Addon):
+            return NotImplemented
+        if self.name == other.name:
+            return self.branch_display_name < other.branch_display_name
+        return self.name < other.name
+
+    def __le__(self, other):
+        if not isinstance(other, Addon):
+            return NotImplemented
+        return self == other or self < other
 
     def __hash__(self):
         return hash((self.name, self.branch_display_name))
@@ -388,7 +403,7 @@ class Addon:
                     fci.Console.PrintWarning(
                         translate(
                             "AddonsInstaller",
-                            "{}: Unrecognized internal workbench '{}'",
+                            "{}: Unrecognized internal workbench '{}'\n",
                         ).format(self.name, dep.package)
                     )
             elif dep.dependency_type == DependencyType.addon:
@@ -488,7 +503,7 @@ class Addon:
         """Determine if this package contains an "other" content item"""
         return self.contains_packaged_content("other")
 
-    def walk_dependency_tree(self, all_repos, deps):
+    def walk_dependency_tree(self, all_repos: Dict[str, "Addon"], deps: Dependencies):
         """Compute the total dependency tree for this repo (recursive)
         - all_repos is a dictionary of repos, keyed on the name of the repo
         - deps is an Addon.Dependency object encapsulating all the types of dependency
@@ -521,7 +536,8 @@ class Addon:
 
         for dep in self.blocks:
             if dep in all_repos:
-                deps.blockers[dep] = all_repos[dep]
+                if all_repos[dep] not in deps.blockers:
+                    deps.blockers.append(all_repos[dep])
 
     def status(self):
         """Threadsafe access to the current update status"""
@@ -576,7 +592,10 @@ class Addon:
         workbench_name = self.get_workbench_name()
 
         # Add the wb to the list of disabled if it was not already
-        disabled_wbs = pref.GetString("Disabled", "NoneWorkbench,TestWorkbench")
+        disabled_wbs = pref.GetString(
+            "Disabled",
+            "NoneWorkbench,TestWorkbench,InspectionWorkbench,RobotWorkbench,OpenSCADWorkbench",
+        )
         # print(f"start disabling {disabled_wbs}")
         disabled_wbs_list = disabled_wbs.split(",")
         if not (workbench_name in disabled_wbs_list):
@@ -698,10 +717,10 @@ class MissingDependencies:
     """
 
     def __init__(self):
-        self.external_addons = []
-        self.wbs = []
-        self.python_requires = []
-        self.python_optional = []
+        self.external_addons: List[Addon] = []
+        self.wbs: List[str] = []
+        self.python_requires: List[str] = []
+        self.python_optional: List[str] = []
         self.python_min_version = Version(from_list=[3, 0, 0])
 
     def import_from_addon(self, repo: Addon, all_repos: List[Addon]):
@@ -720,7 +739,7 @@ class MissingDependencies:
 
         for dep in deps.required_external_addons:
             if dep.status() == Addon.Status.NOT_INSTALLED:
-                self.external_addons.append(dep.name)
+                self.external_addons.append(dep)
 
         # Now check the loaded addons to see if we are missing an internal workbench:
         if fci.FreeCADGui:
@@ -738,6 +757,13 @@ class MissingDependencies:
                         # Plot might fail for a number of reasons
                         self.wbs.append(dep)
                         fci.Console.PrintLog("Failed to import Plot module\n")
+                elif dep.lower() == "meshpart":
+                    # MeshPart is strange: it doesn't ever appear in the listWorkbenches() output
+                    try:
+                        __import__("MeshPart")
+                    except ImportError:
+                        self.wbs.append(dep)
+                        fci.Console.PrintLog("Failed to import MeshPart module\n")
                 else:
                     self.wbs.append(dep)
 

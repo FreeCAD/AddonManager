@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileNotice: Part of the AddonManager.
+
+
 SET(AddonManagerResourceFilesLicenses
     Apache-2.0.txt
     BSD-2-Clause.txt

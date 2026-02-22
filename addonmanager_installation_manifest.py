@@ -1,25 +1,24 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2025 The FreeCAD project association AISBL              *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2025 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
+
 import json
 import os
 import threading
@@ -80,26 +79,31 @@ class InstallationManifest:
             self._scan_mod_path_for_extras(catalog)
 
     def _migrate_to_manifest_file(self, catalog: AddonCatalog):
+        if not os.path.exists(fci.DataPaths().mod_dir):
+            os.makedirs(fci.DataPaths().mod_dir)
         dirs_in_mod = os.listdir(fci.DataPaths().mod_dir)
         for addon_id in dirs_in_mod:
-            branches = []
-            if catalog:
-                branches = catalog.get_available_branches(addon_id)
-            if branches:
-                branch_display_name = branches[0]
-                self._manifest[addon_id] = {
-                    "addon_id": addon_id,
-                    "migrated": True,
-                    "first_installed": datetime.datetime.fromtimestamp(
-                        0, tz=datetime.timezone.utc
-                    ).isoformat(),
-                    "last_updated": most_recent_update(
-                        os.path.join(fci.DataPaths().mod_dir, addon_id)
-                    ).isoformat(),
-                    "branch_display_name": branch_display_name,
-                    "extra_files": [],
-                    "freecad_version": "",
-                }
+            if Path(os.path.join(fci.DataPaths().mod_dir, addon_id)).is_dir():
+                branches = []
+                if catalog:
+                    branches = catalog.get_available_branches(addon_id)
+                if branches:
+                    branch_display_name = branches[0]
+                    self._manifest[addon_id] = {
+                        "addon_id": addon_id,
+                        "migrated": True,
+                        "first_installed": datetime.datetime.fromtimestamp(
+                            0, tz=datetime.timezone.utc
+                        ).isoformat(),
+                        "last_updated": most_recent_update(
+                            os.path.join(fci.DataPaths().mod_dir, addon_id)
+                        ).isoformat(),
+                        "branch_display_name": branch_display_name,
+                        "extra_files": [],
+                        "freecad_version": "",
+                    }
+            else:
+                fci.Console.PrintMessage("Migrate to Manifest, skipping file: " + addon_id + "\n")
 
     def load_manifest(self):
         """Load the manifest from the disk"""

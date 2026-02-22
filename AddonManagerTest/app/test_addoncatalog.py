@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileNotice: Part of the AddonManager.
+
 
 # pylint: import-outside-toplevel,
 
 """Tests for the AddonCatalog and AddonCatalogEntry classes."""
-import time
 from unittest import mock, main, TestCase
 from unittest.mock import patch
 

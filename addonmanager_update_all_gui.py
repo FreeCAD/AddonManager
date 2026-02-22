@@ -1,31 +1,29 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2025 FreeCAD project association AISBL             *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Class to manage the display of an Update All dialog."""
 import threading
 from enum import IntEnum, auto
 import os
-from typing import List
+from typing import List, Set
 
 import NetworkManager
 from PySideWrapper import QtCore, QtWidgets
@@ -264,7 +262,9 @@ class UpdateAllGUI(QtCore.QObject):
             if required_wbs:
                 fci.Console.PrintMessage(f"  Required Workbenches: {required_wbs}\n")
             if required_addons:
-                fci.Console.PrintMessage(f"  Required Addons: {required_addons}\n")
+                fci.Console.PrintMessage(
+                    f"  Required Addons: {','.join([x.display_name for x in required_addons])}\n"
+                )
             if required_python_modules:
                 fci.Console.PrintMessage(f"  Required Python Modules: {required_python_modules}\n")
             if optional_python_modules:
@@ -282,17 +282,17 @@ class UpdateAllGUI(QtCore.QObject):
 
     def handle_missing_dependencies(
         self,
-        addons,
-        required_wbs,
-        required_addons,
-        required_python_modules,
-        optional_python_modules,
+        addons: List[Addon],
+        required_wbs: Set[str],
+        required_addons: Set[Addon],
+        required_python_modules: Set[str],
+        optional_python_modules: Set[str],
     ):
         missing_dependencies = MissingDependencies()
-        missing_dependencies.wbs = required_wbs
-        missing_dependencies.external_addons = required_addons
-        missing_dependencies.python_requires = required_python_modules
-        missing_dependencies.python_optional = optional_python_modules
+        missing_dependencies.wbs = list(required_wbs)
+        missing_dependencies.external_addons = list(required_addons)
+        missing_dependencies.python_requires = list(required_python_modules)
+        missing_dependencies.python_optional = list(optional_python_modules)
         self.dependency_installer = AddonDependencyInstallerGUI(addons, missing_dependencies)
         self.dependency_installer.cancel.connect(self.cancel)
         self.dependency_installer.proceed.connect(self.check_for_git_migration)

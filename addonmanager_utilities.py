@@ -1,26 +1,24 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *   Copyright (c) 2018 Gaël Écorchard <galou_breizh@yahoo.fr>             *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2018 Gaël Écorchard <galou_breizh@yahoo.fr>
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Utilities to work across different platforms, providers and python versions"""
 
@@ -40,7 +38,7 @@ import ctypes
 
 from urllib.parse import urlparse
 
-from PySideWrapper import QtCore, QtGui, QtWidgets
+from PySideWrapper import QtCore, QtGui, QtWidgets, QtNetwork
 
 import addonmanager_freecad_interface as fci
 
@@ -438,7 +436,7 @@ def blocking_get(url: str, method=None) -> bytes:
             if hasattr(p, "data"):
                 p = p.data()
     elif requests and method is None or method == "requests":
-        response = requests.get(url)
+        response = requests.get(url, timeout=10.0)
         if response.status_code == 200:
             p = response.content
     else:
@@ -584,6 +582,14 @@ def create_pip_call(args: List[str]) -> List[str]:
 
     if using_system_pip_installation_location():
         args = remove_options_and_arg(args, ["--target", "--path"])
+    elif "--target" in args or "--path" in args:
+        # If we are not running in some sort of container and are instead trying to install to a
+        # specific directory, pip will complain because it doesn't know that we're effectively
+        # using this as a virtual env: it's not accessible to non-FreeCAD installations (at least,
+        # not without some extra work on the user's part). So add the --break-system-packages flag
+        # so pip will allow us to write to the --target directory
+        if "install" in args:
+            args.append("--break-system-packages")
 
     if snap_package:
         call_args = ["pip", "--disable-pip-version-check"]
@@ -595,5 +601,48 @@ def create_pip_call(args: List[str]) -> List[str]:
         if not python_exe:
             raise RuntimeError("Could not locate Python executable on this system")
         call_args = [python_exe, "-m", "pip", "--disable-pip-version-check"]
+
+    proxy_type = fci.Preferences().get("proxy_type")
+    use_proxy = False
+    host = ""
+    port = 8080
+    if proxy_type == "system":
+        url = fci.Preferences().get("status_test_url")
+        query = QtNetwork.QNetworkProxyQuery(QtCore.QUrl(url))
+        proxies = QtNetwork.QNetworkProxyFactory.systemProxyForQuery(query)
+        if proxies and proxies[0] and proxies[0].hostName() and proxies[0].port() > 0:
+            use_proxy = True
+            host = proxies[0].hostName()
+            port = proxies[0].port()
+    elif proxy_type == "custom":
+        use_proxy = True
+        host = fci.Preferences().get("proxy_host")
+        port = fci.Preferences().get("proxy_port")
+
+    if use_proxy:
+        # noinspection HttpUrlsUsage
+        call_args.extend(["--proxy", f"http://{host}:{port}"])
+
+    if "install" in args:
+        constraints = fci.Preferences().get("pip_constraints_path")
+        if not constraints:
+            fci.Console.PrintWarning(
+                "pip constraints explicitly disabled by unsetting 'pip_constraints_path'\n"
+            )
+        else:
+            parsed_url = urlparse(constraints)
+            major = sys.version_info.major
+            minor = sys.version_info.minor
+            expected_rel_path = f"{major}.{minor}/constraints.txt"
+            if parsed_url.scheme == "https":
+                # The only supported remote scheme is https, and this is the default setup
+                if not constraints.endswith("/"):
+                    constraints += "/"
+                constraints += expected_rel_path
+            else:
+                # If it wasn't https, treat it like it's a local path
+                constraints = os.path.join(constraints, expected_rel_path.replace("/", os.path.sep))
+            args.extend(["--constraint", constraints])
+
     call_args.extend(args)
     return call_args

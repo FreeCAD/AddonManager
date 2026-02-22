@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Misc. worker thread classes for the FreeCAD Addon Manager."""
 
@@ -59,11 +57,11 @@ class ConnectionChecker(QtCore.QThread):
         on it to spawn a child thread."""
 
         fci.Console.PrintLog("Checking network connection...\n")
-        url = "https://addons.freecad.org/status"
+        url = fci.Preferences().get("status_test_url")
         self.done = False
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self.connection_data_received)
         self.request_id = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(
-            url, timeout_ms=30000
+            url, timeout_ms=30000, disable_cache=True
         )
         while not self.done:
             if QtCore.QThread.currentThread().isInterruptionRequested():

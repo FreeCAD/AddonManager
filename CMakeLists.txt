@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileNotice: Part of the AddonManager.
+
 IF (BUILD_GUI)
     add_subdirectory(Widgets)
 ENDIF (BUILD_GUI)
@@ -26,6 +29,7 @@ SET(AddonManager_SRCS
     addonmanager_metadata.py
     addonmanager_package_details_controller.py
     addonmanager_preferences_defaults.json
+    addonmanager_preferences_migrations.py
     addonmanager_python_deps_gui.py
     addonmanager_python_deps.py
     addonmanager_readme_controller.py
@@ -53,7 +57,7 @@ SET(AddonManager_SRCS
     first_run.ui
     Init.py
     InitGui.py
-    LICENSE.md
+    LICENSE
     MacroCacheCreator.py
     NetworkManager.py
     package_details.ui

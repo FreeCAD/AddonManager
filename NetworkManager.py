@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """
 #############################################################################
@@ -60,9 +58,9 @@ import itertools
 import tempfile
 import time
 from typing import Dict, List, Optional
-from urllib.parse import urlparse
 
 import addonmanager_freecad_interface as fci
+from addonmanager_preferences_migrations import migrate_proxy_settings_2025
 
 from PySideWrapper import QtCore, QtNetwork, QtWidgets
 
@@ -176,119 +174,48 @@ class NetworkManager(QtCore.QObject):
 
         # Set up the proxy, if necessary:
         if fci.FreeCAD:
-            (
-                noProxyCheck,
-                systemProxyCheck,
-                userProxyCheck,
-                proxy_string,
-            ) = self._setup_proxy_freecad()
+            migrate_proxy_settings_2025()
+            proxy_type = fci.Preferences().get("proxy_type")
+            proxy_host = fci.Preferences().get("proxy_host")
+            proxy_port = fci.Preferences().get("proxy_port")
         else:
-            (
-                noProxyCheck,
-                systemProxyCheck,
-                userProxyCheck,
-                proxy_string,
-            ) = self._setup_proxy_standalone()
+            proxy_type, proxy_host, proxy_port = self._setup_proxy_standalone()
 
-        if noProxyCheck:
+        if proxy_type == "none":
             pass
-        elif systemProxyCheck:
+        elif proxy_type == "system":
             query = QtNetwork.QNetworkProxyQuery(QtCore.QUrl("https://github.com/FreeCAD/FreeCAD"))
             proxy = QtNetwork.QNetworkProxyFactory.systemProxyForQuery(query)
             if proxy and proxy[0]:
                 self.QNAM.setProxy(proxy[0])  # This may still be QNetworkProxy.NoProxy
-        elif userProxyCheck:
+        elif proxy_type == "custom":
             try:
-                parsed_url = urlparse(proxy_string)
-                host = parsed_url.hostname
-                port = parsed_url.port
-                scheme = (
-                    "http" if parsed_url.scheme == "https" else parsed_url.scheme
-                )  # There seems no https type: doc.qt.io/qt-6/qnetworkproxy.html#ProxyType-enum
-            except ValueError:
-                fci.Console.PrintError(
-                    translate(
-                        "AddonsInstaller",
-                        "Failed to parse proxy URL '{}'",
-                    ).format(proxy_string)
-                    + "\n"
+                fci.Console.PrintMessage(f"Using proxy {proxy_host}:{proxy_port} \n")
+                proxy = QtNetwork.QNetworkProxy(
+                    QtNetwork.QNetworkProxy.HttpProxy, proxy_host, proxy_port
                 )
-                return
-
-            fci.Console.PrintMessage(f"Using proxy {scheme}://{host}:{port} \n")
-            if scheme == "http":
-                _scheme = QtNetwork.QNetworkProxy.HttpProxy
-            elif scheme == "socks5":
-                _scheme = QtNetwork.QNetworkProxy.Socks5Proxy
-            else:
-                fci.Console.PrintWarning(f"Unknown proxy scheme '{scheme}', using http. \n")
-                _scheme = QtNetwork.QNetworkProxy.HttpProxy
-            proxy = QtNetwork.QNetworkProxy(_scheme, host, port)
-            self.QNAM.setProxy(proxy)
-
-    def _setup_proxy_freecad(self):
-        """If we are running within FreeCAD, this uses the config data to set up the proxy"""
-        noProxyCheck = fci.Preferences().get("NoProxyCheck")
-        systemProxyCheck = fci.Preferences().get("SystemProxyCheck")
-        userProxyCheck = fci.Preferences().get("UserProxyCheck")
-        proxy_string = fci.Preferences().get("ProxyUrl")
-
-        # Add some error checking to the proxy setup, since for historical reasons they
-        # are independent booleans, rather than an enumeration:
-        option_count = [noProxyCheck, systemProxyCheck, userProxyCheck].count(True)
-        if option_count != 1:
-            fci.Console.PrintWarning(
-                translate(
-                    "AddonsInstaller",
-                    "Parameter error: mutually exclusive proxy options set. Resetting to default.",
-                )
-                + "\n"
-            )
-            noProxyCheck = False
-            systemProxyCheck = True
-            userProxyCheck = False
-            fci.Preferences().set("NoProxyCheck", noProxyCheck)
-            fci.Preferences().set("SystemProxyCheck", systemProxyCheck)
-            fci.Preferences().set("UserProxyCheck", userProxyCheck)
-
-        if userProxyCheck and not proxy_string:
-            fci.Console.PrintWarning(
-                translate(
-                    "AddonsInstaller",
-                    "Parameter error: user proxy indicated, but no proxy provided. Resetting to default.",
-                )
-                + "\n"
-            )
-            systemProxyCheck = True
-            userProxyCheck = False
-            fci.Preferences().set("SystemProxyCheck", systemProxyCheck)
-            fci.Preferences().set("UserProxyCheck", userProxyCheck)
-        return noProxyCheck, systemProxyCheck, userProxyCheck, proxy_string
+                self.QNAM.setProxy(proxy)
+            except Exception as e:
+                fci.Console.PrintError(f"Error setting up proxy: {e}\n")
 
     def _setup_proxy_standalone(self):
         """If we are NOT running inside FreeCAD, prompt the user for proxy information"""
-        noProxyCheck = True
-        systemProxyCheck = False
-        userProxyCheck = False
-        proxy_string = ""
         print("Please select a proxy type:")
         print("1) No proxy")
         print("2) Use system proxy settings")
         print("3) Custom proxy settings")
         result = input("Choice: ")
         if result == "1":
-            pass
+            return "none", "", ""
         elif result == "2":
-            noProxyCheck = False
-            systemProxyCheck = True
+            return "system", "", ""
         elif result == "3":
-            noProxyCheck = False
-            userProxyCheck = True
-            proxy_string = input("Enter your proxy server (host:port): ")
+            host = input("Enter proxy host: ")
+            port = int(input("Enter proxy port: "))
         else:
-            print(f"Got {result}, expected 1, 2, or 3.")
-            exit(1)
-        return noProxyCheck, systemProxyCheck, userProxyCheck, proxy_string
+            print("Defaulting to system proxy settings")
+            return "system", "", ""
+        return "custom", host, port
 
     def __aboutToQuit(self):
         """Called when the application is about to quit. Not currently used."""
@@ -338,7 +265,7 @@ class NetworkManager(QtCore.QObject):
             current_index = next(self.counting_iterator)  # A thread-safe counter
             item = QueueItem(
                 current_index,
-                self.__create_get_request(url, timeout_ms),
+                self.__create_get_request(url, timeout_ms, disable_cache=True),
                 track_progress=False,
                 operation=QtNetwork.QNetworkAccessManager.HeadOperation,
             )
@@ -347,9 +274,7 @@ class NetworkManager(QtCore.QObject):
             return current_index
 
     def submit_unmonitored_get(
-        self,
-        url: str,
-        timeout_ms: int = default_timeout,
+        self, url: str, timeout_ms: int = default_timeout, disable_cache: bool = False
     ) -> int:
         """Adds this request to the queue, and returns an index that can be used by calling code
         in conjunction with the completed() signal to handle the results of the call. All data is
@@ -360,16 +285,16 @@ class NetworkManager(QtCore.QObject):
         # Use a queue because we can only put things on the QNAM from the main event loop thread
         self.queue.put(
             QueueItem(
-                current_index, self.__create_get_request(url, timeout_ms), track_progress=False
+                current_index,
+                self.__create_get_request(url, timeout_ms, disable_cache),
+                track_progress=False,
             )
         )
         self.__request_queued.emit()
         return current_index
 
     def submit_monitored_get(
-        self,
-        url: str,
-        timeout_ms: int = default_timeout,
+        self, url: str, timeout_ms: int = default_timeout, disable_cache: bool = False
     ) -> int:
         """Adds this request to the queue, and returns an index that can be used by calling code
         in conjunction with the progress_made() and progress_completed() signals to handle the
@@ -382,7 +307,9 @@ class NetworkManager(QtCore.QObject):
         # Use a queue because we can only put things on the QNAM from the main event loop thread
         self.queue.put(
             QueueItem(
-                current_index, self.__create_get_request(url, timeout_ms), track_progress=True
+                current_index,
+                self.__create_get_request(url, timeout_ms, disable_cache),
+                track_progress=True,
             )
         )
         self.__request_queued.emit()
@@ -394,6 +321,7 @@ class NetworkManager(QtCore.QObject):
         timeout_ms: int = default_timeout,
         max_attempts: int = 3,
         delay_ms: int = 1000,
+        disable_cache: bool = False,
     ):
         """Submits a GET request to the QNetworkAccessManager and blocks until it is complete. Do
         not use on the main GUI thread, it will prevent any event processing while it blocks.
@@ -421,9 +349,7 @@ class NetworkManager(QtCore.QObject):
             time.sleep(delay_ms / 1000)
 
     def blocking_get(
-        self,
-        url: str,
-        timeout_ms: int = default_timeout,
+        self, url: str, timeout_ms: int = default_timeout, disable_cache: bool = False
     ) -> Optional[QtCore.QByteArray]:
         """Submits a GET request to the QNetworkAccessManager and blocks until it is complete. Do
         not use on the main GUI thread, it will prevent any event processing while it blocks.
@@ -438,7 +364,9 @@ class NetworkManager(QtCore.QObject):
 
         self.queue.put(
             QueueItem(
-                current_index, self.__create_get_request(url, timeout_ms), track_progress=False
+                current_index,
+                self.__create_get_request(url, timeout_ms, disable_cache),
+                track_progress=False,
             )
         )
         self.__request_queued.emit()
@@ -476,18 +404,27 @@ class NetworkManager(QtCore.QObject):
                 self.synchronous_complete[index] = True
 
     @staticmethod
-    def __create_get_request(url: str, timeout_ms: int) -> QtNetwork.QNetworkRequest:
+    def __create_get_request(
+        url: str, timeout_ms: int, disable_cache: bool
+    ) -> QtNetwork.QNetworkRequest:
         """Construct a network request to a given URL"""
         request = QtNetwork.QNetworkRequest(QtCore.QUrl(url))
         request.setAttribute(
             QtNetwork.QNetworkRequest.RedirectPolicyAttribute,
             QtNetwork.QNetworkRequest.ManualRedirectPolicy,
         )
-        request.setAttribute(QtNetwork.QNetworkRequest.CacheSaveControlAttribute, True)
-        request.setAttribute(
-            QtNetwork.QNetworkRequest.CacheLoadControlAttribute,
-            QtNetwork.QNetworkRequest.PreferNetwork,
-        )
+        if disable_cache:
+            request.setAttribute(QtNetwork.QNetworkRequest.CacheSaveControlAttribute, False)
+            request.setAttribute(
+                QtNetwork.QNetworkRequest.CacheLoadControlAttribute,
+                QtNetwork.QNetworkRequest.AlwaysNetwork,
+            )
+        else:
+            request.setAttribute(QtNetwork.QNetworkRequest.CacheSaveControlAttribute, True)
+            request.setAttribute(
+                QtNetwork.QNetworkRequest.CacheLoadControlAttribute,
+                QtNetwork.QNetworkRequest.PreferNetwork,
+            )
         if hasattr(request, "setTransferTimeout"):
             # Added in Qt 5.15
             # In Qt 5, the function setTransferTimeout seems to accept
@@ -502,7 +439,7 @@ class NetworkManager(QtCore.QObject):
     def abort_all(self):
         """Abort ALL network calls in progress, including clearing the queue"""
         for reply in self.replies.values():
-            if reply.abort().isRunning():
+            if reply.isRunning():
                 reply.abort()
         while True:
             try:
@@ -630,8 +567,13 @@ class NetworkManager(QtCore.QObject):
                 if hasattr(request, "transferTimeout"):
                     timeout_ms = request.transferTimeout()
             new_url = reply.attribute(QtNetwork.QNetworkRequest.RedirectionTargetAttribute)
+            disable_cache = not reply.request().attribute(
+                QtNetwork.QNetworkRequest.CacheSaveControlAttribute
+            )
             self.__launch_request(
-                index, self.__create_get_request(new_url, timeout_ms), reply.operation()
+                index,
+                self.__create_get_request(new_url, timeout_ms, disable_cache=disable_cache),
+                reply.operation(),
             )
             return  # The task is not done, so get out of this method now
         if reply.error() != QtNetwork.QNetworkReply.NetworkError.OperationCanceledError:
@@ -669,3 +611,10 @@ def InitializeNetworkManager():
     global AM_NETWORK_MANAGER
     if AM_NETWORK_MANAGER is None:
         AM_NETWORK_MANAGER = NetworkManager()
+
+
+def ForceReinitializeNetworkManager():
+    """Called when the user changes the network settings, to force a re-initialization of the
+    network manager."""
+    global AM_NETWORK_MANAGER
+    AM_NETWORK_MANAGER = NetworkManager()

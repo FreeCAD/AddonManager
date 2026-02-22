@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2025 The FreeCAD project association AISBL              *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2025 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """The AddonCatalogCacheCreator is an independent script that is run server-side to generate a
 cache of the addon metadata and icons. These tests verify the functionality of its methods."""
@@ -35,7 +33,6 @@ import os
 
 import AddonCatalogCacheCreator as accc
 import AddonCatalog
-from AddonCatalogCacheCreator import EXCLUDED_REPOS
 
 
 class TestRecursiveSerialize(TestCase):
@@ -248,6 +245,9 @@ class TestCacheWriter(TestCase):
         cache_entry = writer.generate_cache_entry("TestMod", 1, ace)
         self.assertIsNone(cache_entry)
 
+    def test_generate_cache_entry_with_approval(self):
+        """If the addon appears in the catalog (as opposed to just the index), it gets marked as approved."""
+
     @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_git")
     def test_create_local_copy_of_single_addon_using_git(self, mock_create_with_git):
         """Given a single addon, each catalog entry is fetched with git if git info is available."""
@@ -290,8 +290,7 @@ class TestCacheWriter(TestCase):
         self.assertEqual(mock_create_with_git.call_count, 1)
 
     @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon")
-    @patch("AddonCatalogCacheCreator.CatalogFetcher.fetch_catalog")
-    def test_create_local_copy_of_addons(self, mock_fetch_catalog, mock_create_single_addon):
+    def test_create_local_copy_of_addons(self, mock_create_single_addon):
         """Given a catalog, each addon is fetched and cached."""
 
         class MockCatalog:
@@ -309,15 +308,15 @@ class TestCacheWriter(TestCase):
                         AddonCatalog.AddonCatalogEntry({"zip_url": "zip1"}),
                         AddonCatalog.AddonCatalogEntry({"zip_url": "zip2"}),
                     ],
-                    EXCLUDED_REPOS[0]: [
+                    accc.FORCE_SPARSE_CLONE[0]: [
                         AddonCatalog.AddonCatalogEntry({"zip_url": "zip1"}),
                         AddonCatalog.AddonCatalogEntry({"zip_url": "zip2"}),
                     ],
                 }
 
-        mock_fetch_catalog.return_value = MockCatalog()
         writer = accc.CacheWriter()
+        writer.catalog = MockCatalog()
         writer.create_local_copy_of_addons()
         mock_create_single_addon.assert_any_call("TestMod1", mock.ANY)
         mock_create_single_addon.assert_any_call("TestMod2", mock.ANY)
-        self.assertEqual(2, mock_create_single_addon.call_count)  # NOT three
+        self.assertEqual(3, mock_create_single_addon.call_count)

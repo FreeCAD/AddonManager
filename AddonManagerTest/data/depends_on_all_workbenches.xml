@@ -21,6 +21,7 @@
 			<depend>Import</depend>
 			<depend>Material</depend>
 			<depend>MeshWorkbench</depend>
+			<depend>MeshPart</depend>
 			<depend>OpenSCAD Workbench</depend>
 			<depend>Part WORKBENCH</depend>
 			<depend>PartDesign WB</depend>

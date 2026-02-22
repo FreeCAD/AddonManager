@@ -1,33 +1,30 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *   Copyright (c) 2019 Yorik van Havre <yorik@uncreated.net>              *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2019 Yorik van Havre <yorik@uncreated.net>
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Worker thread classes for Addon Manager startup"""
 import hashlib
 import io
 import json
 import os
-import time
 from typing import List
 import xml.etree.ElementTree
 import zipfile
@@ -277,7 +274,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 )
                 continue
             primary_branch_name = (
-                installed_branch_name if installed_branch_name else name_of_first_entry
+                installed_branch_name if installed_branch_name in branches else name_of_first_entry
             )
             for branch_display_name in branches:
                 if branch_display_name != primary_branch_name:
@@ -514,8 +511,14 @@ class UpdateChecker:
             macro_wrapper.set_status(Addon.Status.CANNOT_CHECK)
             return
 
-        hasher1 = hashlib.sha1()
-        hasher2 = hashlib.sha1()
+        try:
+            hasher1 = hashlib.sha1(usedforsecurity=False)
+            hasher2 = hashlib.sha1(usedforsecurity=False)
+        except TypeError:
+            # To continue to support Python 3.8, we need to fall back if the usedforsecurity
+            # is not available. This code should be removed when we drop support for 3.8.
+            hasher1 = hashlib.sha1()
+            hasher2 = hashlib.sha1()
         hasher1.update(macro_wrapper.macro.code.encode("utf-8"))
         new_sha1 = hasher1.hexdigest()
         test_file_one = os.path.join(fci.DataPaths().macro_dir, macro_wrapper.macro.filename)
@@ -600,6 +603,7 @@ class GetAddonScoreWorker(QtCore.QThread):
         """Fetch the remote data and load it into the addons"""
 
         if self.url != "TEST":
+            json_result = {}
             fetch_result = NetworkManager.AM_NETWORK_MANAGER.blocking_get_with_retries(
                 self.url, self.ATTEMPT_TIMEOUT_MS, self.MAX_ATTEMPTS, self.RETRY_DELAY_MS
             )
@@ -613,8 +617,30 @@ class GetAddonScoreWorker(QtCore.QThread):
                     ).format(self.url)
                 )
                 return
-            text_result = fetch_result.data().decode("utf8")
-            json_result = json.loads(text_result)
+            try:
+                text_result = fetch_result.data().decode("utf8")
+                json_result = json.loads(text_result)
+            except UnicodeDecodeError:
+                fci.Console.PrintError(
+                    translate(
+                        "AddonsInstaller",
+                        "Failed to decode addon score from '{}' -- sorting by score will fail\n",
+                    ).format(self.url)
+                )
+            except json.JSONDecodeError:
+                fci.Console.PrintError(
+                    translate(
+                        "AddonsInstaller",
+                        "Failed to parse addon score from '{}' -- sorting by score will fail\n",
+                    ).format(self.url)
+                )
+            except RuntimeError:
+                fci.Console.PrintError(
+                    translate(
+                        "AddonsInstaller",
+                        "Failed to read addon score from '{}' -- sorting by score will fail\n",
+                    ).format(self.url)
+                )
         else:
             fci.Console.PrintWarning("Running score generation in TEST mode...\n")
             json_result = {}
@@ -669,17 +695,18 @@ class CheckForMissingDependenciesWorker(QtCore.QThread):
                 counter,
                 len(installed_addons),
             )
-            deps = MissingDependencies()
-            deps.import_from_addon(addon, self.addons)
-            if deps.wbs:
-                details += f"{addon.display_name} is missing workbenches {', '.join(deps.wbs)}\n"
-            if deps.external_addons:
-                details += (
-                    f"{addon.display_name} is missing addons {', '.join(deps.external_addons)}\n"
-                )
-            if deps.python_requires:
-                details += f"{addon.display_name} is missing python packages {', '.join(deps.python_requires)}\n"
-            self.missing_dependencies.join(deps)
+            if addon.status() != Addon.Status.NOT_INSTALLED:
+                deps = MissingDependencies()
+                deps.import_from_addon(addon, self.addons)
+                if deps.wbs:
+                    details += (
+                        f"{addon.display_name} is missing workbenches {', '.join(deps.wbs)}\n"
+                    )
+                if deps.external_addons:
+                    details += f"{addon.display_name} is missing addons {', '.join(deps.external_addons)}\n"
+                if deps.python_requires:
+                    details += f"{addon.display_name} is missing python packages {', '.join(deps.python_requires)}\n"
+                self.missing_dependencies.join(deps)
 
         md = self.missing_dependencies
         message = "\nAddon Missing Dependency Analysis\n"

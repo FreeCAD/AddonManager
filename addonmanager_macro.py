@@ -1,26 +1,24 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *   Copyright (c) 2018 Gaël Écorchard <galou_breizh@yahoo.fr>             *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2018 Gaël Écorchard <galou_breizh@yahoo.fr>
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Unified handler for FreeCAD macros that can be obtained from different sources."""
 import base64
@@ -174,7 +172,10 @@ class Macro:
             code = self._read_code_from_wiki(p)
         if not code:
             self._console.PrintWarning(
-                translate("AddonsInstaller", "Unable to fetch the code of this macro.") + "\n"
+                translate("AddonsInstaller", "Unable to fetch the code of macro '{}'").format(
+                    self.name
+                )
+                + "\n"
             )
             return
 
@@ -328,7 +329,6 @@ class Macro:
 
     def _copy_other_files(self, macro_dir, warnings) -> bool:
         """Copy any specified "other files" into the installation directory"""
-        base_dir = os.path.dirname(self.src_filename)
         for filename, data in self.other_files_data.items():
             if not filename or not data or data == "ICON":
                 continue

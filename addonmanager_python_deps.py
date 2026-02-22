@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2025 FreeCAD Project Association AISBL             *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Provides classes and support functions for managing the automatically installed
 Python library dependencies. No support is provided for uninstalling those dependencies
@@ -67,13 +65,15 @@ def call_pip(args: List[str]) -> List[str]:
 
     try:
         call_args = create_pip_call(args)
+        fci.Console.PrintLog(f"Running pip with the following command:\n")
+        fci.Console.PrintLog(" ".join(call_args) + "\n")
     except RuntimeError as exception:
         raise PipFailed() from exception
 
     try:
-        proc = run_interruptable_subprocess(call_args)
+        proc = run_interruptable_subprocess(call_args, 120)
     except subprocess.CalledProcessError as exception:
-        raise PipFailed("pip timed out") from exception
+        raise PipFailed(f"pip call failed:\n{exception}") from exception
 
     if proc.returncode != 0:
         raise PipFailed(proc.stderr)
@@ -192,13 +192,16 @@ class AsynchronousUpdateWorker(QtCore.QObject):
         update_string = " ".join(self.package_list)
         try:
             fci.Console.PrintLog(
-                f"Running 'pip install --upgrade --target {self.vendor_path} {update_string}'\n"
+                f"Running pip to upgrade the following packages in {self.vendor_path}: {update_string}\n"
             )
             command = ["install", "--upgrade", "--target", self.vendor_path]
             command.extend(self.package_list)
-            call_pip(command)
+            upgrade_stdout = call_pip(command)
+            for line in upgrade_stdout:
+                fci.Console.PrintLog(line + "\n")
         except PipFailed as e:
             self.error = str(e)
+            fci.Console.PrintError(self.error + "\n")
 
         try:
             outdated_packages_stdout = call_pip(["list", "-o", "--path", self.vendor_path])
@@ -253,6 +256,8 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
             self.reset_call_finished()
 
     def reset_call_finished(self):
+        if self.reset_worker.error:
+            fci.Console.PrintError(f"Error while resetting package list: {self.reset_worker.error}")
         self.package_list = self.reset_worker.package_list
         self.endResetModel()
 

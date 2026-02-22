@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2023 FreeCAD Project Association                   *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Defines the PackageList QWidget for displaying a list of Addons."""
 import threading
@@ -33,7 +31,6 @@ from compact_view import Ui_CompactView
 from expanded_view import Ui_ExpandedView
 
 import addonmanager_utilities as utils
-from addonmanager_metadata import get_first_supported_freecad_version, Version
 from Widgets.addonmanager_widget_view_control_bar import WidgetViewControlBar, SortOptions
 from Widgets.addonmanager_widget_view_selector import AddonManagerDisplayStyle
 from Widgets.addonmanager_widget_filter_selector import StatusFilter, Filter
@@ -390,19 +387,29 @@ class PackageListItemDelegate(QtWidgets.QStyledItemDelegate):
             self.widget.ui.labelDescription.setText("")
 
     def _set_package_maintainer_label(self, addon: Addon):
+
         maintainers = addon.metadata.maintainer
-        maintainers_string = ""
-        if len(maintainers) == 1:
-            maintainers_string = (
-                translate("AddonsInstaller", "Maintainer")
-                + f": {maintainers[0].name} <{maintainers[0].email}>"
-            )
-        elif len(maintainers) > 1:
-            n = len(maintainers)
-            maintainers_string = translate("AddonsInstaller", "Maintainers:", "", n)
+
+        text = ""
+
+        count = len(maintainers)
+
+        if count > 0:
+
+            text = translate("AddonsInstaller", "Maintainer(s)", "", count)
+            text = f"{ text }: "
+
             for maintainer in maintainers:
-                maintainers_string += f"\n{maintainer.name} <{maintainer.email}>"
-        self.widget.ui.labelMaintainer.setText(maintainers_string)
+
+                if count > 1:
+                    text += "\n"
+
+                text += maintainer.name
+
+                if maintainer.email:
+                    text += f" <{ maintainer.email }>"
+
+        self.widget.ui.labelMaintainer.setText(text)
 
     def _set_macro_maintainer_label(self, repo: Addon):
         if repo.macro.author:

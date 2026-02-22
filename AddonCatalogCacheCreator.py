@@ -1,30 +1,30 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2025 The FreeCAD project association AISBL              *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2025 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Classes and utility functions to generate a remotely hosted cache of all addon catalog entries.
 Intended to be run by a server-side systemd timer to generate a file that is then loaded by the
 Addon Manager in each FreeCAD installation."""
 import datetime
+import shutil
+import sys
 from dataclasses import is_dataclass, fields
 from typing import Any, List, Optional
 
@@ -35,23 +35,25 @@ import io
 import json
 import os
 import requests
-import shutil
 import subprocess
+from typing import List
 import xml.etree.ElementTree
 import zipfile
 
 import AddonCatalog
 import addonmanager_metadata
+import addonmanager_utilities as utils
 
 
-ADDON_CATALOG_URL = (
-    "https://raw.githubusercontent.com/FreeCAD/FreeCAD-addons/master/AddonCatalog.json"
-)
+ADDON_CATALOG_URL = "https://raw.githubusercontent.com/FreeCAD/Addons/main/Data/Index.json"
 BASE_DIRECTORY = "./CatalogCache"
 MAX_COUNT = 10000  # Do at most this many repos (for testing purposes this can be made smaller)
+CLONE_TIMEOUT = (
+    300  # Seconds: repos that take longer than this are assumed to be too large to index
+)
 
-# Repos that are too large, or that should for some reason not be cloned here
-EXCLUDED_REPOS = ["parts_library"]
+# Repos that are too large, or that should for some reason not be fully cloned here
+FORCE_SPARSE_CLONE = ["parts_library", "offline-documentation", "FreeCAD-Documentation-html"]
 
 
 def recursive_serialize(obj: Any):
@@ -82,7 +84,7 @@ class GitRefType(enum.IntEnum):
 
 
 class CatalogFetcher:
-    """Fetches the addon catalog from the given URL and returns an AddonCatalog object. Separated
+    """Fetches the addon index from the given URL and returns an AddonCatalog object. Separated
     from the main class for easy mocking during tests. Note that every instantiation of this class
     will run a new fetch of the catalog."""
 
@@ -92,11 +94,9 @@ class CatalogFetcher:
 
     def fetch_catalog(self) -> AddonCatalog.AddonCatalog:
         """Fetch the addon catalog from the given URL and return an AddonCatalog object."""
-        response = requests.get(self.addon_catalog_url)
+        response = requests.get(self.addon_catalog_url, timeout=10.0)
         if response.status_code != 200:
-            raise RuntimeError(
-                f"ERROR: Failed to fetch addon catalog from {self.addon_catalog_url}"
-            )
+            raise RuntimeError(f"ERROR: Failed to fetch addon index from {self.addon_catalog_url}")
         return AddonCatalog.AddonCatalog(response.json())
 
 
@@ -106,47 +106,89 @@ class CacheWriter:
     as a base64-encoded icon image. The cache is written to the current working directory."""
 
     def __init__(self):
-        self.catalog: AddonCatalog = None
+        self.catalog: Optional[AddonCatalog.AddonCatalog] = None
         self.icon_errors = {}
+        self.clone_errors = {}
         if os.path.isabs(BASE_DIRECTORY):
             self.cwd = BASE_DIRECTORY
         else:
             self.cwd = os.path.normpath(os.path.join(os.getcwd(), BASE_DIRECTORY))
         self._cache = {}
 
-    def write(self):
+    def write(self, addon_id: Optional[str] = None) -> None:
         original_working_directory = os.getcwd()
         os.makedirs(self.cwd, exist_ok=True)
         os.chdir(self.cwd)
-        self.create_local_copy_of_addons()
 
-        with zipfile.ZipFile(
-            os.path.join(self.cwd, "addon_catalog_cache.zip"), "w", zipfile.ZIP_DEFLATED
-        ) as zipf:
-            zipf.writestr(
-                "addon_catalog_cache.json",
-                json.dumps(recursive_serialize(self.catalog.get_catalog()), indent="  "),
-            )
+        try:
+            fetcher = CatalogFetcher()
+            self.catalog = fetcher.catalog
 
-        # Also generate the sha256 hash of the zip file and store it
-        with open("addon_catalog_cache.zip", "rb") as cache_file:
-            cache_file_content = cache_file.read()
-        sha256 = hashlib.sha256(cache_file_content).hexdigest()
-        with open("addon_catalog_cache.zip.sha256", "w", encoding="utf-8") as hash_file:
-            hash_file.write(sha256)
+            if addon_id is None:
+                self.create_local_copy_of_addons()
+            else:
+                catalog = self.catalog.get_catalog()
+                if addon_id not in catalog:
+                    raise RuntimeError(f"ERROR: Addon {addon_id} not in index")
+                catalog_entries = catalog[addon_id]
+                self.create_local_copy_of_single_addon(addon_id, catalog_entries)
 
-        with open(os.path.join(self.cwd, "icon_errors.json"), "w") as f:
-            json.dump(self.icon_errors, f, indent="  ")
+            # Write the entire index for versions of the Addon Manager after 2026-01-24
+            with zipfile.ZipFile(
+                os.path.join(self.cwd, "addon_index_cache.zip"), "w", zipfile.ZIP_DEFLATED
+            ) as zipf:
+                zipf.writestr(
+                    "addon_index_cache.json",
+                    json.dumps(recursive_serialize(self.catalog.get_catalog()), indent="  "),
+                )
 
-        os.chdir(original_working_directory)
-        print(f"Wrote cache to {os.path.join(self.cwd, 'addon_catalog_cache.zip')}")
+            # Also generate the sha256 hash of the zip file and store it
+            with open("addon_index_cache.zip", "rb") as cache_file:
+                cache_file_content = cache_file.read()
+            sha256 = hashlib.sha256(cache_file_content).hexdigest()
+            with open("addon_index_cache.zip.sha256", "w", encoding="utf-8") as hash_file:
+                hash_file.write(sha256)
+
+            # For pre-2026-01-24 write only curated addons into a separate catalog file so older
+            # versions of the Addon Manager don't accidentally install uncurated addons.
+            with zipfile.ZipFile(
+                os.path.join(self.cwd, "addon_catalog_cache.zip"), "w", zipfile.ZIP_DEFLATED
+            ) as zipf:
+                catalog = self.catalog.get_catalog()
+                reduced_catalog = {}
+                for addon_id, catalog_entries in catalog.items():
+                    approved_entries: List[AddonCatalog.AddonCatalogEntry] = []
+                    for entry in catalog_entries:
+                        if entry.curated:
+                            approved_entries.append(entry)
+                    if approved_entries:
+                        reduced_catalog[addon_id] = approved_entries
+                zipf.writestr(
+                    "addon_catalog_cache.json",
+                    json.dumps(recursive_serialize(reduced_catalog), indent="  "),
+                )
+
+            # Also generate the sha256 hash of the zip file and store it
+            with open("addon_catalog_cache.zip", "rb") as cache_file:
+                cache_file_content = cache_file.read()
+            sha256 = hashlib.sha256(cache_file_content).hexdigest()
+            with open("addon_catalog_cache.zip.sha256", "w", encoding="utf-8") as hash_file:
+                hash_file.write(sha256)
+
+            with open(os.path.join(self.cwd, "icon_errors.json"), "w") as f:
+                json.dump(self.icon_errors, f, indent="  ")
+
+            with open(os.path.join(self.cwd, "clone_errors.json"), "w") as f:
+                json.dump(self.clone_errors, f, indent="  ")
+
+            print(f"Wrote index to {os.path.join(self.cwd, 'addon_index_cache.zip')}")
+            print(f"Wrote cache to {os.path.join(self.cwd, 'addon_catalog_cache.zip')}")
+        finally:
+            os.chdir(original_working_directory)
 
     def create_local_copy_of_addons(self):
-        self.catalog = CatalogFetcher().catalog
         counter = 0
         for addon_id, catalog_entries in self.catalog.get_catalog().items():
-            if addon_id in EXCLUDED_REPOS:
-                continue
             self.create_local_copy_of_single_addon(addon_id, catalog_entries)
             counter += 1
             if counter >= MAX_COUNT:
@@ -156,7 +198,22 @@ class CacheWriter:
         self, addon_id: str, catalog_entries: List[AddonCatalog.AddonCatalogEntry]
     ):
         for index, catalog_entry in enumerate(catalog_entries):
-            if catalog_entry.repository is not None:
+            if addon_id in FORCE_SPARSE_CLONE:
+                if catalog_entry.repository is None:
+                    print(
+                        f"ERROR: Cannot use sparse clone for {addon_id} because it has no git repo."
+                    )
+                    continue
+                if catalog_entry.zip_url is None:
+                    print(
+                        f"ERROR: Cannot use sparse clone for {addon_id} because it has no zip URL."
+                    )
+                    continue
+                catalog_entry.sparse_cache = True
+                self.create_local_copy_of_single_addon_with_git_sparse(
+                    addon_id, index, catalog_entry
+                )
+            elif catalog_entry.repository is not None:
                 self.create_local_copy_of_single_addon_with_git(addon_id, index, catalog_entry)
             elif catalog_entry.zip_url is not None:
                 self.create_local_copy_of_single_addon_with_zip(addon_id, index, catalog_entry)
@@ -235,7 +292,14 @@ class CacheWriter:
             )
             if os.path.exists(absolute_icon_path):
                 with open(absolute_icon_path, "rb") as f:
-                    cache_entry.icon_data = base64.b64encode(f.read()).decode("utf-8")
+                    try:
+                        cache_entry.icon_data = base64.b64encode(f.read()).decode("utf-8")
+                    except IOError as e:
+                        print(f"ERROR: IO Error while reading icon file {absolute_icon_path}")
+                        print(e)
+                    except Exception as e:
+                        print(f"ERROR: Unknown error while reading icon file {absolute_icon_path}")
+                        print(e)
             else:
                 self.icon_errors[metadata.name] = relative_icon_path
                 print(f"ERROR: Could not find icon file {absolute_icon_path}")
@@ -247,6 +311,23 @@ class CacheWriter:
         expected_name = self.get_directory_name(addon_id, index, catalog_entry)
         try:
             self.clone_or_update(expected_name, catalog_entry.repository, catalog_entry.git_ref)
+        except RuntimeError as e:
+            print(f"ERROR: Failed to clone or update {addon_id} from {catalog_entry.repository}.")
+            print(f"ERROR: {e}")
+
+    def create_local_copy_of_single_addon_with_git_sparse(
+        self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
+    ):
+        expected_name = self.get_directory_name(addon_id, index, catalog_entry)
+        try:
+            files = ["package.xml", "requirements.txt", "metadata.txt"]
+            self.sparse_clone(expected_name, catalog_entry.repository, catalog_entry.git_ref, files)
+            if os.path.exists(os.path.join(self.cwd, expected_name, "package.xml")):
+                metadata = addonmanager_metadata.MetadataReader.from_file(
+                    os.path.join(self.cwd, expected_name, "package.xml")
+                )
+                if metadata.icon:
+                    self.add_to_sparse_clone(expected_name, [metadata.icon])
         except RuntimeError as e:
             print(f"ERROR: Failed to clone or update {addon_id} from {catalog_entry.repository}.")
             print(f"ERROR: {e}")
@@ -265,13 +346,13 @@ class CacheWriter:
     def create_local_copy_of_single_addon_with_zip(
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
     ):
-        response = requests.get(catalog_entry.zip_url)
+        response = requests.get(catalog_entry.zip_url, timeout=10.0)
         if response.status_code != 200:
             print(f"ERROR: Failed to fetch zip data for {addon_id} from {catalog_entry.zip_url}.")
             return
         extract_to_dir = self.get_directory_name(addon_id, index, catalog_entry)
         if os.path.exists(extract_to_dir):
-            shutil.rmtree(extract_to_dir)
+            utils.rmdir(extract_to_dir)
         os.makedirs(extract_to_dir, exist_ok=True)
 
         with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
@@ -282,8 +363,7 @@ class CacheWriter:
                 catalog_entry.last_update_time = datetime.datetime(*latest).isoformat()
             zip_file.extractall(path=extract_to_dir)
 
-    @staticmethod
-    def clone_or_update(name: str, url: str, branch: str) -> None:
+    def clone_or_update(self, name: str, url: str, branch: str) -> None:
         """If a directory called "name" exists, and it contains a subdirectory called .git,
         then 'git fetch' is called; otherwise we use 'git clone' to make a bare, shallow
         copy of the repo (in the normal case where minimal is True), or a normal clone,
@@ -302,32 +382,105 @@ class CacheWriter:
                 url,
                 name,
             ]
-            completed_process = subprocess.run(command)
+            try:
+                completed_process = subprocess.run(command, timeout=CLONE_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                self.clone_errors[name] = f"Timed out after {CLONE_TIMEOUT} seconds."
+                raise RuntimeError(f"Clone of {url} timed out.")
+                # TODO: Automatically fall back to a sparse clone
             if completed_process.returncode != 0:
+                self.clone_errors[name] = f"Failed to clone {url}: {completed_process.returncode}"
                 raise RuntimeError(f"Clone failed for {url}")
         else:
             print(f"Updating {name}", flush=True)
             old_dir = os.getcwd()
             os.chdir(os.path.join(old_dir, name))
-            # Determine if we are dealing with a tag, branch, or hash
-            git_ref_type = CacheWriter.determine_git_ref_type(name, url, branch)
-            command = ["git", "fetch"]
-            completed_process = subprocess.run(command)
-            if completed_process.returncode != 0:
-                os.chdir(old_dir)
-                raise RuntimeError(f"git fetch failed for {name}")
-            command = ["git", "checkout", branch, "--quiet"]
-            completed_process = subprocess.run(command)
-            if completed_process.returncode != 0:
-                os.chdir(old_dir)
-                raise RuntimeError(f"git checkout failed for {name} branch {branch}")
-            if git_ref_type == GitRefType.BRANCH:
-                command = ["git", "merge", "--quiet"]
+            try:
+                # Determine if we are dealing with a tag, branch, or hash
+                git_ref_type = CacheWriter.determine_git_ref_type(name, url, branch)
+                command = ["git", "fetch"]
                 completed_process = subprocess.run(command)
                 if completed_process.returncode != 0:
                     os.chdir(old_dir)
-                    raise RuntimeError(f"git merge failed for {name} branch {branch}")
+                    raise RuntimeError(f"git fetch failed for {name}")
+                command = ["git", "checkout", branch, "--quiet"]
+                completed_process = subprocess.run(command)
+                if completed_process.returncode != 0:
+                    os.chdir(old_dir)
+                    raise RuntimeError(f"git checkout failed for {name} branch {branch}")
+                if git_ref_type == GitRefType.BRANCH:
+                    command = ["git", "merge", "--quiet"]
+                    completed_process = subprocess.run(command)
+                    if completed_process.returncode != 0:
+                        os.chdir(old_dir)
+                        raise RuntimeError(f"git merge failed for {name} branch {branch}")
+            except RuntimeError as e:
+                # In the event of basically ANY error, delete the original and re-clone.
+                print(e)
+                print("Deleting and re-cloning the original repo")
+                os.chdir(old_dir)
+                utils.rmdir(os.path.join(old_dir, name))
+                self.clone_or_update(name, url, branch)
             os.chdir(old_dir)
+
+    def sparse_clone(self, name: str, url: str, branch: str, files: List[str]) -> None:
+        """Perform a sparse clone of a git repo, including only the specified files. Overwrite any
+        existing path."""
+
+        if not os.path.exists(os.path.join(os.getcwd(), name, ".git")):
+            print(f"Creating sparse clone {name}", flush=True)
+            cwd = os.getcwd()
+            clone_path = os.path.join(cwd, name)
+            if os.path.exists(clone_path):
+                try:
+                    shutil.rmtree(clone_path)
+                except OSError as e:
+                    self.clone_errors[name] = f"Failed to remove existing path {clone_path}: {e}"
+                    print(f"ERROR: Failed to remove existing path {clone_path}: {e}")
+                    return
+            os.makedirs(clone_path)
+            os.chdir(clone_path)
+            try:
+                subprocess.run(["git", "init", "--quiet"], check=True)
+                subprocess.run(["git", "remote", "add", "origin", url], check=True)
+                subprocess.run(["git", "config", "core.sparsecheckout", "true"], check=True)
+                with open(".git/info/sparse-checkout", "w") as f:
+                    f.write("\n".join(files))
+                    f.write("\n")  # So we are safe appending later
+                subprocess.run(
+                    ["git", "fetch", "--depth=1", "origin", branch],
+                    check=True,
+                    timeout=CLONE_TIMEOUT,
+                )
+                subprocess.run(["git", "checkout", branch], check=True)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                self.clone_errors[name] = str(e)
+                print(f"ERROR: {e}")
+            os.chdir(cwd)
+        else:
+            print(f"Updating sparse clone {name}", flush=True)
+            cwd = os.getcwd()
+            os.chdir(os.path.join(cwd, name))
+            try:
+                subprocess.run(["git", "pull", "--depth=1"], check=True)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                self.clone_errors[name] = str(e)
+                print(f"ERROR: {e}")
+            os.chdir(cwd)
+
+    def add_to_sparse_clone(self, name: str, files: List[str]) -> None:
+        """Clones additional files to an existing sparse clone."""
+        cwd = os.getcwd()
+        clone_path = os.path.join(cwd, name)
+        os.chdir(clone_path)
+        with open(".git/info/sparse-checkout", "a") as f:
+            f.write("\n".join(files))
+        try:
+            subprocess.run(["git", "pull", "--depth=1"], check=True)
+        except subprocess.CalledProcessError as e:
+            self.clone_errors[name] = str(e)
+            print(f"ERROR: {e}")
+        os.chdir(cwd)
 
     def find_file(
         self,
@@ -366,11 +519,11 @@ class CacheWriter:
         return None
 
     @staticmethod
-    def determine_git_ref_type(name: str, url: str, branch: str) -> GitRefType:
+    def determine_git_ref_type(name: str, _url: str, branch: str) -> GitRefType:
         """Determine if the given branch, tag, or hash is a tag, branch, or hash. Returns the type
         if determinable, otherwise raises a RuntimeError."""
         command = ["git", "show-ref", "--verify", f"refs/remotes/origin/{branch}"]
-        completed_process = subprocess.run(command)
+        completed_process = subprocess.run(command, capture_output=True)
         if completed_process.returncode == 0:
             return GitRefType.BRANCH
         command = ["git", "show-ref", "--tags"]
@@ -430,16 +583,18 @@ class CacheWriter:
                     except (OSError, FileNotFoundError, RuntimeError) as e:
                         print(f"WARNING: Could not add {full_path} to zip archive: {e}")
         try:
+            good = False
             with zipfile.ZipFile(temp_file_path, "r") as zf:
-                if zf.testzip() is None:
-                    if os.path.exists(zip_file_path):
-                        os.remove(zip_file_path)
-                    os.rename(temp_file_path, zip_file_path)
-                else:
-                    os.remove(temp_file_path)
-                    print(
-                        f"Failed to create zip file {zip_file_path} for addon {addon_id}: data is corrupt"
-                    )
+                good = zf.testzip() is None
+            if good:
+                if os.path.exists(zip_file_path):
+                    os.remove(zip_file_path)
+                os.rename(temp_file_path, zip_file_path)
+            else:
+                os.remove(temp_file_path)
+                print(
+                    f"Failed to create zip file {zip_file_path} for addon {addon_id}: data is corrupt"
+                )
         except zipfile.BadZipFile:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
@@ -449,5 +604,8 @@ class CacheWriter:
 
 
 if __name__ == "__main__":
+    single_addon_id = None
+    if len(sys.argv) > 1:
+        single_addon_id = sys.argv[1]
     writer = CacheWriter()
-    writer.write()
+    writer.write(single_addon_id)

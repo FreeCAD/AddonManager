@@ -1,25 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2022-2025 The FreeCAD project association AISBL         *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
+# SPDX-FileCopyrightText: 2022 FreeCAD Project Association
+# SPDX-FileNotice: Part of the AddonManager.
+
+################################################################################
+#                                                                              #
+#   This addon is free software: you can redistribute it and/or modify         #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   This addon is distributed in the hope that it will be useful,              #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with this addon. If not, see https://www.gnu.org/licenses    #
+#                                                                              #
+################################################################################
 
 """Classes to manage the GUI presentation of installing an Addon (e.g., the sequence of dialog boxes
 that do dependency resolution, error handling, etc.). See AddonInstallerGUI and MacroInstallerGUI
@@ -613,7 +611,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         """Ask the user how they want to handle dependencies, do that, then install."""
 
         for addon in self.deps.external_addons:
-            self.dependency_dialog.listWidgetAddons.addItem(addon)
+            self.dependency_dialog.listWidgetAddons.addItem(addon.display_name)
         for mod in self.deps.python_requires:
             self.dependency_dialog.listWidgetPythonRequired.addItem(mod)
         for mod in self.deps.python_optional:
@@ -674,17 +672,8 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         self.deps.python_optional = good_packages
 
     def _dependency_dialog_yes_clicked(self) -> None:
-        # Get the lists out of the dialog:
-        addons = []
-        for row in range(self.dependency_dialog.listWidgetAddons.count()):
-            item = self.dependency_dialog.listWidgetAddons.item(row)
-            addons.append(item.text())
-
-        python_requires = []
-        for row in range(self.dependency_dialog.listWidgetPythonRequired.count()):
-            item = self.dependency_dialog.listWidgetPythonRequired.item(row)
-            python_requires.append(item.text())
-
+        addons = self.deps.external_addons
+        python_requires = self.deps.python_requires
         python_optional = []
         for row in range(self.dependency_dialog.listWidgetPythonOptional.count()):
             item = self.dependency_dialog.listWidgetPythonOptional.item(row)
