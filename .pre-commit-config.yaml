@@ -17,7 +17,7 @@ repos:
     -   id: check-added-large-files
     -   id: mixed-line-ending
 -   repo: https://github.com/psf/black-pre-commit-mirror
-    rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8  # frozen: 26.1.0
+    rev: 044edd3b57c805fa7a0165b7936d44f6e56ecfd8  # frozen: 26.3.0
     hooks:
         -   id: black
             args: ['--line-length', '100']
