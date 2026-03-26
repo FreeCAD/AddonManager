@@ -27,7 +27,6 @@ import io
 import json
 import os
 from typing import List
-import xml.etree.ElementTree
 import zipfile
 
 from PySideWrapper import QtCore
@@ -40,6 +39,7 @@ from AddonStats import AddonStats
 import NetworkManager
 from addonmanager_git import initialize_git, GitFailed
 from addonmanager_metadata import MetadataReader, get_branch_from_metadata
+import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
 translate = fci.translate
@@ -129,17 +129,93 @@ class CreateAddonListWorker(QtCore.QThread):
                 repo = Addon(name, addon["url"], state, addon["branch"])
                 md_file = os.path.join(addon_dir, "package.xml")
                 if os.path.isfile(md_file):
-                    try:
-                        repo.installed_metadata = MetadataReader.from_file(md_file)
-                        repo.installed_version = repo.installed_metadata.version
+                    # load_metadata_file calls set_metadata(), populating repo.metadata,
+                    # repo.description, repo.display_name etc. for the UI to display.
+                    # It handles ParseError internally, leaving repo.metadata as None on failure.
+                    repo.load_metadata_file(md_file)
+                    if repo.metadata:
+                        repo.installed_metadata = repo.metadata
+                        repo.installed_version = repo.metadata.version
                         repo.updated_timestamp = os.path.getmtime(md_file)
                         repo.verify_url_and_branch(addon["url"], addon["branch"])
-                    except xml.etree.ElementTree.ParseError:
-                        fci.Console.PrintWarning(
-                            f"An invalid or corrupted package.xml file was installed for custom addon {name}... ignoring the bad data.\n"
-                        )
+                        # Load icon bytes from the local install directory so the
+                        # list view can display the addon's actual icon.
+                        if repo.metadata.icon:
+                            icon_file = os.path.join(addon_dir, repo.metadata.icon)
+                            if os.path.isfile(icon_file):
+                                try:
+                                    with open(icon_file, "rb") as f:
+                                        repo.icon_data = f.read()
+                                except OSError as e:
+                                    fci.Console.PrintWarning(
+                                        f"Could not load icon for custom addon {name}: {e}\n"
+                                    )
+                else:
+                    # Not installed: try to fetch package.xml from the remote repo so the
+                    # browse view can show description and icon.
+                    self._fetch_remote_custom_addon_metadata(repo)
 
                 self.addon_repo.emit(repo)
+
+    def _fetch_remote_custom_addon_metadata(self, repo: Addon) -> None:
+        """For a custom addon that is not yet installed, attempt to fetch its package.xml
+        from the remote repo so the browse view can show the description and display name.
+        Failures are non-fatal: the addon will simply show without metadata."""
+
+        package_xml_url = utils.construct_git_url(repo, "package.xml")
+        fci.Console.PrintLog(
+            f"Fetching remote metadata for custom addon {repo.name} from {package_xml_url}\n"
+        )
+        try:
+            result = NetworkManager.AM_NETWORK_MANAGER.blocking_get_with_retries(
+                package_xml_url,
+                CreateAddonListWorker.ATTEMPT_TIMEOUT_MS,
+                1,  # single attempt – don't slow down startup for missing files
+                0,
+            )
+        except Exception as e:
+            fci.Console.PrintLog(
+                f"Could not fetch remote package.xml for custom addon {repo.name}: {e}\n"
+            )
+            return
+
+        if not result:
+            fci.Console.PrintLog(
+                f"No package.xml found at {package_xml_url} for custom addon {repo.name}\n"
+            )
+            return
+
+        original_url = repo.url
+        original_branch = repo.branch
+
+        try:
+            metadata = MetadataReader.from_bytes(result.data())
+            repo.set_metadata(metadata)
+        except Exception as e:
+            fci.Console.PrintWarning(
+                f"Could not parse remote package.xml for custom addon {repo.name}: {e}\n"
+            )
+            return
+
+        repo.verify_url_and_branch(original_url, original_branch)
+        repo.url = original_url
+        repo.branch = original_branch
+
+        if repo.metadata and repo.metadata.icon:
+            icon_url = utils.construct_git_url(repo, repo.metadata.icon)
+            try:
+                icon_result = NetworkManager.AM_NETWORK_MANAGER.blocking_get_with_retries(
+                    icon_url,
+                    CreateAddonListWorker.ATTEMPT_TIMEOUT_MS,
+                    1,
+                    0,
+                )
+                if icon_result:
+                    repo.icon_data = icon_result.data()
+            except Exception as e:
+                fci.Console.PrintLog(
+                    f"Could not fetch remote icon for custom addon {repo.name}: {e}\n"
+                )
 
     def get_cache(self, cache_name: str) -> str:
         cache_file_name = cache_name + "_cache.json"
