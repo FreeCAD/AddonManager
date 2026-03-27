@@ -42,9 +42,9 @@ class TestCreateAddonListWorker(unittest.TestCase):
         )
 
         def get_side_effect(key):
-            if key == "last_fetched_addon_catalog_cache_hash":
+            if key == "last_fetched_addon_index_cache_hash":
                 return "1234567890abcdef"
-            elif key == "addon_catalog_cache_url":
+            elif key == "addon_index_cache_url":
                 return "https://some.url"
             return None
 
@@ -52,7 +52,7 @@ class TestCreateAddonListWorker(unittest.TestCase):
 
         # Act
         result = addonmanager_workers_startup.CreateAddonListWorker.new_cache_available(
-            "addon_catalog"
+            "addon_index"
         )
 
         # Assert
@@ -71,9 +71,9 @@ class TestCreateAddonListWorker(unittest.TestCase):
         )
 
         def get_side_effect(key):
-            if key == "last_fetched_addon_catalog_cache_hash":
+            if key == "last_fetched_addon_index_cache_hash":
                 return "fedcba0987654321"  # NOT the same hash
-            elif key == "addon_catalog_cache_url":
+            elif key == "addon_index_cache_url":
                 return "https://some.url"
             return None
 
@@ -81,7 +81,7 @@ class TestCreateAddonListWorker(unittest.TestCase):
 
         # Act
         result = addonmanager_workers_startup.CreateAddonListWorker.new_cache_available(
-            "addon_catalog"
+            "addon_index"
         )
 
         # Assert
@@ -155,3 +155,44 @@ class TestCreateAddonListWorker(unittest.TestCase):
 
         # Assert
         self.assertEqual(8, mock_addon_repo_signal.emit.call_count)
+
+    @patch("addonmanager_workers_startup.fci.Preferences")
+    @patch("addonmanager_workers_startup.fci.Console")
+    def test_migrate_catalog_to_index_no_custom_data(self, mock_console, mock_preferences_class):
+        # Arrange
+        def return_no_custom_data(key):
+            return None if key != "addon_catalog_cache_url" else "obsolete"
+
+        mock_preferences_instance = MagicMock()
+        mock_preferences_instance.get = return_no_custom_data
+        mock_preferences_class.return_value = mock_preferences_instance
+        worker = addonmanager_workers_startup.CreateAddonListWorker()
+
+        # Act
+        worker.migrate_catalog_to_index()
+
+        # Assert
+        mock_preferences_instance.set.assert_not_called()
+        mock_console.PrintWarning.assert_not_called()
+
+    @patch("addonmanager_workers_startup.fci.Preferences")
+    @patch("addonmanager_workers_startup.fci.Console")
+    def test_migrate_catalog_to_index_custom_data(self, mock_console, mock_preferences_class):
+
+        # Arrange
+        def return_custom_data(key):
+            return None if key != "addon_catalog_cache_url" else "some custom url"
+
+        mock_preferences_instance = MagicMock()
+        mock_preferences_instance.get = return_custom_data
+        mock_preferences_class.return_value = mock_preferences_instance
+        worker = addonmanager_workers_startup.CreateAddonListWorker()
+
+        # Act
+        worker.migrate_catalog_to_index()
+
+        # Assert
+        mock_preferences_instance.set.assert_called_once_with(
+            "addon_index_cache_url", "some custom url"
+        )
+        mock_console.PrintWarning.assert_called()
