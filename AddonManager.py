@@ -643,7 +643,7 @@ class CommandAddonManager(QtCore.QObject):
             deps: MissingDependencies = self.check_missing_dependencies_worker.missing_dependencies
             if deps.wbs or deps.external_addons or deps.python_requires:
                 ignored_deps_string = fci.Preferences().get("ignored_missing_deps")
-                ignored_deps = ignored_deps_string.split(";")
+                ignored_deps = ignored_deps_string.split(";") if ignored_deps_string else []
 
                 proceed = False
                 all_deps = set()
@@ -670,7 +670,7 @@ class CommandAddonManager(QtCore.QObject):
 
     def ignore_missing_dependencies(self):
         old_deps_string = fci.Preferences().get("ignored_missing_deps")
-        old_deps = set(old_deps_string.split(";"))
+        old_deps = set(old_deps_string.split(";") if old_deps_string else [])
         deps = self.check_missing_dependencies_worker.missing_dependencies
         new_deps = old_deps.union(deps.wbs)
         new_deps = new_deps.union(deps.external_addons)
