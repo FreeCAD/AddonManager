@@ -503,6 +503,20 @@ class Addon:
         """Determine if this package contains an "other" content item"""
         return self.contains_packaged_content("other")
 
+    def contains_no_generated_content(self) -> bool:
+        """Determines if this package explicitly contains no generated content"""
+
+        if self.repo_type != Addon.Kind.PACKAGE:
+            return False
+
+        if not self.metadata:
+            return False
+
+        if not self.metadata.contains:
+            return False
+
+        return self.metadata.contains.generated_content == False
+
     def walk_dependency_tree(self, all_repos: Dict[str, "Addon"], deps: Dependencies):
         """Compute the total dependency tree for this repo (recursive)
         - all_repos is a dictionary of repos, keyed on the name of the repo
