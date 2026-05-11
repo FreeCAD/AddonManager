@@ -41,6 +41,9 @@ from AddonManagerTest.gui.test_update_all_gui import (
 from AddonManagerTest.gui.test_uninstaller_gui import (
     TestUninstallerGUI as AddonManagerTestUninstallerGUI,
 )
+from AddonManagerTest.gui.test_package_list_filter import (
+    TestPackageListFilter as AddonManagerTestPackageListFilter,
+)
 
 
 class TestListTerminator:
@@ -55,6 +58,7 @@ loaded_gui_tests = [
     AddonManagerTestMacroInstallerGui,
     AddonManagerTestUpdateAllGui,
     AddonManagerTestUninstallerGUI,
+    AddonManagerTestPackageListFilter,
     TestListTerminator,  # Needed to prevent the last test from running twice
 ]
 for test in loaded_gui_tests:

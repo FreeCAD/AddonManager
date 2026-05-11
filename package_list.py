@@ -585,6 +585,19 @@ class PackageListFilter(QtCore.QSortFilterProxyModel):
         self.hide_unlicensed = False
         self.hide_newer_freecad_required = False
 
+    @staticmethod
+    def _safe_filter_strings(data):
+        values = [
+            getattr(data, "name", None),
+            getattr(data, "display_name", None),
+            getattr(data, "description", None),
+        ]
+        macro = getattr(data, "macro", None)
+        if macro:
+            values.append(getattr(macro, "comment", None))
+        values.extend(getattr(data, "tags", []) or [])
+        return [str(value) for value in values if value]
+
     def setPackageFilter(
         self, package_type: int
     ) -> None:  # 0=All, 1=Workbenches, 2=Macros, 3=Preference Packs, 4=Bundles, 5=Other
@@ -690,34 +703,21 @@ class PackageListFilter(QtCore.QSortFilterProxyModel):
                     # )
                     return False
 
-        name = data.display_name
-        desc = data.description
+        filter_strings = self._safe_filter_strings(data)
         if hasattr(self, "filterRegularExpression"):  # Added in Qt 5.12
             re = self.filterRegularExpression()
             if re.isValid():
                 re.setPatternOptions(QtCore.QRegularExpression.CaseInsensitiveOption)
-                if re.match(name).hasMatch():
-                    return True
-                if re.match(desc).hasMatch():
-                    return True
-                if data.macro and data.macro.comment and re.match(data.macro.comment).hasMatch():
-                    return True
-                for tag in data.tags:
-                    if re.match(tag).hasMatch():
+                for value in filter_strings:
+                    if re.match(value).hasMatch():
                         return True
             return False
         # Only get here for Qt < 5.12
         re = self.filterRegExp()
         if re.isValid():
             re.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-            if re.indexIn(name) != -1:
-                return True
-            if re.indexIn(desc) != -1:
-                return True
-            if data.macro and data.macro.comment and re.indexIn(data.macro.comment) != -1:
-                return True
-            for tag in data.tags:
-                if re.indexIn(tag) != -1:
+            for value in filter_strings:
+                if re.indexIn(value) != -1:
                     return True
         return False
 
