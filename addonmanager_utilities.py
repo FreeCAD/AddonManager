@@ -425,10 +425,8 @@ def blocking_get(url: str, method=None) -> bytes:
     provided mainly for testing purposes."""
     p = b""
     parse_result = urllib.parse.urlparse(url)
-    if parse_result.scheme != "http" and parse_result.scheme != "https":
-        raise ValueError(
-            f"Invalid URL scheme: {parse_result.scheme} (only http and https are supported)"
-        )
+    if parse_result.scheme != "https":
+        raise ValueError(f"Invalid URL scheme: {parse_result.scheme} (only https is supported)")
     if (
         fci.FreeCADGui
         and method is None

@@ -34,8 +34,8 @@ import sys
 import tempfile
 import time
 from functools import lru_cache
-from urllib.parse import quote_plus
-from urllib.request import Request, urlopen, urlretrieve, urlparse
+from urllib.parse import quote_plus, urlparse
+from urllib.request import Request, urlopen, urlretrieve
 
 CROWDIN_API_URL = "https://api.crowdin.com/api/v2"
 CROWDIN_API_PROJECT_ID = "freecad-addons"
