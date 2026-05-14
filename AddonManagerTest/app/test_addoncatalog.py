@@ -5,7 +5,6 @@
 # pylint: import-outside-toplevel,
 
 """Tests for the AddonCatalog and AddonCatalogEntry classes."""
-
 from unittest import mock, main, TestCase
 from unittest.mock import patch
 
