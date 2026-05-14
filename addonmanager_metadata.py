@@ -25,17 +25,11 @@ https://wiki.FreeCAD.org/Package_metadata"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import defusedxml.ElementTree as ET
 from enum import IntEnum, auto
 from typing import Tuple, Dict, List, Optional
 
 from addonmanager_licenses import get_license_manager
-
-try:
-    # If this system provides a secure parser, use that:
-    import defusedxml.ElementTree as ET
-except ImportError:
-    # Otherwise fall back to the Python standard parser
-    import xml.etree.ElementTree as ET
 
 
 @dataclass
