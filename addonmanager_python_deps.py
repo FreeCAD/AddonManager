@@ -301,7 +301,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
             elif section == 2:
                 return translate("AddonsInstaller", "Available Version")
             elif section == 3:
-                return translate("AddonsInstaller", "Dependent Addons")
+                return translate("AddonsInstaller", "Used By")
         return None
 
     def flags(self, index) -> QtCore.Qt.ItemFlag:
