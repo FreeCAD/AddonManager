@@ -151,6 +151,7 @@ class PipCommand(Enum):
     Upgrade = 1
     List = 2
 
+
 class AsynchronousPipWorker(QtCore.QObject):
     """A worker class that runs pip to install/update/list packages."""
 

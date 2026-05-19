@@ -35,7 +35,7 @@ class Std_AddonMgrPip:
 
     def GetResources(self) -> dict[str, str]:
         return {
-            "Pixmap": str(Path(__file__).parent / "Resources" / "icons" / "add_pypi_package.svg"),
+            "Pixmap": "applications-python.svg",
             "MenuText": QT_TRANSLATE_NOOP(
                 "AddonsInstaller",
                 "Python package manager",
@@ -49,6 +49,7 @@ class Std_AddonMgrPip:
     def Activated(self) -> None:
         from addonmanager_python_deps_gui import PythonPackageManagerGui
         from package_list import PackageListItemModel
+
         model = PackageListItemModel()
         dialog = PythonPackageManagerGui(model.repos)
         dialog.show()
