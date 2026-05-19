@@ -25,12 +25,12 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="labelInstallationPath">
+    <widget class="QLineEdit" name="labelInstallationPath">
      <property name="text">
       <string notr="true">placeholder for path</string>
      </property>
-     <property name="textInteractionFlags">
-      <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -48,12 +48,18 @@
     </widget>
    </item>
    <item>
-    <widget class="QLabel" name="updateInProgressLabel">
-     <property name="text">
-      <string>Update in progress…</string>
+    <widget class="QProgressBar" name="updateInProgressLabel">
+     <property name="minimum">
+      <number>0</number>
      </property>
-     <property name="textInteractionFlags">
-      <set>Qt::TextInteractionFlag::NoTextInteraction</set>
+     <property name="maximum">
+      <number>0</number>
+     </property>
+     <property name="value">
+      <number>-1</number>
+     </property>
+     <property name="textVisible">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -73,6 +79,13 @@
       <widget class="QPushButton" name="buttonUpdateAll">
        <property name="text">
         <string>Update All</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonInstallPkgs">
+       <property name="text">
+        <string>Add Package</string>
        </property>
       </widget>
      </item>
