@@ -29,6 +29,7 @@ import re
 import shutil
 import subprocess
 from typing import Dict, Iterable, List, TypedDict, Optional, Set
+from enum import Enum
 from addonmanager_metadata import Version
 from addonmanager_utilities import (
     create_pip_call,
@@ -145,72 +146,69 @@ def parse_pip_list_output(all_packages, outdated_packages) -> List[PackageInfo]:
     return list(packages.values())
 
 
-class AsynchronousResetWorker(QtCore.QObject):
-    """A worker class that runs pip to generate the package list."""
+class PipCommand(Enum):
+    Install = 0
+    Upgrade = 1
+    List = 2
+
+
+class AsynchronousPipWorker(QtCore.QObject):
+    """A worker class that runs pip to install/update/list packages."""
 
     finished = QtCore.Signal()
 
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        command: PipCommand,
+        package_list: list[str] | None = None,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self.is_running = False
         self.error = ""
         self.vendor_path = get_pip_target_directory()
-        self.package_list = []
+        self.package_list = package_list or []
+        self.command = command
 
     def run(self):
         """Runs pip: when complete, either self.package_list is populated, or self.error is set."""
         self.is_running = True
         self.error = ""
-        self.package_list = []
-        try:
-            outdated_packages_stdout = call_pip(["list", "-o", "--path", self.vendor_path])
-            all_packages_stdout = call_pip(["list", "--path", self.vendor_path])
-            self.package_list = parse_pip_list_output(all_packages_stdout, outdated_packages_stdout)
-        except PipFailed as e:
-            self.error = str(e)
+
+        if self.command in (PipCommand.Upgrade, PipCommand.Install):
+            self._install_or_update()
+        self._list()
+
         self.is_running = False
         self.finished.emit()
 
-
-class AsynchronousUpdateWorker(QtCore.QObject):
-    """A worker class that runs pip to generate the package list."""
-
-    finished = QtCore.Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.is_running = False
-        self.error = ""
-        self.vendor_path = get_pip_target_directory()
-        self.package_list = []
-
-    def run(self):
-        """Runs pip: when complete, either self.package_list is populated, or self.error is set."""
-        self.is_running = True
-        self.error = ""
+    def _install_or_update(self) -> None:
+        if not self.package_list:
+            return
 
         update_string = " ".join(self.package_list)
+        action = "install" if self.command == PipCommand.Install else "upgrade"
+        log_message = f"Running pip to {action} the following packages in {self.vendor_path}: {update_string}\n"
+        upgrade = ["--upgrade"] if self.command == PipCommand.Upgrade else []
+        command = ["install", *upgrade, "--target", self.vendor_path]
+        command.extend(self.package_list)
+
+        fci.Console.PrintLog(f"{log_message}\n")
         try:
-            fci.Console.PrintLog(
-                f"Running pip to upgrade the following packages in {self.vendor_path}: {update_string}\n"
-            )
-            command = ["install", "--upgrade", "--target", self.vendor_path]
-            command.extend(self.package_list)
             upgrade_stdout = call_pip(command)
             for line in upgrade_stdout:
-                fci.Console.PrintLog(line + "\n")
+                fci.Console.PrintLog(f"{line}\n")
         except PipFailed as e:
             self.error = str(e)
-            fci.Console.PrintError(self.error + "\n")
+            fci.Console.PrintError(f"{self.error}\n")
 
+    def _list(self) -> None:
         try:
             outdated_packages_stdout = call_pip(["list", "-o", "--path", self.vendor_path])
             all_packages_stdout = call_pip(["list", "--path", self.vendor_path])
             self.package_list = parse_pip_list_output(all_packages_stdout, outdated_packages_stdout)
         except PipFailed as e:
             self.error = str(e)
-        self.is_running = False
-        self.finished.emit()
 
 
 class PythonPackageListModel(QtCore.QAbstractTableModel):
@@ -243,7 +241,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
         otherwise synchronous."""
         self.beginResetModel()
         self.package_list.clear()
-        self.reset_worker = AsynchronousResetWorker()
+        self.reset_worker = AsynchronousPipWorker(PipCommand.List)
         if self.can_use_thread():
             self.reset_worker_thread = QtCore.QThread()
             self.reset_worker.moveToThread(self.reset_worker_thread)
@@ -304,7 +302,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
             elif section == 2:
                 return translate("AddonsInstaller", "Available Version")
             elif section == 3:
-                return translate("AddonsInstaller", "Dependencies")
+                return translate("AddonsInstaller", "Used By")
         return None
 
     def flags(self, index) -> QtCore.Qt.ItemFlag:
@@ -331,12 +329,20 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
                 dependent_addons.append({"name": addon.name, "optional": True})
         return dependent_addons
 
-    def update_all_packages(self):
+    def update_all_packages(self) -> None:
         """Re-installs all packages. Uses an asynchronous thread when possible."""
-        self.update_worker = AsynchronousUpdateWorker()
-
         updates = [item.name for item in self.package_list]
-        self.update_worker.package_list = updates
+        if updates:
+            self._install_or_update_packages(updates, PipCommand.Upgrade)
+
+    def install_packages(self, packages: list[str]) -> None:
+        """Installs packages. Uses an asynchronous thread when possible."""
+        installed = (item.name for item in self.package_list)
+        self._install_or_update_packages([*installed, *packages], PipCommand.Install)
+
+    def _install_or_update_packages(self, packages: list[str], command: PipCommand) -> None:
+        """Installs/Upgrade packages. Uses an asynchronous thread when possible."""
+        self.update_worker = AsynchronousPipWorker(command, packages)
         if not using_system_pip_installation_location():
             # pip doesn't properly update when using the target directory, so we have to delete
             # it and reinstall
@@ -356,9 +362,16 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
     def update_call_finished(self):
         self.update_complete.emit()
         if not using_system_pip_installation_location():
-            shutil.rmtree(self.vendor_path + ".old")
-            # Clean up old package versions that may remain after update
-            self._cleanup_old_package_versions()
+            if self.update_worker.error:
+                try:
+                    os.rename(self.vendor_path + ".old", self.vendor_path)
+                except Exception as err:
+                    fci.Console.PrintError(f"Backup restore failed: {self.vendor_path}.old.\n")
+                    fci.Console.PrintError(f"{err}\n")
+            else:
+                shutil.rmtree(self.vendor_path + ".old")
+                # Clean up old package versions that may remain after update
+                self._cleanup_old_package_versions()
 
     def _cleanup_old_package_versions(self):
         """Remove old package version metadata directories after an update.
