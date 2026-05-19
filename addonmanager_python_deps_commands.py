@@ -23,9 +23,6 @@
 Provides addition atop level command to launch the pypi package installer.
 """
 
-from pathlib import Path
-
-
 def QT_TRANSLATE_NOOP(_, txt) -> str:
     return txt
 
