@@ -23,6 +23,7 @@
 Provides addition atop level command to launch the pypi package installer.
 """
 
+
 def QT_TRANSLATE_NOOP(_, txt) -> str:
     return txt
 
@@ -70,4 +71,3 @@ class Std_AddonMgrPip:
         Gui.addCommand("Std_AddonMgrPip", Std_AddonMgrPip())
         cls._instance = cls()
         Gui.addWorkbenchManipulator(cls._instance)
-
