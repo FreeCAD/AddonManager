@@ -21,61 +21,69 @@
 
 """GUI for python dependency management."""
 
-import os
-
+from pathlib import Path
 import addonmanager_freecad_interface as fci
 from addonmanager_python_deps import PythonPackageListModel
 
 from PySideWrapper import QtWidgets
 
 translate = fci.translate
+base_path = Path(__file__).parent
 
 
 class PythonPackageManagerGui:
     """GUI for managing Python packages"""
 
+    _ui = base_path / "PythonDependencyUpdateDialog.ui"
+    _icons = base_path / "Resources" / "icons"
+
     def __init__(self, addons):
-        self.dlg = fci.loadUi(
-            os.path.join(os.path.dirname(__file__), "PythonDependencyUpdateDialog.ui")
-        )
+        self.dlg = fci.loadUi(str(self._ui))
         self.dlg.setObjectName("AddonManager_PythonDependencyUpdateDialog")
         self.model = PythonPackageListModel(addons)
         self.dlg.tableView.setModel(self.model)
+        self.dlg.setMinimumHeight(400)
 
-        self.dlg.tableView.horizontalHeader().setStretchLastSection(True)
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
-            1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
-            2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
-        self.dlg.tableView.horizontalHeader().setSectionResizeMode(
-            3, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
-        )
+        header = self.dlg.tableView.horizontalHeader()
+        header.setStretchLastSection(True)
+        resizeMode = QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+        for col in range(4):
+            header.setSectionResizeMode(col, resizeMode)
 
+        self.dlg.buttonInstallPkgs.clicked.connect(self._install_button_clicked)
         self.dlg.buttonUpdateAll.clicked.connect(self._update_button_clicked)
         self.model.modelReset.connect(self._model_was_reset)
         self.model.update_complete.connect(self._update_complete)
 
     def show(self):
-        self.dlg.buttonUpdateAll.setEnabled(False)
-        self.dlg.updateInProgressLabel.show()
+        self._working(True)
         self.model.reset_package_list()
         self.dlg.labelInstallationPath.setText(self.model.vendor_path)
         self.dlg.exec()
 
+    def _working(self, working: bool) -> None:
+        self.dlg.buttonInstallPkgs.setEnabled(not working)
+        self.dlg.buttonUpdateAll.setEnabled(not working and self.model.updates_are_available())
+        if working:
+            self.dlg.updateInProgressLabel.show()
+        else:
+            self.dlg.updateInProgressLabel.hide()
+
+    def _install_button_clicked(self):
+        title = translate("AddonsInstaller", "Install")
+        prompt = translate("AddonsInstaller", "Packages:")
+        packages, ok = QtWidgets.QInputDialog.getText(self.dlg, title, prompt)
+        if packages and ok:
+            self._working(True)
+            self.model.install_packages(packages.split())
+
     def _update_button_clicked(self):
-        self.dlg.buttonUpdateAll.setEnabled(False)
-        self.dlg.updateInProgressLabel.show()
+        self._working(True)
         self.model.update_all_packages()
 
     def _model_was_reset(self):
-        self.dlg.updateInProgressLabel.hide()
-        self.dlg.buttonUpdateAll.setEnabled(self.model.updates_are_available())
+        self._working(False)
 
     def _update_complete(self):
-        self.dlg.updateInProgressLabel.hide()
+        self._working(True)
         self.model.reset_package_list()
