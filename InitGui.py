@@ -6,8 +6,11 @@
 
 import os
 import AddonManager
+from addonmanager_python_deps_commands import Std_AddonMgrPip
 
 cwd = os.path.dirname(AddonManager.__file__)
 FreeCADGui.addLanguagePath(os.path.join(cwd, "Resources", "translations"))
 FreeCADGui.addIconPath(os.path.join(cwd, "Resources", "icons"))
 FreeCADGui.addCommand("Std_AddonMgr", AddonManager.CommandAddonManager())
+
+Std_AddonMgrPip.install()
