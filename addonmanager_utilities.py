@@ -426,7 +426,10 @@ def blocking_get(url: str, method=None) -> bytes:
     p = b""
     parse_result = urlparse(url)
     if parse_result.scheme != "https":
-        raise ValueError(f"Invalid URL scheme: {parse_result.scheme} (only https is supported)")
+        fci.Console.PrintWarning(
+            f"Invalid URL scheme: {parse_result.scheme} (only https is supported)"
+        )
+        return p
     if (
         fci.FreeCADGui
         and method is None
