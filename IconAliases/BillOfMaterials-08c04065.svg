@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 16.93 16.93">
+  <style><![CDATA[.B{stroke-linejoin:round}.C{stroke-width:2}.D{stroke:#2e3436}.E{stroke:#0b1521}.F{stroke-width:1.06}]]></style>
+  <defs>
+    <linearGradient id="A" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3465a4"/>
+      <stop offset="1" stop-color="#729fcf"/>
+    </linearGradient>
+    <linearGradient id="B" x1="50" x2="46" y1="47" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c4a000" offset="0"/>
+      <stop stop-color="#edd400" offset="1"/>
+    </linearGradient>
+    <linearGradient id="C" x1="26" x2="21" y1="52" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c4a000" offset="0"/>
+      <stop stop-color="#fce94f" offset="1"/>
+    </linearGradient>
+    <linearGradient id="D" x1="101.94" x2="98.94" y1="31.67" y2="21.75" href="#A"/>
+    <linearGradient id="E" x1="111.94" x2="109.94" y1="26.62" y2="21.62" href="#A"/>
+    <linearGradient href="#C" id="F" x1="-21" y1="35" x2="-24" y2="25"/>
+    <linearGradient href="#B" id="G" x1="-4" y1="28" x2="-8" y2="17"/>
+    <linearGradient href="#C" id="H"/>
+    <linearGradient href="#B" id="I"/>
+  </defs>
+  <g fill="#ccc">
+    <path d="M.53 3.18h14.82v11.64H.53z" paint-order="fill markers stroke" class="B D F"/>
+    <path d="M.79 3.44h14.29v11.11H.79z"/>
+    <g class="D F">
+      <path d="M.26 5.82h15.35"/>
+      <path d="M5.29 2.65v12.7"/>
+      <path d="M.26 9h15.35M.26 12.17h15.35"/>
+    </g>
+  </g>
+  <g transform="matrix(.215 0 0 .215 4.9072 4.0407)" class="C">
+    <g stroke="#302b00" class="B">
+      <path d="M9 49V35l28 10v14z" fill="url(#H)"/>
+      <path d="M37 59V45l18-17v13z" fill="url(#I)"/>
+    </g>
+    <g fill="none">
+      <path d="M11.01 47.61L11 38l24 8 .01 10.19z" stroke="#fce94f"/>
+      <path d="M39.01 54.17L39 46l14-13v7.18z" stroke="#edd400"/>
+    </g>
+    <path d="M23 40l19-17 13 5-18 17z" fill="#fce94f" stroke="#302b00" class="B"/>
+    <g transform="translate(-60)">
+      <path d="M91 33.5l-.03-14.21 12.97 4.34v14.5z" fill="url(#D)" class="B E"/>
+      <path d="M92.93 32.03l.05-10.14 8.93 3.29.08 10.04z" fill="none" stroke="#729fcf"/>
+      <path d="M103.94 38.12v-14.5l11-9L115 28z" fill="url(#E)" class="B E"/>
+      <path d="M105.94 33.62v-9l7-6-.01 8.58z" fill="none" stroke="#729fcf"/>
+      <path d="M90.97 19.29L102 10l12.94 4.62-11 9z" fill="#729fcf" class="B E"/>
+    </g>
+    <g transform="translate(40)">
+      <g stroke="#172a04" class="B">
+        <path d="M-31 35V21l14 5v14z" fill="url(#F)"/>
+        <path d="M-31 21l19.59-15.79L2 10-17 26z" fill="#fce94f"/>
+        <path d="M-17 40V26l7.97-6.71L-9 33z" fill="url(#G)"/>
+      </g>
+      <path d="M-15 36v-9l4-3.5v9zm-14.05-2.25l.09-9.98 9.96 3.52-.02 9.96z" fill="none" stroke="#fce94f"/>
+    </g>
+  </g>
+  <path d="M.4.41h15.08v2.64H.4z" fill="#217844" stroke-width=".81" paint-order="normal" class="B D"/>
+</svg>

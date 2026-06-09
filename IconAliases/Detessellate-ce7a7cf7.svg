@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 16.93 16.93">
+  <style><![CDATA[.B{stroke-width:.53}.C{stroke:#0b1521}.D{stroke-linejoin:round}.E{stroke-linecap:round}]]></style>
+  <defs>
+    <linearGradient id="A" x1="5.21" y1="13.57" x2="5.21" y2="6.77" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3465a4"/>
+      <stop offset="1" stop-color="#729fcf"/>
+    </linearGradient>
+    <linearGradient id="B" x1="-16.73" y1="8.64" x2="-17.76" y2="5.64" gradientTransform="matrix(2.0604621,0,0,1.6062168,48.327122,-1.2471987)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#204a87"/>
+      <stop offset="1" stop-color="#3465a4"/>
+    </linearGradient>
+    <path id="C" d="M9.52 16.14L.79 12.7V4.23l8.73 3.44z"/>
+    <path id="D" d="M16.14 4.23v8.47l-6.61 3.44V7.67z"/>
+  </defs>
+  <use href="#C" fill="url(#A)"/>
+  <g fill="none" class="B">
+    <path d="M9 15.42L1.32 12.4V4.95L9 7.98z" stroke="#729fcf"/>
+    <g class="C D">
+      <path d="M9.52 7.67L.79 12.7" class="E"/>
+      <use href="#C"/>
+    </g>
+  </g>
+  <path d="M9.52 7.67L.79 4.23 7.67.79l8.47 3.44z" fill="#729fcf" class="B C D"/>
+  <path d="M.79 4.23h15.35" fill="none" class="B C D E"/>
+  <use href="#D" fill="url(#B)"/>
+  <g fill="none" class="B">
+    <path d="M15.61 5.11l.06 7.24-5.68 2.95V8.03z" stroke="#3465a4"/>
+    <g class="C D">
+      <use href="#D"/>
+      <path d="M9.53 16.14l6.61-11.91" class="E"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" height="48" width="48">
+  <defs>
+    <linearGradient id="A" x1="22" y1="4" x2="26" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#729fcf"/>
+      <stop offset="1" stop-color="#3465a4"/>
+    </linearGradient>
+  </defs>
+  <path d="M22 9v10.17l-7.19-7.19-2.83 2.83L19.17 22H9v4h10.17l-7.19 7.19 2.83 2.83L22 28.83V39h4V28.83l7.19 7.19 2.83-2.83L28.83 26H39v-4H28.83l7.19-7.19-2.83-2.83L26 19.17V9z" fill="#d3d7cf" fill-rule="evenodd" stroke="#0b1521" stroke-width="2"/>
+  <g id="B" fill-rule="evenodd">
+    <circle cx="24" cy="6" r="5" fill="#729fcf" stroke-width="2" stroke="#0b1521"/>
+    <circle cx="24" cy="6" r="2" fill="url(#A)"/>
+  </g>
+  <use href="#B" x="13" y="5"/>
+  <use href="#B" x="18" y="18"/>
+  <use href="#B" x="13" y="31"/>
+  <use href="#B" x="0" y="36"/>
+  <use href="#B" x="-13" y="31"/>
+  <use href="#B" x="-18" y="18"/>
+  <use href="#B" x="-13" y="5"/>
+</svg>

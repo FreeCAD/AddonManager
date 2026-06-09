@@ -266,7 +266,7 @@ class CacheWriter:
         path_to_package_xml = self.find_file("package.xml", addon_id, index, catalog_entry)
         cache_entry = None
         if path_to_package_xml and os.path.exists(path_to_package_xml):
-            cache_entry = self.generate_cache_entry_from_package_xml(path_to_package_xml)
+            cache_entry = self.generate_cache_entry_from_package_xml(addon_id, path_to_package_xml)
 
         path_to_requirements = self.find_file("requirements.txt", addon_id, index, catalog_entry)
         if path_to_requirements and os.path.exists(path_to_requirements):
@@ -300,7 +300,7 @@ class CacheWriter:
         return cache_entry
 
     def generate_cache_entry_from_package_xml(
-        self, path_to_package_xml: str
+        self, addon_id: str, path_to_package_xml: str
     ) -> Optional[AddonCatalog.CatalogEntryMetadata]:
         cache_entry = AddonCatalog.CatalogEntryMetadata()
         with open(path_to_package_xml, "r", encoding="utf-8") as f:
@@ -361,6 +361,14 @@ class CacheWriter:
                     icon_data = None
 
         if icon_data is not None:
+            base_path = os.path.dirname(os.path.realpath(__file__))
+            svg_name = addon_id + "-" + hashlib.sha1(icon_data).hexdigest()[:8] + ".svg"
+            path = os.path.join(base_path, "IconAliases", svg_name)
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    icon_data = f.read()
+            if len(icon_data) > 10000:
+                print(f'WARNING: icon_data is long, {len(icon_data):,} bytes. Add "{svg_name}"')
             cache_entry.icon_data = base64.b64encode(icon_data).decode("utf-8")
 
         return cache_entry

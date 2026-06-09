@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <style><![CDATA[.B{fill:none}.C{stroke-linecap:round}.D{stroke-width:2}.E{stroke-linejoin:round}.F{stroke:#2e3436}.G{stroke:#a40000}.H{stroke-width:6}.I{stroke:#ef2929}.J{stroke-miterlimit:4.50000000000000000}.K{stroke-dashoffset:20.39999999999999858}]]></style>
+  <defs>
+    <linearGradient id="A" x1="37.9" y1="51.2" x2="34" y2="38" href="#G">
+      <stop offset="0" stop-color="#204a87"/>
+      <stop offset="1" stop-color="#3465a4"/>
+    </linearGradient>
+    <linearGradient id="B" x1="6.1" y1="55.7" x2="4" y2="40" href="#G">
+      <stop offset="0" stop-color="#3465a4"/>
+      <stop offset="1" stop-color="#729fcf"/>
+    </linearGradient>
+    <linearGradient id="C" x1="21.8" y1="19.6" x2="10.3" y2="19.6" spreadMethod="reflect" href="#G">
+      <stop offset="0" stop-color="#c4a000"/>
+      <stop offset="1" stop-color="#fce94f"/>
+    </linearGradient>
+    <linearGradient id="D" x1="21.8" y1="19.6" x2="10.3" y2="19.6" spreadMethod="reflect" href="#G">
+      <stop offset="0" stop-color="#4e9a06"/>
+      <stop offset="1" stop-color="#8ae234"/>
+    </linearGradient>
+    <linearGradient id="E" x1="94" y1="31" x2="86" y2="5" href="#G">
+      <stop offset="0" stop-color="#d3d7cf"/>
+      <stop offset="1" stop-color="#fff"/>
+    </linearGradient>
+    <path id="F" d="M23 24c0 2-6 3-9 3s-9-1-9-3V8.3h18z"/>
+    <linearGradient id="G" gradientUnits="userSpaceOnUse"/>
+  </defs>
+  <g class="D">
+    <path d="M37 3h18l6 6v24H37z" fill="#fff" stroke-dashoffset="6" class="E F"/>
+    <path d="M79 5v26h20V9l-4-4z" fill="url(#E)" stroke="#fff" transform="translate(-40)"/>
+    <path d="M55 3v6h6z" fill="#babdb6" class="E F"/>
+  </g>
+  <path d="M42 8h8m-8 8h14m-14 8h10" stroke-width="4" class="B C F"/>
+  <g stroke="#302b00" class="D E J K">
+    <path d="M25 25c0 2.3-5 4-11 4S3 27 3 25V7h22z" fill="#fce94f"/>
+    <g stroke="#fce94f">
+      <use href="#F" fill="url(#C)"/>
+      <path d="M23 11c-2 2-6 2.4-9 2.4S7 13 5 11" class="B C"/>
+    </g>
+    <path d="M25 7c0 2.3-5 4-11 4S3 9.4 3 7s5-4 11-4 11 2 11 4z" fill="#fce94f"/>
+  </g>
+  <path d="M28 44l20-20" class="B C G H"/>
+  <g class="D">
+    <g class="E J K">
+      <path d="M61 57c0 2.3-5 4-11 4s-11-2-11-4V39h22z" fill="#8ae234" stroke="#172a04"/>
+      <g stroke="#8ae234">
+        <use href="#F" fill="url(#D)" transform="translate(36 32)"/>
+        <path d="M59 43c-2 2-6 2.4-9 2.4s-7-.4-9-2.4" class="B C"/>
+      </g>
+      <path d="M61 39c0 2.3-5 4-11 4s-11-2-11-4 5-4 11-4 11 2 11 4z" fill="#8ae234" stroke="#172a04"/>
+    </g>
+    <path d="M28 44l20-20" class="B C I"/>
+    <g stroke="#0b1521" class="E">
+      <path d="M3 35l18 4 16-4-16-4z" fill="#729fcf"/>
+      <path d="M37 35v20l-16 6V39z" fill="url(#A)"/>
+      <path d="M3 35l18 4v22L3 57z" fill="url(#B)" fill-rule="evenodd"/>
+    </g>
+    <g class="B">
+      <path d="M5 37.4v18l14 3.3v-18z" stroke="#729fcf"/>
+      <path d="M23 40.4V58l12-4.3v-16z" stroke="#3465a4"/>
+    </g>
+  </g>
+  <g class="C B">
+    <path d="M19 33l-5-11" class="G H"/>
+    <path d="M19 33l-5-11" class="D I"/>
+    <path d="M41 50l-12-2" class="G H"/>
+    <path d="M41 50l-12-2" class="D I"/>
+  </g>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <style><![CDATA[.B{stroke-width:1.76}.C{stroke-linejoin:round}.D{stroke-dashoffset:2.04}]]></style>
+  <defs>
+    <linearGradient id="A" href="#J">
+      <stop offset="0" stop-color="#204a87"/>
+      <stop offset="1" stop-color="#3465a4"/>
+    </linearGradient>
+    <linearGradient href="#A" id="B" x1="39.78" y1="47.76" x2="36.27" y2="38.1"/>
+    <linearGradient href="#A" id="C" x1="27.49" y1="31.07" x2="23.97" y2="21.41"/>
+    <linearGradient id="D" x1="18.7" y1="52.15" x2="9.92" y2="28.43" href="#J">
+      <stop offset="0" stop-color="#3465a4"/>
+      <stop offset="1" stop-color="#729fcf"/>
+    </linearGradient>
+    <radialGradient id="E" gradientTransform="matrix(0.98996505,0,0,0.35413451,16.80711,-73.153048)" cx="24.84" cy="36.42" fx="24.84" fy="36.42" r="15.64" href="#J">
+      <stop offset="0"/>
+      <stop offset="1" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient href="#G" id="F" gradientTransform="matrix(1.0434787,1.0434783,-1.6856187,1.6856188,-23.582326,-69.974294)" cx="43.78" cy="41.45" fx="43.78" fy="41.45" r="12.46"/>
+    <linearGradient id="G" href="#J">
+      <stop offset="0" stop-color="#34e0e2"/>
+      <stop offset="1" stop-color="#06989a"/>
+    </linearGradient>
+    <linearGradient id="H" x1="-20.76" y1="70.58" x2="-18.76" y2="80.58" href="#J">
+      <stop offset="0" stop-color="#34e0e2"/>
+      <stop offset="1" stop-color="#16d0d2"/>
+    </linearGradient>
+    <radialGradient href="#G" id="I" gradientTransform="matrix(1.0434787,1.0434783,-1.6856187,1.6856188,-24.127375,-70.170601)" cx="43.78" cy="41.45" fx="43.78" fy="41.45" r="12.46"/>
+    <linearGradient id="J" gradientUnits="userSpaceOnUse"/>
+  </defs>
+  <g stroke="#0b1521" class="B C">
+    <path d="M3.77 49.51V24.92l12.3 4.39v12.3L28.36 46v12.3z" fill="url(#D)"/>
+    <path d="M28.36 58.3V46l15.81-14.93v11.42z" fill="url(#B)"/>
+    <path d="M3.77 24.92l17.57-14.05 11.42 4.39-16.69 14.05z" fill="#729fcf"/>
+  </g>
+  <g fill="none" class="B">
+    <path d="M5.54 48.29l-.01-20.73 8.78 3.51v11.42l12.3 4.39.01 8.95z" stroke="#729fcf"/>
+    <path d="M30.13 54.05v-7.17l12.3-11.42v6.3z" stroke="#3465a4"/>
+  </g>
+  <g stroke="#0b1521" class="C B">
+    <path d="M16.07 41.61l16.69-14.93 11.42 4.39L28.36 46z" fill="#729fcf"/>
+    <path d="M16.07 41.61v-12.3l16.69-14.05v11.42z" fill="url(#C)"/>
+  </g>
+  <path d="M17.83 38.1v-7.9L31 18.77v7.03z" fill="none" stroke="#3465a4" class="B"/>
+  <g transform="matrix(.5789 0 0 .5789 64.3315 -10.1533)">
+    <circle cx="-41.3" cy="52.38" r="21" opacity=".2" fill="url(#I)"/>
+    <g stroke-width="2">
+      <path d="M-32.63 67.88l7.17-7.17 21.52 21.52-7.17 7.17z" fill="url(#H)" stroke="#042a2a" class="C D"/>
+      <path d="M-6.08 82.91l-17.93-17.93" fill="none" stroke="#34e0e2"/>
+      <g class="C D">
+        <path d="M-40.76 31.58a21 21 0 1 0 0 42 21 21 0 1 0 0-42zm-.02 5.26a16 16 0 1 1 0 32 16 16 0 1 1 0-32z" fill="url(#F)" stroke="#042a2a"/>
+        <circle cx="-40.76" cy="52.58" r="19" fill="none" stroke="#34e0e2"/>
+      </g>
+    </g>
+    <ellipse transform="scale(-1)" cx="41.39" cy="-60.26" rx="15.49" ry="5.54" opacity=".26" fill="url(#E)" fill-rule="evenodd"/>
+  </g>
+</svg>

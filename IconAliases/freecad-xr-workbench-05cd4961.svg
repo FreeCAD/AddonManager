@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+  <path d="M1.13 4.63c.08-.26.31-.46.57-.52.47-.14.96-.1 1.44-.1h10.42c.33 0 .67.04.97.19.24.12.35.38.4.63.1.44.07.89.07 1.33v4.44c0 .52-.15 1.06-.53 1.44l-.59.57c-.41.4-1.05.42-1.6.39-.49-.02-.98-.19-1.33-.54l-2-2c-.3-.3-.78-.46-1.21-.36-.32.08-.6.26-.83.5l-1.96 1.96c-.4.4-1 .47-1.54.45-.52-.01-1.06-.15-1.44-.53l-.57-.59c-.38-.39-.4-.99-.4-1.51V5.41a2.5 2.5 0 0 1 .12-.78z" stroke="#fff" stroke-width="2" paint-order="stroke fill markers" stroke-linejoin="round"/>
+  <g fill="#fff" fill-rule="evenodd">
+    <circle cx="4" cy="8" r="1.94" paint-order="markers fill stroke"/>
+    <circle cx="12" cy="8" r="1.94" paint-order="markers fill stroke"/>
+  </g>
+  <circle cx="4" cy="8" r=".94" fill="#0f0" fill-rule="evenodd" paint-order="markers fill stroke"/>
+  <circle cx="12" cy="8" r=".94" fill="red" fill-rule="evenodd" paint-order="markers fill stroke"/>
+</svg>

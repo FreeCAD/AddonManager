@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <defs>
+    <linearGradient id="A" x1="27.6" y1="54.5" x2="9.7" y2="36.2" href="#G">
+      <stop offset="0" stop-color="#2e3436"/>
+      <stop offset="1" stop-color="#888a85"/>
+    </linearGradient>
+    <linearGradient id="B" x1="55.6" y1="26.5" x2="37.7" y2="8.2" href="#G">
+      <stop offset="0" stop-color="#a40000"/>
+      <stop offset="1" stop-color="#ef2929"/>
+    </linearGradient>
+    <linearGradient href="#D" id="C" gradientTransform="scale(1.5652476,0.63887656)" x1="1197.7" y1="282.4" x2="1244.6" y2="386.6"/>
+    <linearGradient id="D" href="#G" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="1" stop-color="#d3d7cf"/>
+    </linearGradient>
+    <linearGradient href="#D" id="E" x1="1989" y1="6.8" x2="2018.1" y2="912.2"/>
+    <linearGradient id="F" x1="10.5" y1="36.8" x2="26.4" y2="53.7" href="#G">
+      <stop offset="0" stop-color="#729fcf"/>
+      <stop offset="1" stop-color="#204a87"/>
+    </linearGradient>
+    <linearGradient id="G" gradientUnits="userSpaceOnUse"/>
+  </defs>
+  <g stroke-width="1.9">
+    <ellipse cy="46" cx="18" rx="13" ry="12.8" fill="url(#A)" fill-rule="evenodd" stroke="#000"/>
+    <circle cy="46" cx="18" r="11.1" fill="url(#F)" stroke="#729fcf"/>
+    <ellipse cy="18" cx="46" rx="13" ry="12.8" fill="url(#B)" fill-rule="evenodd" stroke="#280000"/>
+    <circle cy="18" cx="46" r="11.1" fill="none" stroke="#ef2929"/>
+  </g>
+  <g stroke-width="2">
+    <g stroke-linejoin="round">
+      <path d="M11.7 44h12.7v4H11.7z" fill="url(#C)" stroke="#0b1521"/>
+      <path d="M39.3 19.2v-2.8h5.3V11h2.7v5.5h5.3v2.8h-5.3v5.5h-2.7v-5.5z" fill="url(#E)" stroke="#280000"/>
+    </g>
+    <path d="M64 44.2c-10.4-1.6-22-5-29.7-13.3-8.8-7.7-13-20.6-14.4-30.4m44 35.7C45.3 36 40.5 33.4 35.5 29 30.7 24 28 18 28 .2M0 0l64.3 64.2M.2 20c10.4 1.6 22 5 29.7 13.3C38.7 41 43 54 44.3 63.7M.2 28c18.6.2 23.5 2.8 28.4 7.2 4.8 5 7.5 11 7.7 29" fill="none" stroke="#d3d7cf" stroke-linecap="round"/>
+  </g>
+</svg>
