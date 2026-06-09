@@ -317,52 +317,52 @@ class CacheWriter:
             return None
 
         relative_icon_path = self.get_icon_from_metadata(metadata)
-        if relative_icon_path is not None:
-            absolute_icon_path = os.path.join(
-                os.path.dirname(path_to_package_xml), relative_icon_path
-            )
-            if os.path.exists(absolute_icon_path):
-                icon_data_is_good = True
-                with open(absolute_icon_path, "rb") as f:
-                    icon_data = None
-                    try:
-                        icon_data = f.read()
-                    except IOError as e:
-                        print(f"ERROR: IO Error while reading icon file {absolute_icon_path}")
-                        print(e)
-                        icon_data_is_good = False
-                    except Exception as e:
-                        print(f"ERROR: Unknown error while reading icon file {absolute_icon_path}")
-                        print(e)
-                        icon_data_is_good = False
-                    if icon_data is not None:
-                        if absolute_icon_path.lower().endswith(".svg"):
-                            try:
-                                if not icon_utils.is_svg_bytes(icon_data):
-                                    self.icon_errors[metadata.name] = {
-                                        "valid_icon_path": relative_icon_path,
-                                        "error_message": "SVG file does not have valid XML header",
-                                    }
-                                    icon_data_is_good = False
-                            except icon_utils.BadIconData as e:
-                                self.icon_errors[metadata.name] = {
-                                    "valid_icon_path": relative_icon_path,
-                                    "error_message": str(e),
-                                }
-                                icon_data_is_good = False
-                        elif absolute_icon_path.lower().endswith(".png"):
-                            if icon_utils.png_has_duplicate_iccp(icon_data):
-                                self.icon_errors[metadata.name] = {
-                                    "valid_icon_path": relative_icon_path,
-                                    "error_message": "PNG data has duplicate iCCP chunk",
-                                }
-                                icon_data_is_good = False
+        if relative_icon_path is None:
+            return cache_entry
 
-                        if icon_data_is_good:
-                            cache_entry.icon_data = base64.b64encode(icon_data).decode("utf-8")
-            else:
-                self.icon_errors[metadata.name] = {"bad_icon_path": relative_icon_path}
-                print(f"ERROR: Could not find icon file {absolute_icon_path}")
+        absolute_icon_path = os.path.join(os.path.dirname(path_to_package_xml), relative_icon_path)
+        if not os.path.exists(absolute_icon_path):
+            self.icon_errors[metadata.name] = {"bad_icon_path": relative_icon_path}
+            print(f"ERROR: Could not find icon file {absolute_icon_path}")
+            return cache_entry
+
+        icon_data = None
+        with open(absolute_icon_path, "rb") as f:
+            try:
+                icon_data = f.read()
+            except IOError as e:
+                print(f"ERROR: IO Error while reading icon file {absolute_icon_path}")
+                print(e)
+            except Exception as e:
+                print(f"ERROR: Unknown error while reading icon file {absolute_icon_path}")
+                print(e)
+
+        if icon_data is not None:
+            if absolute_icon_path.lower().endswith(".svg"):
+                try:
+                    if not icon_utils.is_svg_bytes(icon_data):
+                        self.icon_errors[metadata.name] = {
+                            "valid_icon_path": relative_icon_path,
+                            "error_message": "SVG file does not have valid XML header",
+                        }
+                        icon_data = None
+                except icon_utils.BadIconData as e:
+                    self.icon_errors[metadata.name] = {
+                        "valid_icon_path": relative_icon_path,
+                        "error_message": str(e),
+                    }
+                    icon_data = None
+            elif absolute_icon_path.lower().endswith(".png"):
+                if icon_utils.png_has_duplicate_iccp(icon_data):
+                    self.icon_errors[metadata.name] = {
+                        "valid_icon_path": relative_icon_path,
+                        "error_message": "PNG data has duplicate iCCP chunk",
+                    }
+                    icon_data = None
+
+        if icon_data is not None:
+            cache_entry.icon_data = base64.b64encode(icon_data).decode("utf-8")
+
         return cache_entry
 
     def create_local_copy_of_single_addon_with_git(
