@@ -81,9 +81,10 @@ class TestIsSvgBytes(unittest.TestCase):
     def test_is_svg_bytes_sniffs_only_first_MAX_ICON_BYTES(self):
         # Place "<svg" after the sniff window; should NOT be detected.
         raw = b"A" * 100 + b"<svg></svg>"
-        with patch("addonmanager_icon_utilities.MAX_ICON_BYTES", 64), patch(
-            "addonmanager_icon_utilities.is_valid_xml"
-        ) as m:
+        with (
+            patch("addonmanager_icon_utilities.MAX_ICON_BYTES", 64),
+            patch("addonmanager_icon_utilities.is_valid_xml") as m,
+        ):
             self.assertFalse(iu.is_svg_bytes(raw))
             m.assert_not_called()
 
@@ -99,9 +100,10 @@ class TestIsSvgBytes(unittest.TestCase):
             calls.append(arg)
             return True
 
-        with patch(
-            "addonmanager_icon_utilities.is_valid_xml", side_effect=fake_is_valid_xml
-        ), patch("addonmanager_icon_utilities.MAX_ICON_BYTES", 32):
+        with (
+            patch("addonmanager_icon_utilities.is_valid_xml", side_effect=fake_is_valid_xml),
+            patch("addonmanager_icon_utilities.MAX_ICON_BYTES", 32),
+        ):
             self.assertTrue(iu.is_svg_bytes(raw))
             self.assertIs(calls[0], raw)
             self.assertEqual(len(calls[0]), len(raw))
@@ -147,9 +149,11 @@ class TestDecompressGzipLimited(unittest.TestCase):
     def test_small_valid_within_ratio(self):
         raw = b"hello world"
         data = gz(raw)
-        with patch("addonmanager_icon_utilities.MAX_ICON_BYTES", len(data)), patch(
-            "addonmanager_icon_utilities.MAX_GZIP_EXPANSION_RATIO", 16
-        ), patch("addonmanager_icon_utilities.MAX_GZIP_OUTPUT_ABS", 512 * 1024):
+        with (
+            patch("addonmanager_icon_utilities.MAX_ICON_BYTES", len(data)),
+            patch("addonmanager_icon_utilities.MAX_GZIP_EXPANSION_RATIO", 16),
+            patch("addonmanager_icon_utilities.MAX_GZIP_OUTPUT_ABS", 512 * 1024),
+        ):
             self.assertEqual(iu.decompress_gzip_limited(data), raw)
 
     def test_respects_input_cap_inclusive(self):
@@ -168,19 +172,21 @@ class TestDecompressGzipLimited(unittest.TestCase):
         # Choose caps so ratio*len(data) < len(uncompressed)
         payload = b"x" * 129
         data = gz(payload)
-        with patch("addonmanager_icon_utilities.MAX_ICON_BYTES", len(data)), patch(
-            "addonmanager_icon_utilities.MAX_GZIP_EXPANSION_RATIO", 1
-        ), patch(
-            "addonmanager_icon_utilities.MAX_GZIP_OUTPUT_ABS", 10**9
+        with (
+            patch("addonmanager_icon_utilities.MAX_ICON_BYTES", len(data)),
+            patch("addonmanager_icon_utilities.MAX_GZIP_EXPANSION_RATIO", 1),
+            patch("addonmanager_icon_utilities.MAX_GZIP_OUTPUT_ABS", 10**9),
         ):  # let ratio drive the bound
             self.assertIsNone(iu.decompress_gzip_limited(data))
 
     def test_overflows_absolute_cap_returns_none(self):
         payload = b"x" * 600_000  # >512 KiB default abs cap
         data = gz(payload)
-        with patch("addonmanager_icon_utilities.MAX_ICON_BYTES", len(data)), patch(
-            "addonmanager_icon_utilities.MAX_GZIP_EXPANSION_RATIO", 1000
-        ), patch("addonmanager_icon_utilities.MAX_GZIP_OUTPUT_ABS", 512 * 1024):
+        with (
+            patch("addonmanager_icon_utilities.MAX_ICON_BYTES", len(data)),
+            patch("addonmanager_icon_utilities.MAX_GZIP_EXPANSION_RATIO", 1000),
+            patch("addonmanager_icon_utilities.MAX_GZIP_OUTPUT_ABS", 512 * 1024),
+        ):
             self.assertIsNone(iu.decompress_gzip_limited(data))
 
     def test_truncated_or_non_gzip_returns_none(self):
