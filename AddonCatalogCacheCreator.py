@@ -45,6 +45,9 @@ import addonmanager_metadata
 import addonmanager_utilities as utils
 import addonmanager_icon_utilities as icon_utils
 
+from scour import scour
+from types import SimpleNamespace
+
 ADDON_CATALOG_URL = "https://raw.githubusercontent.com/FreeCAD/Addons/main/Data/Index.json"
 BASE_DIRECTORY = "./CatalogCache"
 MAX_COUNT = 10000  # Do at most this many repos (for testing purposes this can be made smaller)
@@ -323,6 +326,7 @@ class CacheWriter:
             )
             if os.path.exists(absolute_icon_path):
                 icon_data_is_good = True
+                icon_is_svg = absolute_icon_path.lower().endswith(".svg")
                 with open(absolute_icon_path, "rb") as f:
                     icon_data = None
                     try:
@@ -336,7 +340,7 @@ class CacheWriter:
                         print(e)
                         icon_data_is_good = False
                     if icon_data is not None:
-                        if absolute_icon_path.lower().endswith(".svg"):
+                        if icon_is_svg:
                             try:
                                 if not icon_utils.is_svg_bytes(icon_data):
                                     self.icon_errors[metadata.name] = {
@@ -358,8 +362,30 @@ class CacheWriter:
                                 }
                                 icon_data_is_good = False
 
+                        if icon_data_is_good and icon_is_svg:
+                            try:
+                                options = SimpleNamespace(
+                                    enable_comment_stripping=True,
+                                    shorten_ids=True,
+                                    enable_id_stripping=True,
+                                    indent="none",
+                                )
+                                optimized_icon_data = scour.scourString(
+                                    icon_data.decode("utf-8"),
+                                    options=options,
+                                ).encode("utf-8")
+                            except Exception:
+                                self.icon_errors[metadata.name] = {
+                                    "valid_icon_path": relative_icon_path,
+                                    "error_message": "SVG Icon cannot be optimized",
+                                }
+                            else:
+                                if len(optimized_icon_data) < len(icon_data):
+                                    icon_data = optimized_icon_data
+
                         if icon_data_is_good:
-                            cache_entry.icon_data = base64.b64encode(icon_data).decode("utf-8")
+                            icon_data = base64.b64encode(icon_data)
+                            cache_entry.icon_data = icon_data.decode("utf-8")
             else:
                 self.icon_errors[metadata.name] = {"bad_icon_path": relative_icon_path}
                 print(f"ERROR: Could not find icon file {absolute_icon_path}")

@@ -102,8 +102,9 @@ class TestMacroCatalog(unittest.TestCase):
             fci.Console.PrintWarning("wiki failure")
 
         instance = MacroCatalog()
-        with patch.object(type(instance), "retrieve_macros_from_git", fake_git), patch.object(
-            type(instance), "retrieve_macros_from_wiki", fake_wiki
+        with (
+            patch.object(type(instance), "retrieve_macros_from_git", fake_git),
+            patch.object(type(instance), "retrieve_macros_from_wiki", fake_wiki),
         ):
             instance.fetch_macros()
 
