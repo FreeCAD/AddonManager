@@ -30,6 +30,7 @@ SET(AddonManager_SRCS
     addonmanager_package_details_controller.py
     addonmanager_preferences_defaults.json
     addonmanager_preferences_migrations.py
+    addonmanager_python_deps_commands.py
     addonmanager_python_deps_gui.py
     addonmanager_python_deps.py
     addonmanager_readme_controller.py
@@ -58,6 +59,7 @@ SET(AddonManager_SRCS
     Init.py
     InitGui.py
     LICENSE
+    main.py
     MacroCacheCreator.py
     NetworkManager.py
     package_details.ui
