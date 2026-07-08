@@ -40,7 +40,7 @@ class Std_AddonMgrPip:
             ),
             "ToolTip": QT_TRANSLATE_NOOP(
                 "AddonsInstaller",
-                "Open the Python Package Manager",
+                "Opens the Python Package Manager",
             ),
         }
 
