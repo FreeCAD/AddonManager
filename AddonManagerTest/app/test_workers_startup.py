@@ -22,8 +22,10 @@
 import json
 import os
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
+import addonmanager_utilities as utils
 import addonmanager_workers_startup
 from Addon import Addon
 from PySideWrapper import QtCore
@@ -204,6 +206,153 @@ def _serve(files: dict):
         return None
 
     return get
+
+
+def _serve_urls(urls: dict):
+    """Return a blocking_get_with_retries side effect that serves the given files, keyed on the
+    complete URL, and returns None for every other URL."""
+
+    def get(url: str, *_args, **_kwargs):
+        if url in urls:
+            return _make_network_reply(urls[url])
+        return None
+
+    return get
+
+
+class TestCustomAddonOnAnUnknownHost(unittest.TestCase):
+    """Tests for a custom repository on a git host the Addon Manager does not ship support for,
+    which is only usable if the Addon Manager works out what software the host is running."""
+
+    _NAME = "addon"
+    _URL = "https://git.example.com/user/addon"
+    _BRANCH = "main"
+
+    # This self-hosted Gitea only serves the Gitea URL layout
+    _GITEA_PACKAGE_XML = f"{_URL}/raw/branch/{_BRANCH}/package.xml"
+    _GITEA_ICON = f"{_URL}/raw/branch/{_BRANCH}/Resources/icons/MyIcon.svg"
+
+    def setUp(self):
+        self.mod_dir = tempfile.TemporaryDirectory()
+        data_paths_patch = patch("AddonCatalog.fci.DataPaths")
+        mock_data_paths = data_paths_patch.start()
+        mock_data_paths.return_value.mod_dir = self.mod_dir.name
+        self.addCleanup(data_paths_patch.stop)
+        self.addCleanup(self.mod_dir.cleanup)
+
+        utils.forget_git_hosts()
+        self.addCleanup(utils.forget_git_hosts)
+
+    def _create_addon(self) -> Addon:
+        worker = addonmanager_workers_startup.CreateAddonListWorker()
+        worker.mod_dir = self.mod_dir.name
+        return worker._create_custom_addon(self._NAME, self._URL, self._BRANCH)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_metadata_is_found_by_probing(self, mock_network_manager, _):
+        """The metadata of an addon on an unknown host is found by trying each known URL layout."""
+        mock_network_manager.blocking_get_with_retries.side_effect = _serve_urls(
+            {self._GITEA_PACKAGE_XML: _package_xml("1.0.0"), self._GITEA_ICON: _FAKE_ICON_BYTES}
+        )
+
+        addon = self._create_addon()
+
+        self.assertEqual("My Custom Addon", addon.display_name)
+        self.assertEqual(_FAKE_ICON_BYTES, addon.icon_data)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_the_host_is_identified(self, mock_network_manager, _):
+        """The host that answered is remembered, so the addon's other URLs are built for it. This
+        is what makes the addon installable: its zip lives at a Gitea URL, not a GitLab one."""
+        mock_network_manager.blocking_get_with_retries.side_effect = _serve_urls(
+            {self._GITEA_PACKAGE_XML: _package_xml("1.0.0", icon=False)}
+        )
+
+        addon = self._create_addon()
+
+        self.assertEqual(utils.GITEA, utils.git_host_of(addon))
+        self.assertEqual(f"{self._URL}/archive/{self._BRANCH}.zip", addon.get_zip_url())
+        self.assertEqual(
+            f"{self._URL}/src/branch/{self._BRANCH}/README.md", utils.get_readme_html_url(addon)
+        )
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_an_identified_host_is_not_probed_again(self, mock_network_manager, _):
+        """Once the host has been identified from the first file, every later file is fetched from
+        the layout that worked, rather than probing for it all over again."""
+        mock_network_manager.blocking_get_with_retries.side_effect = _serve_urls(
+            {self._GITEA_PACKAGE_XML: _package_xml("1.0.0"), self._GITEA_ICON: _FAKE_ICON_BYTES}
+        )
+
+        self._create_addon()
+
+        requested = [
+            call[0][0] for call in mock_network_manager.blocking_get_with_retries.call_args_list
+        ]
+        self.assertEqual([self._GITEA_ICON], [url for url in requested if url.endswith(".svg")])
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_a_host_that_answers_nothing_is_not_identified(self, mock_network_manager, _):
+        """A host that provides none of the files is left unidentified, rather than being recorded
+        as whichever layout was tried last."""
+        mock_network_manager.blocking_get_with_retries.side_effect = _serve_urls({})
+
+        addon = self._create_addon()
+
+        self.assertIsNone(utils.git_host_of(addon))
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_a_host_behind_a_login_is_not_identified(self, mock_network_manager, _):
+        """A git host that requires a login answers every URL, including a nonsense one, with a 200
+        and a sign-in page. Its answers say nothing about what software it runs, and the sign-in
+        page must not be mistaken for the addon's metadata."""
+        sign_in_page = b"<!DOCTYPE html>\n<html><body>Please sign in</body></html>"
+        mock_network_manager.blocking_get_with_retries.side_effect = lambda url, *_a, **_k: (
+            _make_network_reply(sign_in_page)
+        )
+
+        addon = self._create_addon()
+
+        self.assertIsNone(utils.git_host_of(addon))
+        self.assertIsNone(addon.metadata)
+        self.assertFalse(addon.python_requires)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_a_sign_in_page_is_never_read_as_a_requirements_file(self, mock_network_manager, _):
+        """The plain text metadata files cannot be checked by parsing them, so a sign-in page
+        served in place of one would otherwise be read as a list of Python dependencies, and the
+        user would be offered its JavaScript to install."""
+        sign_in_page = b"<!DOCTYPE html>\n<html>\n<script>var gl = {};</script>\n</html>"
+        mock_network_manager.blocking_get_with_retries.side_effect = lambda url, *_a, **_k: (
+            _make_network_reply(sign_in_page)
+        )
+
+        addon = self._create_addon()
+
+        self.assertFalse(addon.python_requires)
+        self.assertFalse(addon.requires)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    def test_a_host_that_changed_software_is_identified_again(self, mock_network_manager, _):
+        """A host identified on an earlier run is stored in the preferences, so if it later moves
+        to different software it has to be worked out again rather than staying wrong forever."""
+        remembered = SimpleNamespace(url=self._URL, branch=self._BRANCH, name=self._NAME)
+        utils.remember_git_host(remembered, utils.GITLAB)  # What it was running last time
+        mock_network_manager.blocking_get_with_retries.side_effect = _serve_urls(
+            {self._GITEA_PACKAGE_XML: _package_xml("1.0.0", icon=False)}  # What it runs now
+        )
+
+        addon = self._create_addon()
+
+        self.assertEqual(utils.GITEA, utils.git_host_of(addon))
+        self.assertEqual("My Custom Addon", addon.display_name)
 
 
 class TestCustomAddons(unittest.TestCase):

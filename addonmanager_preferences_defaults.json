@@ -11,6 +11,7 @@
     "HideNonFSFFreeLibre": false,
     "HideNonOSIApproved": false,
     "HideUnlicensed": false,
+    "IdentifiedGitHosts": "{}",
     "KnownPythonVersions": "[]",
     "MacroUpdateStatsURL": "https://addons.freecad.org/macro_update_stats.json",
     "NoProxyCheck": false,

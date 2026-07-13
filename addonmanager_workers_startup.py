@@ -136,7 +136,13 @@ class CreateAddonListWorker(QtCore.QThread):
         entry = AddonCatalogEntry(
             {"repository": url, "git_ref": branch, "branch_display_name": branch}
         )
-        entry.metadata = self._fetch_custom_addon_metadata(name, url, branch)
+        location = SimpleNamespace(url=url, branch=branch, name=name)
+
+        entry.metadata = self._fetch_custom_addon_metadata(name, location)
+        if entry.metadata is None and utils.forget_git_host(location):
+            # The host we had identified answered nothing at all. It may be running different
+            # software than it was when it was identified, so work out what it is now and retry.
+            entry.metadata = self._fetch_custom_addon_metadata(name, location)
         if entry.metadata is None:
             # Something is wrong: fall back to using the installed metadata
             entry.metadata = self._load_installed_addon_metadata(name)
@@ -158,16 +164,42 @@ class CreateAddonListWorker(QtCore.QThread):
 
         return addon
 
-    def _fetch_custom_addon_metadata(
-        self, name: str, url: str, branch: str
-    ) -> Optional[CatalogEntryMetadata]:
+    def _fetch_custom_addon_metadata(self, name: str, location) -> Optional[CatalogEntryMetadata]:
         """Fetch the metadata files of a custom repository directly from its git host."""
 
-        location = SimpleNamespace(url=url, branch=branch)
+        self._identify_git_host(location)
         return self._collect_addon_metadata(
             name,
             lambda filename: self._fetch_remote_file(utils.construct_git_url(location, filename)),
         )
+
+    def _identify_git_host(self, location) -> None:
+        """Work out which software this repository's git host is running, unless that is already
+        known. The answer is stored in the user's preferences, so this happens only once for any
+        given host, which is why it can afford to ask the host several questions."""
+
+        host = utils.identify_git_host(location, self._serves_package_xml)
+        if host is None:
+            fci.Console.PrintLog(
+                f"Could not work out what software the git host at {location.url} is running. "
+                f"Add a package.xml file to the repository to let the Addon Manager identify it.\n"
+            )
+            return
+        utils.remember_git_host(location, host)
+
+    def _serves_package_xml(self, url: str) -> bool:
+        """Whether the repository really served a package.xml at this URL. The contents have to be
+        checked: a git host that requires a login answers every URL with a 200 and a sign-in page,
+        and that must not be mistaken for the file."""
+
+        data = self._fetch_remote_file(url)
+        if not data:
+            return False
+        try:
+            MetadataReader.from_bytes(data)
+        except (XmlParseError, RuntimeError):
+            return False
+        return True
 
     def _load_installed_addon_metadata(self, name: str) -> Optional[CatalogEntryMetadata]:
         """Load the metadata files of a custom repository from its installed copy, if there is
@@ -206,17 +238,41 @@ class CreateAddonListWorker(QtCore.QThread):
                 if icon_data:
                     metadata.icon_data = base64.b64encode(icon_data).decode("utf-8")
 
-        requirements_txt = get_file("requirements.txt")
+        requirements_txt = cls._text_file(name, "requirements.txt", get_file)
         if requirements_txt:
-            metadata.requirements_txt = cls._decode(requirements_txt)
+            metadata.requirements_txt = requirements_txt
 
-        metadata_txt = get_file("metadata.txt")
+        metadata_txt = cls._text_file(name, "metadata.txt", get_file)
         if metadata_txt:
-            metadata.metadata_txt = cls._decode(metadata_txt)
+            metadata.metadata_txt = metadata_txt
 
         if metadata.package_xml or metadata.requirements_txt or metadata.metadata_txt:
             return metadata
         return None
+
+    @classmethod
+    def _text_file(cls, name: str, filename: str, get_file) -> Optional[str]:
+        """Retrieve one of the plain text metadata files, unless what came back is a web page. A
+        git host that requires a login answers every request with a 200 and a sign-in page: without
+        this check its HTML would be read as though it were a list of the addon's dependencies."""
+
+        data = get_file(filename)
+        if not data:
+            return None
+        if cls._is_html(data):
+            fci.Console.PrintLog(
+                f"The {filename} of custom addon {name} came back as a web page, not a file. "
+                f"Ignoring it: the repository may be private, or may not exist.\n"
+            )
+            return None
+        return cls._decode(data)
+
+    @staticmethod
+    def _is_html(data: bytes) -> bool:
+        """Whether these are the contents of a web page rather than of an addon's metadata file."""
+
+        beginning = data.lstrip()[:64].lower()
+        return beginning.startswith(b"<!doctype html") or beginning.startswith(b"<html")
 
     @staticmethod
     def _decode(data: bytes) -> str:

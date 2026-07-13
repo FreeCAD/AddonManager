@@ -20,6 +20,7 @@
 ################################################################################
 
 from datetime import datetime
+import json
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import os
@@ -27,12 +28,26 @@ import subprocess
 
 from AddonManagerTest.app.mocks import MockAddon as Addon
 
+from addonmanager_freecad_interface import Preferences
 from addonmanager_utilities import (
+    GITEA,
+    GITHUB,
+    GITLAB,
+    IDENTIFIED_HOSTS_PREFERENCE,
+    construct_git_url,
+    forget_git_host,
+    forget_git_hosts,
     get_assigned_string_literal,
     get_macro_version_from_file,
+    get_readme_html_url,
     get_readme_url,
+    get_zip_url,
+    git_host_of,
+    identify_git_host,
     process_date_string_to_python_datetime,
     recognized_git_location,
+    reload_git_hosts,
+    remember_git_host,
     run_interruptable_subprocess,
 )
 
@@ -93,6 +108,36 @@ class TestUtilities(unittest.TestCase):
             repo = Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", branch)
             actual_result = get_readme_url(repo)
             self.assertEqual(actual_result, expected_result)
+
+    def test_get_readme_html_url(self):
+        """Each git host displays a file at its own URL: the Gitea hosts, including Codeberg, do
+        not use the same one as GitHub."""
+        expected_urls = {
+            "https://github.com/FreeCAD/FreeCAD": "https://github.com/FreeCAD/FreeCAD/blob/main/README.md",
+            "https://codeberg.org/user/addon": "https://codeberg.org/user/addon/src/branch/main/README.md",
+            "https://gitlab.com/freecad/FreeCAD": "https://gitlab.com/freecad/FreeCAD/-/blob/main/README.md",
+            "https://unknown.host/user/addon": "https://unknown.host/user/addon/-/blob/main/README.md",
+        }
+        for url, expected_result in expected_urls.items():
+            repo = Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
+            self.assertEqual(expected_result, get_readme_html_url(repo))
+
+    def test_get_zip_url(self):
+        expected_urls = {
+            "https://github.com/FreeCAD/FreeCAD": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+            "https://codeberg.org/user/addon": "https://codeberg.org/user/addon/archive/main.zip",
+            "https://gitlab.com/freecad/FreeCAD": "https://gitlab.com/freecad/FreeCAD/-/archive/main/Test Repo-main.zip",
+            "https://unknown.host/user/addon": "https://unknown.host/user/addon/-/archive/main/Test Repo-main.zip",
+        }
+        for url, expected_result in expected_urls.items():
+            repo = Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
+            self.assertEqual(expected_result, get_zip_url(repo))
+
+    def test_construct_git_url_for_a_local_path(self):
+        """A repo that is a local path, rather than a remote host, is used as-is."""
+        repo = Addon("Test Repo", "/home/user/addon", "Addon.Status.NOT_INSTALLED", "main")
+
+        self.assertEqual("/home/user/addon/package.xml", construct_git_url(repo, "package.xml"))
 
     def test_get_assigned_string_literal(self):
         good_lines = [
@@ -267,6 +312,207 @@ class TestUtilities(unittest.TestCase):
             with self.subTest(separator=separator):
                 with self.assertRaises(ValueError):
                     process_date_string_to_python_datetime(f"2024{separator}01{separator}31")
+
+
+class TestGitHostDetection(unittest.TestCase):
+    """Tests for identifying the software that an unrecognized git host is running."""
+
+    _UNKNOWN_URL = "https://git.example.com/user/addon"
+
+    def setUp(self):
+        forget_git_hosts()
+        self.addCleanup(forget_git_hosts)
+
+    def _repo(self, url: str = _UNKNOWN_URL):
+        return Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
+
+    def _answers_at(self, *layouts):
+        """A serves_file() that answers only at the raw file layouts of the given hosts, and
+        records every URL it was asked about."""
+        answering_urls = {
+            f"{self._UNKNOWN_URL}{suffix}"
+            for suffix in (
+                {
+                    GITHUB: "/raw/main/package.xml",
+                    GITEA: "/raw/branch/main/package.xml",
+                    GITLAB: "/-/raw/main/package.xml",
+                }[host]
+                for host in layouts
+            )
+        }
+        self.asked = []
+
+        def serves_file(url):
+            self.asked.append(url)
+            return url in answering_urls
+
+        return serves_file
+
+    # The layouts each host was measured to serve. All three serve GitHub's, so it identifies
+    # nothing on its own; the other two layouts are each served only by their own software.
+
+    def test_a_host_serving_only_the_github_layout_is_github(self):
+        self.assertEqual(GITHUB, identify_git_host(self._repo(), self._answers_at(GITHUB)))
+
+    def test_a_host_serving_the_gitea_layout_is_gitea(self):
+        """Gitea serves GitHub's layout as well as its own: the exclusive layout decides."""
+        self.assertEqual(GITEA, identify_git_host(self._repo(), self._answers_at(GITEA, GITHUB)))
+
+    def test_a_host_serving_the_gitlab_layout_is_gitlab(self):
+        """GitLab serves GitHub's layout as well as its own: the exclusive layout decides."""
+        self.assertEqual(GITLAB, identify_git_host(self._repo(), self._answers_at(GITLAB, GITHUB)))
+
+    def test_the_answer_does_not_depend_on_the_order_of_the_layouts(self):
+        """Every layout is asked before anything is decided, so no host can win by being asked
+        first. A Gitea host is identified as Gitea whichever way round the answers arrive."""
+        for order in ((GITEA, GITHUB), (GITHUB, GITEA)):
+            with self.subTest(order=[host.name for host in order]):
+                self.assertEqual(GITEA, identify_git_host(self._repo(), self._answers_at(*order)))
+
+    def test_every_layout_is_asked_about(self):
+        """No early exit: the decision is made from the complete set of answers."""
+        identify_git_host(self._repo(), self._answers_at(GITEA, GITHUB))
+
+        self.assertEqual(
+            {
+                f"{self._UNKNOWN_URL}/raw/main/package.xml",
+                f"{self._UNKNOWN_URL}/raw/branch/main/package.xml",
+                f"{self._UNKNOWN_URL}/-/raw/main/package.xml",
+            },
+            set(self.asked),
+        )
+
+    def test_a_host_serving_an_exclusive_layout_alone_is_still_identified(self):
+        """If a GitLab ever stops serving GitHub's legacy layout, it is still a GitLab."""
+        self.assertEqual(GITLAB, identify_git_host(self._repo(), self._answers_at(GITLAB)))
+
+    def test_a_host_that_contradicts_itself_is_not_identified(self):
+        """Nothing can be both a Gitea and a GitLab. A host that answers at both exclusive layouts
+        is answering everything it is asked, so its answers mean nothing and it is left alone."""
+        self.assertIsNone(identify_git_host(self._repo(), self._answers_at(GITHUB, GITEA, GITLAB)))
+
+    def test_a_host_that_serves_nothing_is_not_identified(self):
+        self.assertIsNone(identify_git_host(self._repo(), self._answers_at()))
+
+    def test_a_local_path_is_not_identified(self):
+        repo = self._repo("/home/user/addon")
+
+        self.assertIsNone(identify_git_host(repo, self._answers_at(GITHUB)))
+
+    def test_identified_host_is_used_for_every_url(self):
+        """A host identified while fetching one file is used for the zip and readme URLs too."""
+        repo = self._repo()
+
+        remember_git_host(repo, GITEA)
+
+        self.assertEqual(f"{self._UNKNOWN_URL}/archive/main.zip", get_zip_url(repo))
+        self.assertEqual(
+            f"{self._UNKNOWN_URL}/src/branch/main/README.md", get_readme_html_url(repo)
+        )
+        self.assertEqual(f"{self._UNKNOWN_URL}/raw/branch/main/README.md", get_readme_url(repo))
+
+    def test_a_known_host_cannot_be_overridden(self):
+        """The layouts of the hosts the Addon Manager ships are not up for redefinition."""
+        repo = self._repo("https://github.com/FreeCAD/FreeCAD")
+
+        remember_git_host(repo, GITLAB)
+
+        self.assertEqual(GITHUB, git_host_of(repo))
+
+    def test_an_unidentified_host_has_no_layout(self):
+        self.assertIsNone(git_host_of(self._repo()))
+
+    def test_forgetting_hosts_makes_them_be_identified_again(self):
+        repo = self._repo()
+        remember_git_host(repo, GITEA)
+
+        forget_git_hosts()
+
+        self.assertIsNone(git_host_of(repo))
+
+
+class TestGitHostPersistence(unittest.TestCase):
+    """A git host does not change which software it runs from one run of FreeCAD to the next, so
+    what was worked out about it is stored in the preferences rather than probed for every time."""
+
+    _UNKNOWN_URL = "https://git.example.com/user/addon"
+
+    def setUp(self):
+        forget_git_hosts()
+        self.addCleanup(forget_git_hosts)
+
+    def _repo(self, url: str = _UNKNOWN_URL):
+        return Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
+
+    @staticmethod
+    def _restart():
+        """Simulate the next run of FreeCAD: everything held in memory is gone, and only what was
+        written to the preferences is left."""
+        reload_git_hosts()
+
+    def test_an_identified_host_is_stored_in_the_preferences(self):
+        remember_git_host(self._repo(), GITEA)
+
+        stored = json.loads(Preferences().get(IDENTIFIED_HOSTS_PREFERENCE))
+
+        self.assertEqual({"git.example.com": "Gitea"}, stored)
+
+    def test_an_identified_host_survives_a_restart(self):
+        remember_git_host(self._repo(), GITEA)
+
+        self._restart()
+
+        self.assertEqual(GITEA, git_host_of(self._repo()))
+
+    def test_a_stored_host_is_not_probed_again(self):
+        """A host read back from the preferences is used as-is: nothing is asked of it."""
+        remember_git_host(self._repo(), GITEA)
+
+        self._restart()
+
+        def must_not_be_asked(url):
+            raise AssertionError(f"A host already stored in the preferences was probed at {url}")
+
+        self.assertEqual(GITEA, git_host_of(self._repo()))
+        self.assertEqual(GITEA, identify_git_host(self._repo(), must_not_be_asked))
+
+    def test_forgetting_a_host_removes_it_from_the_preferences(self):
+        repo = self._repo()
+        remember_git_host(repo, GITEA)
+
+        self.assertTrue(forget_git_host(repo))
+
+        self._restart()
+        self.assertIsNone(git_host_of(repo))
+
+    def test_forgetting_a_host_that_was_never_identified_does_nothing(self):
+        """Nothing was learned about this host, so there is no point in trying again."""
+        self.assertFalse(forget_git_host(self._repo()))
+
+    def test_a_host_stored_under_a_name_we_do_not_know_is_ignored(self):
+        """A preference naming host software this version does not support, perhaps written by a
+        newer version, is discarded rather than trusted."""
+        Preferences().set(IDENTIFIED_HOSTS_PREFERENCE, '{"git.example.com": "Fossil"}')
+
+        self._restart()
+
+        self.assertIsNone(git_host_of(self._repo()))
+
+    def test_a_corrupt_preference_is_ignored(self):
+        Preferences().set(IDENTIFIED_HOSTS_PREFERENCE, "this is not JSON")
+
+        self._restart()
+
+        with patch("addonmanager_utilities.fci.Console"):
+            self.assertIsNone(git_host_of(self._repo()))
+
+    def test_a_shipped_host_cannot_be_overridden_by_the_preference(self):
+        """A stored preference cannot redefine the layout of a host we ship support for."""
+        Preferences().set(IDENTIFIED_HOSTS_PREFERENCE, '{"github.com": "GitLab"}')
+
+        self._restart()
+
+        self.assertEqual(GITHUB, git_host_of(self._repo("https://github.com/FreeCAD/FreeCAD")))
 
 
 if __name__ == "__main__":
