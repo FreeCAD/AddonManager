@@ -270,6 +270,22 @@ class GitManager:
         os.chdir(original_cwd)
         shutil.rmtree(backup_path, ignore_errors=True)
 
+    def default_branch(self, remote: str) -> str:
+        """Get the name of the default branch of a remote repository, without cloning it. Works with
+        any git host, since it asks the repository itself rather than the software hosting it.
+        Raises GitFailed if the default branch cannot be determined."""
+
+        response = self._synchronous_call_git(["ls-remote", "--symref", remote, "HEAD"])
+        for line in response.split("\n"):
+            # The line we want looks like:
+            # ref: refs/heads/main    HEAD
+            if line.startswith("ref:"):
+                reference = line.split()[1]
+                prefix = "refs/heads/"
+                if reference.startswith(prefix):
+                    return reference[len(prefix) :]  # A branch name may itself contain a slash
+        raise GitFailed(f"Could not determine the default branch of {remote}")
+
     def get_remote(self, local_path) -> str:
         """Get the repository that this local path is set to fetch from"""
         old_dir = os.getcwd()

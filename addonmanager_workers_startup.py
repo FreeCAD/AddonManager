@@ -66,6 +66,11 @@ class CreateAddonListWorker(QtCore.QThread):
     RETRY_DELAY_MS = 3000
     ATTEMPT_TIMEOUT_MS = 30000
 
+    # The names a default branch is given, tried in this order when git is not available to ask the
+    # repository what its default branch actually is. The last of them is the fallback when nothing
+    # else works, which is what a custom repository has always used.
+    DEFAULT_BRANCH_NAMES = ("main", "master")
+
     def __init__(self):
         QtCore.QThread.__init__(self)
         self.setObjectName("CreateAddonListWorker")
@@ -111,6 +116,8 @@ class CreateAddonListWorker(QtCore.QThread):
                     + "\n"
                 )
                 continue
+            if not branch:
+                branch = self._default_branch_of(url)
             fci.Console.PrintLog(f"Adding custom location {url} with branch {branch}\n")
             self.package_names.append(name)
             self.addon_repo.emit(self._create_custom_addon(name, url, branch))
@@ -118,15 +125,67 @@ class CreateAddonListWorker(QtCore.QThread):
     @staticmethod
     def _parse_custom_repositories() -> List[Tuple[str, str]]:
         """Parse the CustomRepositories preference into a list of (url, branch) pairs. Each line of
-        the preference is a repository URL, optionally followed by a space and a branch name."""
+        the preference is a repository URL, optionally followed by a space and a branch name. The
+        branch is empty when the user did not name one, and has to be worked out from the
+        repository itself."""
 
         repositories = []
         for line in fci.Preferences().get("CustomRepositories").split("\n"):
             url, _, branch = line.strip().partition(" ")
             url = url.rstrip("/").split(".git")[0]
             if url:
-                repositories.append((url, branch.strip() if branch.strip() else "master"))
+                repositories.append((url, branch.strip()))
         return repositories
+
+    def _default_branch_of(self, url: str) -> str:
+        """Work out which branch to use for a custom repository whose branch the user did not name.
+
+        Asking git is exact and works with any host, because the repository is asked about itself
+        rather than the software hosting it. Without git, the two names that a default branch almost
+        always has are tried instead, which does not cover a repository whose default branch is
+        named anything else."""
+
+        git_manager = initialize_git()
+        if git_manager:
+            try:
+                branch = git_manager.default_branch(url)
+                fci.Console.PrintLog(f"The default branch of {url} is '{branch}'\n")
+                return branch
+            except GitFailed as e:
+                fci.Console.PrintLog(f"Could not ask git for the default branch of {url}: {e}\n")
+
+        for candidate in CreateAddonListWorker.DEFAULT_BRANCH_NAMES:
+            if self._repository_has_branch(url, candidate):
+                fci.Console.PrintLog(f"Using branch '{candidate}' of {url}\n")
+                return candidate
+
+        fci.Console.PrintWarning(
+            translate(
+                "AddonsInstaller",
+                "Could not determine the default branch of the custom repository {}, so '{}' is "
+                "being used. If that is the wrong branch, set the correct one in the Addon Manager "
+                "preferences.",
+            ).format(url, CreateAddonListWorker.DEFAULT_BRANCH_NAMES[-1])
+            + "\n"
+        )
+        return CreateAddonListWorker.DEFAULT_BRANCH_NAMES[-1]
+
+    def _repository_has_branch(self, url: str, branch: str) -> bool:
+        """Whether the repository serves an addon's package.xml on the given branch.
+
+        If the software running the git host has not been identified yet, then which URL the file
+        would live at is not known either, so every layout is asked: the host gets identified in the
+        process, and the answer is kept for later."""
+
+        location = SimpleNamespace(url=url, branch=branch)
+        if utils.git_host_of(location) is not None:
+            return self._serves_package_xml(utils.construct_git_url(location, "package.xml"))
+
+        host = utils.identify_git_host(location, self._serves_package_xml)
+        if host is None:
+            return False
+        utils.remember_git_host(location, host)
+        return True
 
     def _create_custom_addon(self, name: str, url: str, branch: str) -> Addon:
         """Create an Addon for a custom repository by synthesizing the catalog entry that the
