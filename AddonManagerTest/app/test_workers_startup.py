@@ -28,6 +28,7 @@ from unittest.mock import patch, MagicMock
 import addonmanager_utilities as utils
 import addonmanager_workers_startup
 from Addon import Addon
+from addonmanager_git import GitFailed
 from PySideWrapper import QtCore
 
 
@@ -355,6 +356,142 @@ class TestCustomAddonOnAnUnknownHost(unittest.TestCase):
         self.assertEqual("My Custom Addon", addon.display_name)
 
 
+class TestCustomAddonDefaultBranch(unittest.TestCase):
+    """A custom repository whose branch the user did not name. Its default branch has to be worked
+    out: guessing "master" has been wrong by default since GitHub renamed it in 2020."""
+
+    _URL = "https://git.example.com/user/addon"
+
+    def setUp(self):
+        # Looking for the branch identifies the git host as a side effect, and that is remembered
+        utils.forget_git_hosts()
+        self.addCleanup(utils.forget_git_hosts)
+
+    def _worker(self) -> addonmanager_workers_startup.CreateAddonListWorker:
+        worker = addonmanager_workers_startup.CreateAddonListWorker()
+        worker.current_thread = MagicMock()
+        worker.current_thread.isInterruptionRequested.return_value = False
+        return worker
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_git_is_asked_for_the_default_branch(self, mock_initialize_git, _):
+        """Git knows the answer exactly, whatever the branch is called and whatever the host is."""
+        mock_initialize_git.return_value.default_branch.return_value = "development"
+
+        branch = self._worker()._default_branch_of(self._URL)
+
+        self.assertEqual("development", branch)
+        mock_initialize_git.return_value.default_branch.assert_called_once_with(self._URL)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_without_git_the_usual_names_are_tried(self, mock_initialize_git, mock_network, _):
+        """Without git, the repository is asked for a package.xml on each of the usual names."""
+        mock_initialize_git.return_value = None
+        mock_network.blocking_get_with_retries.side_effect = _serve_urls(
+            {f"{self._URL}/-/raw/main/package.xml": _package_xml("1.0.0")}
+        )
+
+        branch = self._worker()._default_branch_of(self._URL)
+
+        self.assertEqual("main", branch)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_without_git_master_is_used_if_main_does_not_exist(
+        self, mock_initialize_git, mock_network, _
+    ):
+        mock_initialize_git.return_value = None
+        mock_network.blocking_get_with_retries.side_effect = _serve_urls(
+            {f"{self._URL}/-/raw/master/package.xml": _package_xml("1.0.0")}
+        )
+
+        branch = self._worker()._default_branch_of(self._URL)
+
+        self.assertEqual("master", branch)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_git_failing_falls_back_to_the_usual_names(self, mock_initialize_git, mock_network, _):
+        """Git is there but cannot answer, so the usual names are tried instead of giving up."""
+        mock_initialize_git.return_value.default_branch.side_effect = GitFailed("no such repo")
+        mock_network.blocking_get_with_retries.side_effect = _serve_urls(
+            {f"{self._URL}/-/raw/main/package.xml": _package_xml("1.0.0")}
+        )
+
+        branch = self._worker()._default_branch_of(self._URL)
+
+        self.assertEqual("main", branch)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_nothing_works_so_the_old_default_is_used(self, mock_initialize_git, mock_network, _):
+        """When the branch cannot be worked out at all, the addon still gets the branch it has
+        always been given, and the user is told to name one themselves."""
+        mock_initialize_git.return_value = None
+        mock_network.blocking_get_with_retries.side_effect = _serve_urls({})
+
+        branch = self._worker()._default_branch_of(self._URL)
+
+        self.assertEqual("master", branch)
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.NetworkManager.AM_NETWORK_MANAGER")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_a_sign_in_page_is_not_mistaken_for_a_branch(
+        self, mock_initialize_git, mock_network, _
+    ):
+        """A git host that requires a login answers every request with a 200 and a sign-in page,
+        which must not be taken as proof that the branch exists."""
+        mock_initialize_git.return_value = None
+        mock_network.blocking_get_with_retries.side_effect = lambda url, *_a, **_k: (
+            _make_network_reply(b"<!DOCTYPE html><html>Please sign in</html>")
+        )
+
+        branch = self._worker()._default_branch_of(self._URL)
+
+        self.assertEqual("master", branch)  # The fallback, not "main"
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.CreateAddonListWorker.addon_repo")
+    @patch("addonmanager_workers_startup.fci.Preferences")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_a_branch_the_user_named_is_never_second_guessed(
+        self, mock_initialize_git, mock_preferences, mock_addon_repo_signal, _
+    ):
+        """The user named a branch, so the repository is not asked about it at all."""
+        mock_preferences.return_value.get.return_value = f"{self._URL} their-branch"
+        worker = self._worker()
+
+        with patch.object(worker, "_create_custom_addon") as mock_create:
+            worker._get_custom_addons()
+
+        mock_initialize_git.assert_not_called()
+        mock_create.assert_called_once_with("addon", self._URL, "their-branch")
+
+    @patch("addonmanager_workers_startup.fci.Console")
+    @patch("addonmanager_workers_startup.CreateAddonListWorker.addon_repo")
+    @patch("addonmanager_workers_startup.fci.Preferences")
+    @patch("addonmanager_workers_startup.initialize_git")
+    def test_the_detected_branch_is_the_one_the_addon_is_built_with(
+        self, mock_initialize_git, mock_preferences, mock_addon_repo_signal, _
+    ):
+        """The branch that was worked out is the one the addon is fetched and installed from."""
+        mock_preferences.return_value.get.return_value = self._URL  # No branch named
+        mock_initialize_git.return_value.default_branch.return_value = "development"
+        worker = self._worker()
+
+        with patch.object(worker, "_create_custom_addon") as mock_create:
+            worker._get_custom_addons()
+
+        mock_create.assert_called_once_with("addon", self._URL, "development")
+
+
 class TestCustomAddons(unittest.TestCase):
     """Tests for the custom repository handling in CreateAddonListWorker."""
 
@@ -394,7 +531,8 @@ class TestCustomAddons(unittest.TestCase):
 
     @patch("addonmanager_workers_startup.fci.Preferences")
     def test_parse_custom_repositories(self, mock_preferences):
-        """Each line is parsed into a URL and a branch, with "master" as the default branch."""
+        """Each line is parsed into a URL and a branch. A line with no branch yields an empty one:
+        the repository is asked what its default branch is, rather than being assumed."""
         mock_preferences.return_value.get.return_value = "\n".join(
             [
                 "https://github.com/myorg/no-branch-given",
@@ -409,10 +547,10 @@ class TestCustomAddons(unittest.TestCase):
 
         self.assertEqual(
             [
-                ("https://github.com/myorg/no-branch-given", "master"),
+                ("https://github.com/myorg/no-branch-given", ""),
                 ("https://github.com/myorg/branch-given", "other-branch"),
-                ("https://github.com/myorg/trailing-slash", "master"),
-                ("https://github.com/myorg/dot-git", "master"),
+                ("https://github.com/myorg/trailing-slash", ""),
+                ("https://github.com/myorg/dot-git", ""),
             ],
             result,
         )
