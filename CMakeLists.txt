@@ -1,6 +1,30 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileNotice: Part of the AddonManager.
 
+# The Addon Manager requires the defusedxml package at runtime to safely parse addon metadata. Unlike
+# the optional Python packages that individual addons depend on, defusedxml is a hard dependency of the
+# Addon Manager itself, so verify that it is importable at configure time rather than deferring the
+# failure to the user's first launch.
+IF (Python3_EXECUTABLE)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "-c" "import defusedxml"
+        RESULT_VARIABLE ADDONMANAGER_DEFUSEDXML_MISSING
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    IF (ADDONMANAGER_DEFUSEDXML_MISSING)
+        MESSAGE(FATAL_ERROR
+            "The Addon Manager requires the Python package 'defusedxml', which was not found for "
+            "${Python3_EXECUTABLE}. Install it (for example, 'pip install defusedxml') and reconfigure.")
+    ELSE ()
+        MESSAGE(STATUS "Found required Addon Manager dependency: defusedxml")
+    ENDIF ()
+ELSE ()
+    MESSAGE(WARNING
+        "Python3_EXECUTABLE is not set, so the Addon Manager cannot verify that its required "
+        "'defusedxml' dependency is installed.")
+ENDIF ()
+
 IF (BUILD_GUI)
     add_subdirectory(Widgets)
 ENDIF (BUILD_GUI)
