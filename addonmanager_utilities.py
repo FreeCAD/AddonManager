@@ -24,14 +24,17 @@
 
 # pylint: disable=deprecated-module, ungrouped-imports
 
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Any, List
+from typing import Dict, Optional, Any, List, Tuple
+import json
 import os
 import platform
 import shutil
 import stat
 import subprocess
 import sys
+import threading
 import time
 import re
 import ctypes
@@ -197,58 +200,237 @@ def restart_freecad():
         QtCore.QProcess.startDetached(QtWidgets.QApplication.applicationFilePath(), args)
 
 
+@dataclass(frozen=True)
+class GitHost:
+    """The URL layouts used by a family of git hosting software. Each layout is a format string
+    that takes the base url of the repository, the branch, the name of the addon, and the path of
+    a file within the repository.
+
+    raw_file_is_exclusive records whether a host that serves a file at this raw_file layout must be
+    running this software. Gitea and GitLab each have a raw file layout that only they serve, but
+    all three of them serve GitHub's, so being answered at GitHub's layout means nothing on its own.
+    See identify_git_host()."""
+
+    name: str
+    raw_file: str
+    archive: str
+    blob: str
+    raw_file_is_exclusive: bool
+
+
+GITHUB = GitHost(
+    name="GitHub",
+    raw_file="{url}/raw/{branch}/{filename}",
+    archive="{url}/archive/{branch}.zip",
+    blob="{url}/blob/{branch}/{filename}",
+    raw_file_is_exclusive=False,  # Gitea and GitLab serve this layout too
+)
+
+GITEA = GitHost(
+    name="Gitea",  # Also Forgejo (and therefore Codeberg)
+    raw_file="{url}/raw/branch/{branch}/{filename}",
+    archive="{url}/archive/{branch}.zip",
+    blob="{url}/src/branch/{branch}/{filename}",
+    raw_file_is_exclusive=True,
+)
+
+GITLAB = GitHost(
+    name="GitLab",
+    raw_file="{url}/-/raw/{branch}/{filename}",
+    archive="{url}/-/archive/{branch}/{name}-{branch}.zip",
+    blob="{url}/-/blob/{branch}/{filename}",
+    raw_file_is_exclusive=True,
+)
+
+KNOWN_GIT_HOSTS: Dict[str, GitHost] = {
+    "github.com": GITHUB,
+    "codeberg.org": GITEA,
+    "gitlab.com": GITLAB,
+    "framagit.org": GITLAB,
+    "salsa.debian.org": GITLAB,
+}
+
+# Every host that an unidentified git host might turn out to be running. All of them are asked, and
+# the answer is worked out from the complete set of replies, so the order here does not matter.
+CANDIDATE_GIT_HOSTS: Tuple[GitHost, ...] = (GITHUB, GITEA, GITLAB)
+
+# The layout to use for a host that we have neither heard of nor identified
+DEFAULT_GIT_HOST = GITLAB
+
+# The file a host is asked for when identifying it. It has to be one whose contents can be checked,
+# so that a login page or an error page served with a 200 status is not mistaken for it.
+IDENTIFYING_FILE = "package.xml"
+
+GIT_HOSTS_BY_NAME: Dict[str, GitHost] = {host.name: host for host in CANDIDATE_GIT_HOSTS}
+
+# The preference that identified hosts are stored in, so that a host only ever has to be identified
+# once: a host does not change which software it runs from one run of FreeCAD to the next.
+IDENTIFIED_HOSTS_PREFERENCE = "IdentifiedGitHosts"
+
+_identified_git_hosts: Optional[Dict[str, GitHost]] = None  # Loaded from preferences on first use
+_identified_git_hosts_lock = threading.Lock()
+
+
+def _load_identified_git_hosts() -> Dict[str, GitHost]:
+    """Read the identified hosts from the preferences. Must be called with the lock held."""
+
+    global _identified_git_hosts
+    if _identified_git_hosts is not None:
+        return _identified_git_hosts
+
+    _identified_git_hosts = {}
+    try:
+        stored = json.loads(fci.Preferences().get(IDENTIFIED_HOSTS_PREFERENCE))
+    except json.JSONDecodeError:
+        fci.Console.PrintWarning(
+            f"Could not read the {IDENTIFIED_HOSTS_PREFERENCE} preference: "
+            "the git hosts it names will be identified again\n"
+        )
+        stored = {}
+    if isinstance(stored, dict):
+        for netloc, host_name in stored.items():
+            if host_name in GIT_HOSTS_BY_NAME and netloc not in KNOWN_GIT_HOSTS:
+                _identified_git_hosts[netloc] = GIT_HOSTS_BY_NAME[host_name]
+    return _identified_git_hosts
+
+
+def _store_identified_git_hosts() -> None:
+    """Write the identified hosts back to the preferences. Must be called with the lock held."""
+
+    fci.Preferences().set(
+        IDENTIFIED_HOSTS_PREFERENCE,
+        json.dumps({netloc: host.name for netloc, host in _identified_git_hosts.items()}),
+    )
+
+
+def git_host_of(repo) -> Optional[GitHost]:
+    """The software running the git host of this repo, if it is known: either because it is one of
+    the hosts the Addon Manager ships, or because it was identified during this or an earlier run.
+    Returns None for a host that has not been identified."""
+
+    netloc = urlparse(repo.url).netloc
+    if netloc in KNOWN_GIT_HOSTS:
+        return KNOWN_GIT_HOSTS[netloc]
+    with _identified_git_hosts_lock:
+        return _load_identified_git_hosts().get(netloc)
+
+
+def remember_git_host(repo, host: GitHost) -> None:
+    """Record the software that a git host turned out to be running. This is stored in the user's
+    preferences, so that the host does not have to be identified again on the next run."""
+
+    netloc = urlparse(repo.url).netloc
+    if not netloc or netloc in KNOWN_GIT_HOSTS:
+        return
+    with _identified_git_hosts_lock:
+        identified = _load_identified_git_hosts()
+        if identified.get(netloc) == host:
+            return
+        fci.Console.PrintLog(f"Identified the git host at {netloc} as {host.name}\n")
+        identified[netloc] = host
+        _store_identified_git_hosts()
+
+
+def forget_git_host(repo) -> bool:
+    """Discard what was previously worked out about this repo's git host, so that it is identified
+    again. Returns True if there was anything to discard, which means it is worth another try."""
+
+    netloc = urlparse(repo.url).netloc
+    with _identified_git_hosts_lock:
+        identified = _load_identified_git_hosts()
+        if netloc not in identified:
+            return False
+        fci.Console.PrintLog(
+            f"The git host at {netloc} no longer answers as {identified[netloc].name}: "
+            "identifying it again\n"
+        )
+        del identified[netloc]
+        _store_identified_git_hosts()
+        return True
+
+
+def forget_git_hosts() -> None:
+    """Discard everything the Addon Manager has worked out about git hosts."""
+
+    with _identified_git_hosts_lock:
+        _load_identified_git_hosts().clear()
+        _store_identified_git_hosts()
+
+
+def reload_git_hosts() -> None:
+    """Discard the identified hosts held in memory and read them from the preferences again, as
+    happens the first time they are needed in a run of FreeCAD."""
+
+    global _identified_git_hosts
+    with _identified_git_hosts_lock:
+        _identified_git_hosts = None
+
+
+def _base_url(repo) -> str:
+    return repo.url[:-4] if repo.url.endswith(".git") else repo.url
+
+
+def _format_url(layout: str, repo, filename: str = "") -> str:
+    return layout.format(
+        url=_base_url(repo),
+        branch=repo.branch,
+        filename=filename,
+        name=getattr(repo, "name", ""),
+    )
+
+
+def identify_git_host(repo, serves_file) -> Optional[GitHost]:
+    """Work out which software an unrecognized git host is running, by asking it for the same file
+    in every layout the Addon Manager knows and deciding from the complete set of answers.
+
+    serves_file(url) must return True only if the host really served the file that was asked for.
+    Checking the status code is not enough to establish that: a git host that requires a login
+    answers every URL, including a nonsense one, with a 200 and a sign-in page.
+
+    Only Gitea and GitLab have a raw file layout that is exclusively theirs, so an answer at either
+    of those identifies the host outright. All three serve GitHub's layout, so an answer there only
+    means GitHub if neither of the exclusive layouts answered. A host that answers at both of the
+    exclusive layouts is contradicting itself and is left unidentified rather than guessed at."""
+
+    known = git_host_of(repo)
+    if known is not None:
+        return known  # Shipped, or identified on an earlier run: there is nothing to ask
+    if not urlparse(repo.url).netloc:
+        return None  # A local path, not a git host
+
+    answered = {
+        candidate
+        for candidate in CANDIDATE_GIT_HOSTS
+        if serves_file(_format_url(candidate.raw_file, repo, IDENTIFYING_FILE))
+    }
+    exclusive = {candidate for candidate in answered if candidate.raw_file_is_exclusive}
+
+    if len(exclusive) == 1:
+        return exclusive.pop()
+    if not exclusive and GITHUB in answered:
+        return GITHUB
+    return None
+
+
 def get_zip_url(repo):
     """Returns the location of a zip file from a repo, if available"""
 
-    parsed_url = urlparse(repo.url)
-    if parsed_url.netloc == "github.com":
-        return f"{repo.url}/archive/{repo.branch}.zip"
-    if parsed_url.netloc in ["gitlab.com", "framagit.org", "salsa.debian.org"]:
-        return f"{repo.url}/-/archive/{repo.branch}/{repo.name}-{repo.branch}.zip"
-    if parsed_url.netloc in ["codeberg.org"]:
-        return f"{repo.url}/archive/{repo.branch}.zip"
-    fci.Console.PrintLog(
-        "Debug: addonmanager_utilities.get_zip_url: Unknown git host fetching zip URL:"
-        + parsed_url.netloc
-        + "\n"
-    )
-    return f"{repo.url}/-/archive/{repo.branch}/{repo.name}-{repo.branch}.zip"
+    return _format_url(_host_or_default(repo).archive, repo)
 
 
 def recognized_git_location(repo) -> bool:
-    """Returns whether this repo is based at a known git repo location: works with GitHub, gitlab,
-    framagit, and salsa.debian.org"""
+    """Returns whether this repo is based at a git host that the Addon Manager ships support for"""
 
-    parsed_url = urlparse(repo.url)
-    return parsed_url.netloc in [
-        "github.com",
-        "gitlab.com",
-        "framagit.org",
-        "salsa.debian.org",
-        "codeberg.org",
-    ]
+    return urlparse(repo.url).netloc in KNOWN_GIT_HOSTS
 
 
 def construct_git_url(repo, filename):
     """Returns a direct download link to a file in an online Git repo"""
 
     parsed_url = urlparse(repo.url)
-    repo_url = repo.url[:-4] if repo.url.endswith(".git") else repo.url
-    if parsed_url.netloc == "github.com":
-        return f"{repo_url}/raw/{repo.branch}/{filename}"
-    if parsed_url.netloc in ["gitlab.com", "framagit.org", "salsa.debian.org"]:
-        return f"{repo_url}/-/raw/{repo.branch}/{filename}"
-    if parsed_url.netloc in ["codeberg.org"]:
-        return f"{repo_url}/raw/branch/{repo.branch}/{filename}"
-    if parsed_url.netloc == "":
-        return f"{parsed_url.path}/{filename}"
-    fci.Console.PrintLog(
-        "Debug: addonmanager_utilities.construct_git_url: Unknown git host:"
-        + parsed_url.netloc
-        + f" for file {filename}\n"
-    )
-    # Assume it's some kind of local GitLab instance...
-    return f"{repo_url}/-/raw/{repo.branch}/{filename}"
+    if not parsed_url.netloc:
+        return f"{parsed_url.path}/{filename}"  # A local path, not a remote host
+    return _format_url(_host_or_default(repo).raw_file, repo, filename)
 
 
 def get_readme_url(repo):
@@ -257,35 +439,24 @@ def get_readme_url(repo):
     return construct_git_url(repo, "README.md")
 
 
-def get_desc_regex(repo):
-    """Returns a regex string that extracts a WB description to be displayed in the description
-    panel of the Addon manager, if the README could not be found"""
-
-    parsed_url = urlparse(repo.url)
-    if parsed_url.netloc == "github.com":
-        return r'<meta property="og:description" content="(.*?)"'
-    if parsed_url.netloc in ["gitlab.com", "salsa.debian.org", "framagit.org"]:
-        return r'<meta.*?content="(.*?)".*?og:description.*?>'
-    if parsed_url.netloc in ["codeberg.org"]:
-        return r'<meta property="og:description" content="(.*?)"'
-    fci.Console.PrintLog(
-        f"Debug: addonmanager_utilities.get_desc_regex: Unknown git host: {repo.url}\n"
-    )
-    return r'<meta.*?content="(.*?)".*?og:description.*?>'
-
-
 def get_readme_html_url(repo):
     """Returns the location of a html file containing readme"""
 
-    parsed_url = urlparse(repo.url)
-    if parsed_url.netloc == "github.com":
-        return f"{repo.url}/blob/{repo.branch}/README.md"
-    if parsed_url.netloc in ["gitlab.com", "salsa.debian.org", "framagit.org"]:
-        return f"{repo.url}/-/blob/{repo.branch}/README.md"
-    if parsed_url.netloc in ["gitlab.com", "salsa.debian.org", "framagit.org"]:
-        return f"{repo.url}/raw/branch/{repo.branch}/README.md"
-    fci.Console.PrintLog("Unrecognized git repo location '' -- guessing it is a GitLab instance...")
-    return f"{repo.url}/-/blob/{repo.branch}/README.md"
+    return _format_url(_host_or_default(repo).blob, repo, "README.md")
+
+
+def _host_or_default(repo) -> GitHost:
+    """The layout to use for this repo's git host, falling back to the default for a host that has
+    not been identified."""
+
+    host = git_host_of(repo)
+    if host is not None:
+        return host
+    fci.Console.PrintLog(
+        f"Debug: the git host at {urlparse(repo.url).netloc} has not been identified: "
+        f"assuming it is running {DEFAULT_GIT_HOST.name}\n"
+    )
+    return DEFAULT_GIT_HOST
 
 
 def is_darkmode() -> bool:
