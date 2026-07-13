@@ -474,7 +474,8 @@ class AddonManagerOptions:
         """Callback: show the Add custom repo dialog"""
         dlg = CustomRepositoryDialog()
         url, branch = dlg.exec()
-        if url and branch:
+        if url:
+            # An empty branch is allowed: it means the repository's default branch
             self.table_model.appendData(url, branch)
 
     def _remove_custom_repo_clicked(self):
@@ -494,7 +495,7 @@ class AddonManagerOptions:
         dlg.dialog.urlLineEdit.setText(self.table_model.data(url_index))
         dlg.dialog.branchLineEdit.setText(self.table_model.data(branch_index))
         url, branch = dlg.exec()
-        if url and branch:
+        if url:
             self.table_model.setData(url_index, url)
             self.table_model.setData(branch_index, branch)
 
@@ -515,17 +516,14 @@ class CustomRepoDataModel(QtCore.QAbstractTableModel):
         pref_entry: str = self.pref.GetString("CustomRepositories", "")
 
         # The entry is saved as a space- and newline-delimited text block: break it into its
-        # constituent parts
+        # constituent parts. A line with no branch means the repository's default branch.
         lines = pref_entry.split("\n")
         self.model = []
         for line in lines:
             if not line:
                 continue
             split_data = line.split()
-            if len(split_data) > 1:
-                branch = split_data[1]
-            else:
-                branch = "master"
+            branch = split_data[1] if len(split_data) > 1 else ""
             url = split_data[0]
             self.model.append([url, branch])
 
@@ -533,7 +531,8 @@ class CustomRepoDataModel(QtCore.QAbstractTableModel):
         """Save the data into a preferences entry"""
         entry = ""
         for row in self.model:
-            entry += f"{row[0]} {row[1]}\n"
+            url, branch = row[0], row[1]
+            entry += f"{url} {branch}\n" if branch else f"{url}\n"
         self.pref.SetString("CustomRepositories", entry)
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
@@ -623,12 +622,16 @@ class CustomRepositoryDialog:
             os.path.join(os.path.dirname(__file__), "AddonManagerOptions_AddCustomRepository.ui")
         )
         self.dialog.setObjectName("AddonManager_AddCustomRepositoryDialog")
+        self.dialog.branchLineEdit.setPlaceholderText(
+            translate("AddonsInstaller", "Leave blank to use the repository's default branch")
+        )
 
     def exec(self):
-        """Run the dialog as a modal, and return either None or a tuple of (url,branch)"""
+        """Run the dialog as a modal, and return either None or a tuple of (url,branch). The branch
+        may be empty, meaning the repository's default branch, whatever that turns out to be."""
         result = self.dialog.exec()
         if result == QtWidgets.QDialog.Accepted:
-            url = self.dialog.urlLineEdit.text()
-            branch = self.dialog.branchLineEdit.text()
+            url = self.dialog.urlLineEdit.text().strip()
+            branch = self.dialog.branchLineEdit.text().strip()
             return url, branch
         return None, None
