@@ -242,6 +242,23 @@ def get_repo_url_from_metadata(metadata: Metadata) -> str:
     return ""
 
 
+def get_icon_from_metadata(metadata: Metadata) -> Optional[str]:
+    """Locate the icon file specified for this Addon, as a path relative to the root of the
+    Addon's repository. Recursively searches through the levels of the metadata and returns the
+    first specified icon file path, or None if no icon is specified anywhere."""
+
+    if metadata.icon:
+        if metadata.subdirectory and metadata.subdirectory not in (".", "./"):
+            return metadata.subdirectory.rstrip("/") + "/" + metadata.icon
+        return metadata.icon
+    for content_type in metadata.content:
+        for content_item in metadata.content[content_type]:
+            icon = get_icon_from_metadata(content_item)
+            if icon:
+                return icon
+    return None
+
+
 class MetadataReader:
     """Read metadata XML data and construct a Metadata object"""
 
