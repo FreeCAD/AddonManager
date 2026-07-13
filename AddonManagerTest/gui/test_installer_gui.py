@@ -326,6 +326,110 @@ class TestAddonDependencyInstallerGUI(unittest.TestCase):
         # Assert
         self.assertTrue(proceed_monitor.good())
 
+    # The allow-list of reviewed Python packages belongs to the addon catalog, so it does not get
+    # to veto the dependencies of a repository the user entered themselves. They are asked to
+    # confirm the packages instead of being told to install them by hand.
+
+    @staticmethod
+    def _addon(from_custom_repository: bool) -> Addon:
+        addon = Addon(
+            "TestAddon", "https://git.example.com/user/addon", Addon.Status.NOT_INSTALLED, "main"
+        )
+        addon.from_custom_repository = from_custom_repository
+        return addon
+
+    def _handle_disallowed_python(self, addons, deps, button):
+        """Run the disallowed-package check with the given answer to whatever dialog it shows.
+        Returns whether the installation was stopped, and the dialog it showed."""
+        gui = AddonDependencyInstallerGUI(addons, deps)
+        gui.installer = self.MockAddonInstaller(addons)
+        with patch(
+            "addonmanager_installer_gui.MessageDialog.show_modal", return_value=button
+        ) as mock_dialog:
+            stop_installation = gui._handle_disallowed_python()
+        dialog_name = mock_dialog.call_args[0][1] if mock_dialog.call_args else None
+        return stop_installation, dialog_name
+
+    def test_custom_repo_unreviewed_package_is_installed_when_accepted(self):
+        """This is what makes a custom addon's dependencies actually get installed: the package
+        stays in the list, rather than being dropped with an instruction to install it by hand."""
+        deps = self.create_mock_deps(python_requires=["not_in_the_allowlist"])
+
+        stop_installation, dialog_name = self._handle_disallowed_python(
+            [self._addon(from_custom_repository=True)], deps, QtWidgets.QMessageBox.Ok
+        )
+
+        self.assertFalse(stop_installation)
+        self.assertEqual("AddonManager_UnreviewedPythonDialog", dialog_name)
+        self.assertIn("not_in_the_allowlist", deps.python_requires)
+
+    def test_custom_repo_unreviewed_package_is_refused_when_cancelled(self):
+        deps = self.create_mock_deps(python_requires=["not_in_the_allowlist"])
+
+        stop_installation, dialog_name = self._handle_disallowed_python(
+            [self._addon(from_custom_repository=True)], deps, QtWidgets.QMessageBox.Cancel
+        )
+
+        self.assertTrue(stop_installation)
+        self.assertEqual("AddonManager_UnreviewedPythonDialog", dialog_name)
+
+    def test_catalog_addon_is_still_held_to_the_allow_list(self):
+        """The user did not choose where a catalog addon comes from, so nothing changes for it."""
+        deps = self.create_mock_deps(python_requires=["not_in_the_allowlist"])
+
+        stop_installation, dialog_name = self._handle_disallowed_python(
+            [self._addon(from_custom_repository=False)], deps, QtWidgets.QMessageBox.Ok
+        )
+
+        self.assertFalse(stop_installation)
+        self.assertEqual("AddonManager_RequirementFailedDialog", dialog_name)
+        self.assertNotIn("not_in_the_allowlist", deps.python_requires)
+
+    def test_one_catalog_addon_holds_the_whole_installation_to_the_allow_list(self):
+        """Installing a catalog addon alongside a custom one does not launder the catalog addon's
+        dependencies through the custom repository's exemption."""
+        deps = self.create_mock_deps(python_requires=["not_in_the_allowlist"])
+        addons = [self._addon(from_custom_repository=True), self._addon(False)]
+
+        stop_installation, dialog_name = self._handle_disallowed_python(
+            addons, deps, QtWidgets.QMessageBox.Ok
+        )
+
+        self.assertFalse(stop_installation)
+        self.assertEqual("AddonManager_RequirementFailedDialog", dialog_name)
+        self.assertNotIn("not_in_the_allowlist", deps.python_requires)
+
+    def test_an_empty_addon_list_is_held_to_the_allow_list(self):
+        """No addon means nothing to trust: the exemption must not apply by default."""
+        deps = self.create_mock_deps(python_requires=["not_in_the_allowlist"])
+
+        stop_installation, dialog_name = self._handle_disallowed_python(
+            [], deps, QtWidgets.QMessageBox.Ok
+        )
+
+        self.assertEqual("AddonManager_RequirementFailedDialog", dialog_name)
+        self.assertNotIn("not_in_the_allowlist", deps.python_requires)
+
+    def test_custom_repo_unreviewed_optional_package_is_offered(self):
+        """An optional package is offered in the dependency dialog for the user to accept or
+        refuse, so a custom repository's optional packages are not dropped either."""
+        deps = self.create_mock_deps(python_optional=["not_in_the_allowlist"])
+        gui = AddonDependencyInstallerGUI([self._addon(from_custom_repository=True)], deps)
+        gui.installer = self.MockAddonInstaller([])
+
+        gui._clean_up_optional()
+
+        self.assertIn("not_in_the_allowlist", deps.python_optional)
+
+    def test_catalog_addon_unreviewed_optional_package_is_dropped(self):
+        deps = self.create_mock_deps(python_optional=["not_in_the_allowlist"])
+        gui = AddonDependencyInstallerGUI([self._addon(from_custom_repository=False)], deps)
+        gui.installer = self.MockAddonInstaller([])
+
+        gui._clean_up_optional()
+
+        self.assertEqual([], deps.python_optional)
+
     @patch("addonmanager_installer_gui.utils.blocking_get", MagicMock(return_value=None))
     def test_run_incompatible_python_version(self):
         # Arrange

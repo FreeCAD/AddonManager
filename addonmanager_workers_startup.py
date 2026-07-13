@@ -142,6 +142,7 @@ class CreateAddonListWorker(QtCore.QThread):
             entry.metadata = self._load_installed_addon_metadata(name)
 
         addon = entry.instantiate_addon(name)
+        addon.from_custom_repository = True
 
         if addon.metadata:
             # set_metadata() replaces the url and branch with the ones stated in package.xml, but

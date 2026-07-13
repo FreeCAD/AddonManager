@@ -189,6 +189,11 @@ class Addon:
         self.curated = True
         self.score = 0
 
+        # True if this Addon comes from a repository URL that the user entered themselves, rather
+        # than from the addon catalog. The user has chosen to trust that repository, so its Python
+        # dependencies are not held to the catalog's allow-list of reviewed packages.
+        self.from_custom_repository = False
+
         # In cases where there are multiple versions/branches/installations available for an addon,
         # this dictionary is the mapping from the displayed name in the UI (as given in the
         # catalog) to the Addon object.
