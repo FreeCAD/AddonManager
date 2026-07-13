@@ -235,6 +235,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 cls.ATTEMPT_TIMEOUT_MS,
                 1,  # A single attempt: do not slow down startup for files that do not exist
                 0,
+                quiet=True,  # Most addons do not have all of these files, so 404 is not an error
             )
         except (RuntimeError, OSError) as e:
             fci.Console.PrintLog(f"Could not fetch {url}: {e}\n")
