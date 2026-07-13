@@ -615,24 +615,10 @@ class CacheWriter:
 
     @staticmethod
     def get_icon_from_metadata(metadata: addonmanager_metadata.Metadata) -> Optional[str]:
-        """Try to locate the icon file specified for this Addon. Recursively search through the
-        levels of the metadata and return the first specified icon file path. Returns None of there
-        is no icon specified for this Addon (which is not allowed by the standard, but we don't want
-        to crash the cache writer)."""
-        if metadata.icon:
-            if (
-                metadata.subdirectory
-                and metadata.subdirectory != "."
-                and metadata.subdirectory != "./"
-            ):
-                return metadata.subdirectory + "/" + metadata.icon
-            return metadata.icon
-        for content_type in metadata.content:
-            for content_item in metadata.content[content_type]:
-                icon = CacheWriter.get_icon_from_metadata(content_item)
-                if icon:
-                    return icon
-        return None
+        """Try to locate the icon file specified for this Addon. Returns None if there is no icon
+        specified for this Addon (which is not allowed by the standard, but we don't want to crash
+        the cache writer)."""
+        return addonmanager_metadata.get_icon_from_metadata(metadata)
 
     @staticmethod
     def determine_git_ref_type(name: str, _url: str, branch: str) -> GitRefType:

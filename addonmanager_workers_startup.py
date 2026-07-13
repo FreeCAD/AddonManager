@@ -22,11 +22,14 @@
 
 """Worker thread classes for Addon Manager startup"""
 
+import base64
 import hashlib
 import io
 import json
 import os
-from typing import List
+from types import SimpleNamespace
+from typing import List, Optional, Tuple
+from xml.etree.ElementTree import ParseError as XmlParseError
 import zipfile
 
 from PySideWrapper import QtCore
@@ -34,11 +37,15 @@ from addonmanager_installation_manifest import InstallationManifest
 
 from addonmanager_macro import Macro
 from Addon import Addon, MissingDependencies
-from AddonCatalog import AddonCatalog
+from AddonCatalog import AddonCatalog, AddonCatalogEntry, CatalogEntryMetadata
 from AddonStats import AddonStats
 import NetworkManager
 from addonmanager_git import initialize_git, GitFailed
-from addonmanager_metadata import MetadataReader, get_branch_from_metadata
+from addonmanager_metadata import (
+    MetadataReader,
+    get_branch_from_metadata,
+    get_icon_from_metadata,
+)
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
@@ -91,131 +98,162 @@ class CreateAddonListWorker(QtCore.QThread):
             return
 
     def _get_custom_addons(self):
+        """Create and emit an Addon for each custom repository the user has configured."""
 
-        # querying custom addons first
-        addon_list = fci.Preferences().get("CustomRepositories").split("\n")
-        custom_addons = []
-        for addon in addon_list:
-            if " " in addon:
-                addon_and_branch = addon.split(" ")
-                custom_addons.append({"url": addon_and_branch[0], "branch": addon_and_branch[1]})
-            else:
-                custom_addons.append({"url": addon, "branch": "master"})
-        for addon in custom_addons:
+        for url, branch in self._parse_custom_repositories():
             if self.current_thread.isInterruptionRequested():
                 return
-            if addon and addon["url"]:
-                if addon["url"][-1] == "/":
-                    addon["url"] = addon["url"][0:-1]  # Strip trailing slash
-                addon["url"] = addon["url"].split(".git")[0]  # Remove .git
-                name: str = addon["url"].split("/")[-1]
-                if name in self.package_names:
-                    # We already have something with this name, skip this one
-                    fci.Console.PrintWarning(
-                        translate("AddonsInstaller", "WARNING: Duplicate addon {} ignored").format(
-                            name
-                        )
-                    )
-                    continue
-                fci.Console.PrintLog(
-                    f"Adding custom location {addon['url']} with branch {addon['branch']}\n"
+            name = url.split("/")[-1]
+            if name in self.package_names:
+                # We already have something with this name, skip this one
+                fci.Console.PrintWarning(
+                    translate("AddonsInstaller", "WARNING: Duplicate addon {} ignored").format(name)
+                    + "\n"
                 )
-                self.package_names.append(name)
-                addon_dir = os.path.join(self.mod_dir, name)
-                if os.path.exists(addon_dir) and os.listdir(addon_dir):
-                    state = Addon.Status.UNCHECKED
-                else:
-                    state = Addon.Status.NOT_INSTALLED
-                repo = Addon(name, addon["url"], state, addon["branch"])
-                md_file = os.path.join(addon_dir, "package.xml")
-                if os.path.isfile(md_file):
-                    # load_metadata_file calls set_metadata(), populating repo.metadata,
-                    # repo.description, repo.display_name etc. for the UI to display.
-                    # It handles ParseError internally, leaving repo.metadata as None on failure.
-                    repo.load_metadata_file(md_file)
-                    if repo.metadata:
-                        repo.installed_metadata = repo.metadata
-                        repo.installed_version = repo.metadata.version
-                        repo.updated_timestamp = os.path.getmtime(md_file)
-                        repo.verify_url_and_branch(addon["url"], addon["branch"])
-                        # Load icon bytes from the local install directory so the
-                        # list view can display the addon's actual icon.
-                        if repo.metadata.icon:
-                            icon_file = os.path.join(addon_dir, repo.metadata.icon)
-                            if os.path.isfile(icon_file):
-                                try:
-                                    with open(icon_file, "rb") as f:
-                                        repo.icon_data = f.read()
-                                except OSError as e:
-                                    fci.Console.PrintWarning(
-                                        f"Could not load icon for custom addon {name}: {e}\n"
-                                    )
-                else:
-                    # Not installed: try to fetch package.xml from the remote repo so the
-                    # browse view can show description and icon.
-                    self._fetch_remote_custom_addon_metadata(repo)
+                continue
+            fci.Console.PrintLog(f"Adding custom location {url} with branch {branch}\n")
+            self.package_names.append(name)
+            self.addon_repo.emit(self._create_custom_addon(name, url, branch))
 
-                self.addon_repo.emit(repo)
+    @staticmethod
+    def _parse_custom_repositories() -> List[Tuple[str, str]]:
+        """Parse the CustomRepositories preference into a list of (url, branch) pairs. Each line of
+        the preference is a repository URL, optionally followed by a space and a branch name."""
 
-    def _fetch_remote_custom_addon_metadata(self, repo: Addon) -> None:
-        """For a custom addon that is not yet installed, attempt to fetch its package.xml
-        from the remote repo so the browse view can show the description and display name.
-        Failures are non-fatal: the addon will simply show without metadata."""
+        repositories = []
+        for line in fci.Preferences().get("CustomRepositories").split("\n"):
+            url, _, branch = line.strip().partition(" ")
+            url = url.rstrip("/").split(".git")[0]
+            if url:
+                repositories.append((url, branch.strip() if branch.strip() else "master"))
+        return repositories
 
-        package_xml_url = utils.construct_git_url(repo, "package.xml")
-        fci.Console.PrintLog(
-            f"Fetching remote metadata for custom addon {repo.name} from {package_xml_url}\n"
+    def _create_custom_addon(self, name: str, url: str, branch: str) -> Addon:
+        """Create an Addon for a custom repository by synthesizing the catalog entry that the
+        remote addon catalog would have contained for it, so that a custom addon is constructed by
+        the same code that constructs an addon from the official catalog."""
+
+        entry = AddonCatalogEntry(
+            {"repository": url, "git_ref": branch, "branch_display_name": branch}
         )
+        entry.metadata = self._fetch_custom_addon_metadata(name, url, branch)
+        if entry.metadata is None:
+            # Something is wrong: fall back to using the installed metadata
+            entry.metadata = self._load_installed_addon_metadata(name)
+
+        addon = entry.instantiate_addon(name)
+
+        if addon.metadata:
+            # set_metadata() replaces the url and branch with the ones stated in package.xml, but
+            # for a custom repository the location the user configured is the authoritative one.
+            addon.verify_url_and_branch(url, branch)
+            addon.url = url
+            addon.branch = branch
+
+        if addon.status() == Addon.Status.NO_UPDATE_AVAILABLE:
+            # There is no cached remote update time for a custom repository, so instantiate_addon()
+            # could only compare version strings. Leave the addon unchecked so that the update
+            # worker still gets a chance to run a git-based check on it.
+            addon.set_status(Addon.Status.UNCHECKED)
+
+        return addon
+
+    def _fetch_custom_addon_metadata(
+        self, name: str, url: str, branch: str
+    ) -> Optional[CatalogEntryMetadata]:
+        """Fetch the metadata files of a custom repository directly from its git host."""
+
+        location = SimpleNamespace(url=url, branch=branch)
+        return self._collect_addon_metadata(
+            name,
+            lambda filename: self._fetch_remote_file(utils.construct_git_url(location, filename)),
+        )
+
+    def _load_installed_addon_metadata(self, name: str) -> Optional[CatalogEntryMetadata]:
+        """Load the metadata files of a custom repository from its installed copy, if there is
+        one."""
+
+        addon_dir = os.path.join(self.mod_dir, name)
+        return self._collect_addon_metadata(
+            name, lambda filename: self._read_installed_file(addon_dir, filename)
+        )
+
+    @classmethod
+    def _collect_addon_metadata(cls, name: str, get_file) -> Optional[CatalogEntryMetadata]:
+        """Assemble the metadata that the remote cache would have provided for this addon, using
+        get_file to retrieve the contents of a file given its path relative to the root of the
+        addon. Returns None if the addon provides none of the metadata files."""
+
+        metadata = CatalogEntryMetadata()
+
+        package_xml = get_file("package.xml")
+        if package_xml:
+            try:
+                parsed_metadata = MetadataReader.from_bytes(package_xml)
+            except (XmlParseError, RuntimeError) as e:
+                parsed_metadata = None
+                fci.Console.PrintWarning(
+                    translate(
+                        "AddonsInstaller",
+                        "Could not parse the package.xml file of custom addon {}: {}",
+                    ).format(name, str(e))
+                    + "\n"
+                )
+            if parsed_metadata is not None:
+                metadata.package_xml = cls._decode(package_xml)
+                icon_path = get_icon_from_metadata(parsed_metadata)
+                icon_data = get_file(icon_path) if icon_path else None
+                if icon_data:
+                    metadata.icon_data = base64.b64encode(icon_data).decode("utf-8")
+
+        requirements_txt = get_file("requirements.txt")
+        if requirements_txt:
+            metadata.requirements_txt = cls._decode(requirements_txt)
+
+        metadata_txt = get_file("metadata.txt")
+        if metadata_txt:
+            metadata.metadata_txt = cls._decode(metadata_txt)
+
+        if metadata.package_xml or metadata.requirements_txt or metadata.metadata_txt:
+            return metadata
+        return None
+
+    @staticmethod
+    def _decode(data: bytes) -> str:
+        """Decode the contents of a metadata file, which the standard requires to be UTF-8."""
+
+        return data.decode("utf-8", errors="replace")
+
+    @classmethod
+    def _fetch_remote_file(cls, url: str) -> Optional[bytes]:
+        """Fetch a single file from a remote git host. Returns None if the file could not be
+        fetched: a custom repository is not required to provide any particular file."""
+
         try:
             result = NetworkManager.AM_NETWORK_MANAGER.blocking_get_with_retries(
-                package_xml_url,
-                CreateAddonListWorker.ATTEMPT_TIMEOUT_MS,
-                1,  # single attempt – don't slow down startup for missing files
+                url,
+                cls.ATTEMPT_TIMEOUT_MS,
+                1,  # A single attempt: do not slow down startup for files that do not exist
                 0,
             )
-        except Exception as e:
-            fci.Console.PrintLog(
-                f"Could not fetch remote package.xml for custom addon {repo.name}: {e}\n"
-            )
-            return
-
+        except (RuntimeError, OSError) as e:
+            fci.Console.PrintLog(f"Could not fetch {url}: {e}\n")
+            return None
         if not result:
-            fci.Console.PrintLog(
-                f"No package.xml found at {package_xml_url} for custom addon {repo.name}\n"
-            )
-            return
+            fci.Console.PrintLog(f"No file found at {url}\n")
+            return None
+        return result.data()
 
-        original_url = repo.url
-        original_branch = repo.branch
+    @staticmethod
+    def _read_installed_file(addon_dir: str, filename: str) -> Optional[bytes]:
+        """Read a single file from an installed addon. Returns None if it does not exist."""
 
+        path = os.path.join(addon_dir, *filename.split("/"))
         try:
-            metadata = MetadataReader.from_bytes(result.data())
-            repo.set_metadata(metadata)
-        except Exception as e:
-            fci.Console.PrintWarning(
-                f"Could not parse remote package.xml for custom addon {repo.name}: {e}\n"
-            )
-            return
-
-        repo.verify_url_and_branch(original_url, original_branch)
-        repo.url = original_url
-        repo.branch = original_branch
-
-        if repo.metadata and repo.metadata.icon:
-            icon_url = utils.construct_git_url(repo, repo.metadata.icon)
-            try:
-                icon_result = NetworkManager.AM_NETWORK_MANAGER.blocking_get_with_retries(
-                    icon_url,
-                    CreateAddonListWorker.ATTEMPT_TIMEOUT_MS,
-                    1,
-                    0,
-                )
-                if icon_result:
-                    repo.icon_data = icon_result.data()
-            except Exception as e:
-                fci.Console.PrintLog(
-                    f"Could not fetch remote icon for custom addon {repo.name}: {e}\n"
-                )
+            with open(path, "rb") as f:
+                return f.read()
+        except OSError:
+            return None
 
     def get_cache(self, cache_name: str) -> str:
         cache_file_name = cache_name + "_cache.json"
