@@ -171,6 +171,7 @@ class CreateAddonListWorker(QtCore.QThread):
                 CreateAddonListWorker.ATTEMPT_TIMEOUT_MS,
                 1,  # single attempt – don't slow down startup for missing files
                 0,
+                quiet=True,  # Most addons do not have all of these files, so 404 is not an error
             )
         except Exception as e:
             fci.Console.PrintLog(
