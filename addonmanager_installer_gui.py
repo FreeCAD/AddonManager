@@ -513,6 +513,9 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
             if dep.lower() not in self.installer.allowed_packages:
                 bad_packages.append(dep)
 
+        if bad_packages and self._all_from_custom_repositories():
+            return self._confirm_unreviewed_python(bad_packages)
+
         for dep in bad_packages:
             self.deps.python_requires.remove(dep)
 
@@ -553,6 +556,59 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
                 return False
             return True
         return False
+
+    def _all_from_custom_repositories(self) -> bool:
+        """Whether every addon being installed comes from a repository the user entered themselves.
+        The allow-list of reviewed Python packages is the catalog's, so it does not get to veto the
+        dependencies of a repository the user chose to trust. If even one of the addons comes from
+        the catalog, the allow-list applies as usual."""
+
+        return bool(self.addons) and all(
+            getattr(addon, "from_custom_repository", False) for addon in self.addons
+        )
+
+    def _confirm_unreviewed_python(self, packages: List[str]) -> bool:
+        """Ask the user to confirm the installation of Python packages that FreeCAD has not
+        reviewed, naming them and the repository that asked for them. Returns True to stop the
+        installation, or False to proceed with the packages left in place, to be installed."""
+
+        if len(self.addons) == 1:
+            core_message = translate(
+                "AddonsInstaller",
+                "This addon requires Python packages that are not on FreeCAD's list of reviewed "
+                "packages:",
+            )
+        else:
+            core_message = translate(
+                "AddonsInstaller",
+                "These addons require Python packages that are not on FreeCAD's list of reviewed "
+                "packages:",
+            )
+        message = f"<p>{core_message}</p><ul>"
+        for package in packages:
+            message += f"<li>{package}</li>"
+        message += "</ul><p>"
+        message += translate(
+            "AddonsInstaller",
+            "They will be downloaded from the Python Package Index (PyPI) and installed into your "
+            "user directory. FreeCAD has not reviewed them. Only continue if you trust the "
+            "repository that asked for them:",
+        )
+        message += "</p><ul>"
+        for addon in self.addons:
+            message += f"<li>{addon.url}</li>"
+        message += "</ul>"
+
+        r = MessageDialog.show_modal(
+            MessageDialog.DialogType.WARNING,
+            "AddonManager_UnreviewedPythonDialog",
+            translate("AddonsInstaller", "Unreviewed Python Packages"),
+            message,
+            QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel,
+        )
+        if r == QtWidgets.QMessageBox.Ok:
+            return False  # Leave the packages in python_requires, so that they get installed
+        return True
 
     def _report_missing_workbenches(self) -> bool:
         """If there are missing workbenches, display a dialog informing the user. Returns True to
@@ -657,6 +713,11 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         return False
 
     def _clean_up_optional(self):
+        if self._all_from_custom_repositories():
+            # The allow-list does not apply to a repository the user chose to trust. Each optional
+            # package is offered in the dependency dialog for the user to accept or refuse, so
+            # nothing is installed here without them saying so.
+            return
         good_packages = []
         for dep in self.deps.python_optional:
             if dep in self.installer.allowed_packages:
