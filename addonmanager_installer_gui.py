@@ -172,7 +172,7 @@ class AddonInstallerGUI(QtCore.QObject):
             "AddonManager_SuccessDialog",
             translate("AddonsInstaller", "Success"),
             translate("AddonsInstaller", "{} was installed successfully").format(
-                self.addon_to_install.name
+                self.addon_to_install.display_name
             ),
             QtWidgets.QMessageBox.Ok,
         )
