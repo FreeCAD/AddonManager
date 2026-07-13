@@ -36,11 +36,11 @@ class Std_AddonMgrPip:
             "Pixmap": "applications-python.svg",
             "MenuText": QT_TRANSLATE_NOOP(
                 "AddonsInstaller",
-                "Python package manager",
+                "Python Package Manager",
             ),
             "ToolTip": QT_TRANSLATE_NOOP(
                 "AddonsInstaller",
-                "Open python packages manager",
+                "Opens the Python Package Manager",
             ),
         }
 
