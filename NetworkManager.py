@@ -57,7 +57,7 @@ import queue
 import itertools
 import tempfile
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import addonmanager_freecad_interface as fci
 from addonmanager_preferences_migrations import migrate_proxy_settings_2025
@@ -140,6 +140,7 @@ class NetworkManager(QtCore.QObject):
         self.synchronous_lock = threading.Lock()
         self.synchronous_complete: Dict[int, bool] = {}
         self.synchronous_result_data: Dict[int, QtCore.QByteArray] = {}
+        self.synchronous_quiet: Set[int] = set()  # Indices whose failures are not reported
 
         # Only one size request at a time:
         self.download_size_lock = threading.Lock()
@@ -164,7 +165,7 @@ class NetworkManager(QtCore.QObject):
         self._setup_proxy()
 
         # A helper connection for our blocking interface
-        self.completed.connect(self.__synchronous_process_completion)
+        self.completed.connect(self.__complete_synchronous_request)
 
         # Set up our worker connection
         self.__request_queued.connect(self.__setup_network_request)
@@ -322,6 +323,7 @@ class NetworkManager(QtCore.QObject):
         max_attempts: int = 3,
         delay_ms: int = 1000,
         disable_cache: bool = False,
+        quiet: bool = False,
     ):
         """Submits a GET request to the QNetworkAccessManager and blocks until it is complete. Do
         not use on the main GUI thread, it will prevent any event processing while it blocks.
@@ -329,6 +331,7 @@ class NetworkManager(QtCore.QObject):
         :timeout_ms: The timeout in milliseconds
         :max_attempts: The number of attempts to make if the request fails
         :delay_ms: The delay between attempts in milliseconds
+        :quiet: Do not report a failed request to the user: the file is allowed to be missing
         :returns: The response data, or None if the request failed after max_attempts attempts.
         """
         if max_attempts < 1:
@@ -338,29 +341,37 @@ class NetworkManager(QtCore.QObject):
         attempt = 0
         while True:
             attempt += 1
-            p = self.blocking_get(url, timeout_ms)
+            p = self.blocking_get(url, timeout_ms, disable_cache, quiet)
             if p is not None or attempt >= max_attempts:
                 return p
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return None
-            fci.Console.PrintWarning(
-                f"Failed to get {url}, retrying in {delay_ms}ms... (attempt {attempt} of {max_attempts})\n"
-            )
+            if not quiet:
+                fci.Console.PrintWarning(
+                    f"Failed to get {url}, retrying in {delay_ms}ms... (attempt {attempt} of {max_attempts})\n"
+                )
             time.sleep(delay_ms / 1000)
 
     def blocking_get(
-        self, url: str, timeout_ms: int = default_timeout, disable_cache: bool = False
+        self,
+        url: str,
+        timeout_ms: int = default_timeout,
+        disable_cache: bool = False,
+        quiet: bool = False,
     ) -> Optional[QtCore.QByteArray]:
         """Submits a GET request to the QNetworkAccessManager and blocks until it is complete. Do
         not use on the main GUI thread, it will prevent any event processing while it blocks.
         :url: The URL to fetch
         :timeout_ms: The timeout in milliseconds
+        :quiet: Do not report a failed request to the user: the file is allowed to be missing
         :returns: The response data, or None if the request failed after max_attempts attempts.
         """
 
         current_index = next(self.counting_iterator)  # A thread-safe counter
         with self.synchronous_lock:
             self.synchronous_complete[current_index] = False
+            if quiet:
+                self.synchronous_quiet.add(current_index)
 
         self.queue.put(
             QueueItem(
@@ -380,20 +391,31 @@ class NetworkManager(QtCore.QObject):
 
         with self.synchronous_lock:
             self.synchronous_complete.pop(current_index)
+            self.synchronous_quiet.discard(current_index)
             if current_index in self.synchronous_result_data:
                 return self.synchronous_result_data.pop(current_index)
             return None
 
-    def __synchronous_process_completion(
+    def __complete_synchronous_request(
         self, index: int, code: int, data: QtCore.QByteArray
     ) -> None:
+        """Slot for the completed signal. The signal is shared with the asynchronous interface and
+        cannot carry the quiet flag, which applies to a single request, so it is looked up here."""
+        with self.synchronous_lock:
+            quiet = index in self.synchronous_quiet
+        self.__synchronous_process_completion(index, code, data, quiet)
+
+    def __synchronous_process_completion(
+        self, index: int, code: int, data: QtCore.QByteArray, quiet: bool = False
+    ) -> None:
         """Check the return status of a completed process, and handle its returned data (if
-        any)."""
+        any). When quiet is set, a failed request is not reported to the user: the caller has
+        asked for a file that it knows may not exist."""
         with self.synchronous_lock:
             if index in self.synchronous_complete:
                 if code == 200:
                     self.synchronous_result_data[index] = data
-                else:
+                elif not quiet:
                     fci.Console.PrintWarning(
                         translate(
                             "AddonsInstaller",
