@@ -4,4 +4,11 @@
 .idea
 __pycache*
 .DS_Store
+
+# Local cache files
 CatalogCache
+FreeCAD-macros/
+macro_cache.zip
+macro_cache.zip.sha256
+macro_errors.json
+macro_stats.json
