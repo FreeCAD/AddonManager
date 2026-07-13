@@ -86,7 +86,7 @@ class AddonInstallerGUI(QtCore.QObject):
     def _stop_thread(thread: QtCore.QThread):
         if thread and hasattr(thread, "quit"):
             if thread.isRunning():
-                fci.Console.PrintMessage(
+                fci.Console.PrintWarning(
                     "INTERNAL ERROR: a QThread is still running when it should have finished"
                 )
 
@@ -357,7 +357,7 @@ class MacroInstallerGUI(QtCore.QObject):
         if custom_toolbar:
             self._install_macro_to_toolbar(custom_toolbar)
         else:
-            fci.Console.PrintMessage("In the end, no custom toolbar was set, bailing out\n")
+            fci.Console.PrintWarning("In the end, no custom toolbar was set, bailing out\n")
 
     def _install_macro_to_toolbar(self, toolbar) -> None:
         """Adds an icon for the given macro to the given toolbar."""
@@ -388,7 +388,7 @@ class MacroInstallerGUI(QtCore.QObject):
                         f.write(self.addon_to_install.macro.icon_data)
                     pixmap_text = icon_file
                 else:
-                    fci.Console.PrintMessage(
+                    fci.Console.PrintLog(
                         f"No cached icon data for {self.addon_to_install.macro.name}\n"
                     )
                     pixmap_text = None
@@ -449,7 +449,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
     def _stop_thread(thread: QtCore.QThread):
         if thread and hasattr(thread, "quit"):
             if thread.isRunning():
-                fci.Console.PrintMessage(
+                fci.Console.PrintWarning(
                     "INTERNAL ERROR: a QThread is still running when it should have finished"
                 )
 

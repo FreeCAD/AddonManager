@@ -334,7 +334,7 @@ class CreateAddonListWorker(QtCore.QThread):
                     if name_of_first_entry is None:
                         name_of_first_entry = branch_display_name
                     else:
-                        fci.Console.PrintMessage(
+                        fci.Console.PrintLog(
                             f"Found additional branch '{branch_display_name}' for addon {addon_id}\n"
                         )
                 except Exception as e:
@@ -787,5 +787,8 @@ class CheckForMissingDependenciesWorker(QtCore.QThread):
         message += f"Missing required Python packages: {len(md.python_requires)}\n"
         message += f"Missing optional Python packages: {len(md.python_optional)}\n"
         message += f"Minimum required Python version evaluated to {md.python_min_version}\n\n"
-        fci.Console.PrintMessage(message)
+        if len(md.wbs) + len(md.external_addons) + len(md.python_requires) > 0:
+            fci.Console.PrintMessage(message)
+        else:
+            fci.Console.PrintLog(message)
         fci.Console.PrintLog(details)
