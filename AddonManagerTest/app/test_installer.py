@@ -138,56 +138,65 @@ class TestAddonInstaller(unittest.TestCase):
             expected_location = os.path.join(temp_dir, self.mock_addon.name, "README")
             self.assertTrue(os.path.isfile(expected_location), "GitHub zip extraction failed")
 
-    def test_code_in_branch_subdirectory_true(self):
-        """When there is a subdirectory with the branch name in it, find it"""
-        self.mock_addon.url = "https://something.com/something_else/something"
-        installer = AddonInstaller(self.mock_addon, [])
+    @patch("addonmanager_installer.InstallationManifest")
+    def test_finalize_zip_installation_gitea(self, mock_manifest):
+        """Gitea/Forgejo hosts (such as Codeberg) wrap the code in a subdirectory whose name does
+        not match GitHub's "{name}-{branch}" convention: it must still be flattened (issue 441)."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            os.mkdir(os.path.join(temp_dir, f"something-{self.mock_addon.branch}"))
-            result = installer._code_in_branch_subdirectory(temp_dir)
-            self.assertTrue(result, "Failed to find ZIP subdirectory")
+            gitea_style_repo = os.path.join(temp_dir, "gitea_style_repo.zip")
+            with ZipFile(gitea_style_repo, "w") as zfile:
+                zfile.writestr("kiconnect/README", "")
+            self.mock_addon.url = "https://codeberg.org/kiconnect/KiConnect"
+            self.mock_addon.name = "KiConnect"
+            self.mock_addon.branch = "development"
+            installer = AddonInstaller(self.mock_addon, [])
+            installer.installation_path = temp_dir
+            installer._finalize_zip_installation(gitea_style_repo)
+            expected_location = os.path.join(temp_dir, self.mock_addon.name, "README")
+            self.assertTrue(os.path.isfile(expected_location), "Gitea zip extraction failed")
 
-    def test_code_in_branch_subdirectory_false(self):
-        """When there is not a subdirectory with the branch name in it, don't find
-        one"""
+    def test_archive_wrapper_subdirectory_single_directory(self):
+        """A single extracted directory is the wrapper, regardless of its name"""
         installer = AddonInstaller(self.mock_addon, [])
         with tempfile.TemporaryDirectory() as temp_dir:
-            result = installer._code_in_branch_subdirectory(temp_dir)
-            self.assertFalse(result, "Found ZIP subdirectory when there was none")
+            subdir = os.path.join(temp_dir, "some_unpredictable_name")
+            os.mkdir(subdir)
+            result = installer._archive_wrapper_subdirectory(temp_dir)
+            self.assertEqual(result, subdir)
 
-    def test_code_in_branch_subdirectory_more_than_one(self):
-        """When there are multiple subdirectories, never find a branch subdirectory"""
+    def test_archive_wrapper_subdirectory_single_file(self):
+        """A single extracted file is not a wrapper: the code is already at the top level"""
         installer = AddonInstaller(self.mock_addon, [])
         with tempfile.TemporaryDirectory() as temp_dir:
-            os.mkdir(os.path.join(temp_dir, f"{self.mock_addon.name}-{self.mock_addon.branch}"))
-            os.mkdir(os.path.join(temp_dir, "AnotherSubdir"))
-            result = installer._code_in_branch_subdirectory(temp_dir)
-            self.assertFalse(result, "Found ZIP subdirectory when there were multiple subdirs")
+            with open(os.path.join(temp_dir, "package.xml"), "w", encoding="utf-8") as f:
+                f.write("")
+            result = installer._archive_wrapper_subdirectory(temp_dir)
+            self.assertIsNone(result, "Found a wrapper subdirectory when there was none")
+
+    def test_archive_wrapper_subdirectory_more_than_one(self):
+        """When there is more than one top-level entry, there is no wrapper to flatten"""
+        installer = AddonInstaller(self.mock_addon, [])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.mkdir(os.path.join(temp_dir, "a_subdir"))
+            os.mkdir(os.path.join(temp_dir, "another_subdir"))
+            result = installer._archive_wrapper_subdirectory(temp_dir)
+            self.assertIsNone(result, "Found a wrapper subdirectory when there were multiple")
 
     def test_move_code_out_of_subdirectory(self):
         """All files are moved out and the subdirectory is deleted"""
-        test_urls = [
-            "https://something.com/something_else/something",
-            "https://something.com/something_else/something.git",
-            "https://something.com/something_else/something/",
-            "https://something.com/something_else/something.git/",
-        ]
-        for url in test_urls:
-            with self.subTest(url=url):
-                self.mock_addon.url = url
-                installer = AddonInstaller(self.mock_addon, [])
-                # TODO: Someday use a mock filesystem instead of a temp dir
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    subdir = os.path.join(temp_dir, f"something-{self.mock_addon.branch}")
-                    os.mkdir(subdir)
-                    with open(os.path.join(subdir, "README.txt"), "w", encoding="utf-8") as f:
-                        f.write("# Test file for unit testing")
-                    with open(os.path.join(subdir, "AnotherFile.txt"), "w", encoding="utf-8") as f:
-                        f.write("# Test file for unit testing")
-                    installer._move_code_out_of_subdirectory(temp_dir)
-                    self.assertTrue(os.path.isfile(os.path.join(temp_dir, "README.txt")))
-                    self.assertTrue(os.path.isfile(os.path.join(temp_dir, "AnotherFile.txt")))
-                    self.assertFalse(os.path.isdir(subdir))
+        installer = AddonInstaller(self.mock_addon, [])
+        # TODO: Someday use a mock filesystem instead of a temp dir
+        with tempfile.TemporaryDirectory() as temp_dir:
+            subdir = os.path.join(temp_dir, "wrapper_directory")
+            os.mkdir(subdir)
+            with open(os.path.join(subdir, "README.txt"), "w", encoding="utf-8") as f:
+                f.write("# Test file for unit testing")
+            with open(os.path.join(subdir, "AnotherFile.txt"), "w", encoding="utf-8") as f:
+                f.write("# Test file for unit testing")
+            installer._move_code_out_of_subdirectory(temp_dir, subdir)
+            self.assertTrue(os.path.isfile(os.path.join(temp_dir, "README.txt")))
+            self.assertTrue(os.path.isfile(os.path.join(temp_dir, "AnotherFile.txt")))
+            self.assertFalse(os.path.isdir(subdir))
 
     @patch("addonmanager_installer.InstallationManifest")
     def test_install_by_git(self, mock_manifest):
