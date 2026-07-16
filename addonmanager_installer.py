@@ -404,48 +404,39 @@ class AddonInstaller(QtCore.QObject):
         with zipfile.ZipFile(filename, "r") as zfile:
             zfile.extractall(destination)
 
-        # GitHub (and possibly other hosts) put all files in the zip into a subdirectory named
-        # after the branch. If that is the setup that we just extracted, move all files out of
-        # that subdirectory.
-        if self._code_in_branch_subdirectory(destination):
-            actual_path = os.path.join(
-                destination, f"{self.addon_to_install.name}-{self.addon_to_install.branch}"
-            )
+        # Git hosts wrap all of the repository's files inside a single top-level directory in
+        # their zip archives. The name of that directory varies between hosts: GitHub uses
+        # "{name}-{branch}", GitLab appends a commit hash, and Gitea/Forgejo hosts (such as
+        # Codeberg) use just the repository name. Rather than guess the name, detect the wrapper by
+        # its structure and move the code up out of it.
+        wrapper_subdirectory = self._archive_wrapper_subdirectory(destination)
+        if wrapper_subdirectory is not None:
             fci.Console.PrintLog(
-                f"ZIP installation moving code from {actual_path} to {destination}"
+                f"ZIP installation moving code from {wrapper_subdirectory} to {destination}\n"
             )
-            self._move_code_out_of_subdirectory(destination)
+            self._move_code_out_of_subdirectory(destination, wrapper_subdirectory)
 
         fci.Console.PrintLog("ZIP installation complete.\n")
         self._finalize_successful_installation()
 
-    def _code_in_branch_subdirectory(self, destination: str) -> bool:
-        test_path = os.path.join(destination, self._expected_subdirectory_name())
-        fci.Console.PrintLog(f"Checking for possible zip sub-path {test_path}...")
-        if os.path.isdir(test_path):
-            fci.Console.PrintLog(f"path exists.\n")
-            return True
-        fci.Console.PrintLog(f"path does not exist.\n")
-        return False
+    def _archive_wrapper_subdirectory(self, destination: str) -> Optional[str]:
+        """If the extracted archive placed all of its contents inside a single subdirectory, as the
+        common git hosts do, return the full path to that subdirectory. Otherwise return None."""
+        entries = os.listdir(destination)
+        if len(entries) != 1:
+            return None
+        only_entry = os.path.join(destination, entries[0])
+        if not os.path.isdir(only_entry):
+            return None
+        return only_entry
 
-    def _expected_subdirectory_name(self) -> str:
-        url = self.addon_to_install.url
-        if url.endswith("/"):
-            url = url[:-1]
-        if url.endswith(".git"):
-            url = url[:-4]
-        _, _, name = url.rpartition("/")
-        branch = self.addon_to_install.branch
-        return f"{name}-{branch}"
-
-    def _move_code_out_of_subdirectory(self, destination):
-        subdirectory = os.path.join(destination, self._expected_subdirectory_name())
-        for extracted_filename in os.listdir(os.path.join(destination, subdirectory)):
+    def _move_code_out_of_subdirectory(self, destination, subdirectory):
+        for extracted_filename in os.listdir(subdirectory):
             shutil.move(
-                os.path.join(destination, subdirectory, extracted_filename),
+                os.path.join(subdirectory, extracted_filename),
                 os.path.join(destination, extracted_filename),
             )
-        os.rmdir(os.path.join(destination, subdirectory))
+        os.rmdir(subdirectory)
 
     def _finalize_successful_installation(self):
         """Perform any necessary additional steps after installing the addon."""
