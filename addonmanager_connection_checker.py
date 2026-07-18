@@ -63,8 +63,8 @@ class ConnectionCheckerGUI(QtCore.QObject):
         if not self.connection_checker.isFinished():
             self.connection_check_message = QtWidgets.QMessageBox(
                 QtWidgets.QMessageBox.Information,
-                translate("AddonsInstaller", "Checking connection"),
-                translate("AddonsInstaller", "Checking for connection to addons.freecad.org..."),
+                translate("AddonsInstaller", "Checking Connection"),
+                translate("AddonsInstaller", "Checking the connection to addons.freecad.org…"),
                 QtWidgets.QMessageBox.Cancel,
             )
             self.connection_check_message.setObjectName("AddonManager_ConnectionCheckMessageDialog")
@@ -90,7 +90,7 @@ class ConnectionCheckerGUI(QtCore.QObject):
         MessageDialog.show_modal(
             MessageDialog.DialogType.ERROR,
             "AddonManager_ConnectionFailedDialog",
-            translate("AddonsInstaller", "Connection failed"),
+            translate("AddonsInstaller", "Connection Failed"),
             message,
             QtWidgets.QMessageBox.Ok,
         )

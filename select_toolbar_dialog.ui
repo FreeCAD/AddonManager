@@ -23,7 +23,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Select a toolbar to add this macro to</string>
+      <string>Adds this macro to the selected toolbar</string>
      </property>
     </widget>
    </item>
