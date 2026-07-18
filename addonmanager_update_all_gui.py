@@ -407,8 +407,8 @@ class UpdatesAvailableModel(QtCore.QAbstractTableModel):
         self.update_is_done: List[bool] = []
         self.headers = [
             translate("AddonsInstaller", "Name", "Column header"),
-            translate("AddonsInstaller", "Installed Version", "Column header"),
-            translate("AddonsInstaller", "Available Version", "Column header"),
+            translate("AddonsInstaller", "Installed version", "Column header"),
+            translate("AddonsInstaller", "Available version", "Column header"),
             translate("AddonsInstaller", "Update?", "Column header"),
             translate("AddonsInstaller", "Done", "Column header"),
         ]

@@ -26,9 +26,9 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>This installation/update has the following required and optional dependencies.
+      <string>The following dependencies are required or optional for this installation or update.
 
-Do you want the Addon Manager to install them automatically? Choose "Ignore" to install/update without installing the dependencies.</string>
+Choose "Ignore" to continue without installing dependencies.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>

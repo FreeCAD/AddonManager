@@ -83,7 +83,7 @@ class AddonUninstallerGUI(QtCore.QObject):
         confirm = MessageDialog.show_modal(
             MessageDialog.DialogType.QUESTION,
             "AddonManager_ConfirmUninstallDialog",
-            translate("AddonsInstaller", "Confirm remove"),
+            translate("AddonsInstaller", "Confirm Remove"),
             translate("AddonsInstaller", "Are you sure you want to uninstall {}?").format(
                 self.addon_to_remove.display_name
             ),
@@ -96,7 +96,7 @@ class AddonUninstallerGUI(QtCore.QObject):
             QtWidgets.QMessageBox.NoIcon,
             translate("AddonsInstaller", "Removing Addon"),
             translate("AddonsInstaller", "Removing {}").format(self.addon_to_remove.display_name)
-            + "...",
+            + "…",
             QtWidgets.QMessageBox.Cancel,
             parent=utils.get_main_am_window(),
         )
@@ -120,7 +120,7 @@ class AddonUninstallerGUI(QtCore.QObject):
         MessageDialog.show_modal(
             MessageDialog.DialogType.INFO,
             "AddonManager_UninstallCompleteDialog",
-            translate("AddonsInstaller", "Uninstall complete"),
+            translate("AddonsInstaller", "Uninstall Complete"),
             translate("AddonInstaller", "Finished removing {}").format(addon.display_name),
             QtWidgets.QMessageBox.Ok,
         )
@@ -134,7 +134,7 @@ class AddonUninstallerGUI(QtCore.QObject):
         MessageDialog.show_modal(
             MessageDialog.DialogType.ERROR,
             "AddonManager_UninstallFailedDialog",
-            translate("AddonsInstaller", "Uninstall failed"),
+            translate("AddonsInstaller", "Uninstall Failed"),
             translate("AddonInstaller", "Failed to remove some files") + ":\n" + message,
             QtWidgets.QMessageBox.Ok,
         )

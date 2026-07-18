@@ -136,10 +136,10 @@
    <item>
     <widget class="QGroupBox" name="proxyGroupBox">
      <property name="toolTip">
-      <string>Use a proxy server for access to addon data</string>
+      <string>Uses a proxy server to access addon data</string>
      </property>
      <property name="title">
-      <string>Proxy addon manager traffic</string>
+      <string>Proxy Addon Manager traffic</string>
      </property>
      <property name="flat">
       <bool>false</bool>
@@ -156,7 +156,7 @@
         <item>
          <widget class="QRadioButton" name="systemProxyButton">
           <property name="toolTip">
-           <string>Use the system's proxy settings</string>
+           <string>Uses the system proxy settings</string>
           </property>
           <property name="text">
            <string>System</string>
@@ -172,7 +172,7 @@
         <item>
          <widget class="QRadioButton" name="customProxyButton">
           <property name="toolTip">
-           <string>Use custom proxy settings</string>
+           <string>Uses custom proxy settings</string>
           </property>
           <property name="text">
            <string>Custom</string>
@@ -229,7 +229,7 @@
         <item row="1" column="4">
          <widget class="QPushButton" name="proxyTestButton">
           <property name="toolTip">
-           <string>Test these proxy settings</string>
+           <string>Tests these proxy settings</string>
           </property>
           <property name="text">
            <string>Test Connection</string>
@@ -278,7 +278,7 @@
         </sizepolicy>
        </property>
        <property name="toolTip">
-        <string>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</string>
+        <string>Specifies the URL for addon score data</string>
        </property>
        <property name="prefEntry" stdset="0">
         <cstring>AddonsScoreURL</cstring>

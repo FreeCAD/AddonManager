@@ -701,7 +701,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
             MessageDialog.show_modal(
                 MessageDialog.DialogType.ERROR,
                 "AddonManager_IncompatiblePythonVersionDialog",
-                translate("AddonsInstaller", "Incompatible Python version"),
+                translate("AddonsInstaller", "Incompatible Python Version"),
                 translate(
                     "AddonsInstaller",
                     "This addon (or one of its dependencies) requires Python {}, and your system"
@@ -783,7 +783,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         result = MessageDialog.show_modal(
             MessageDialog.DialogType.ERROR,
             "AddonManager_CannotExecutePythonDialog",
-            translate("AddonsInstaller", "Cannot execute Python"),
+            translate("AddonsInstaller", "Cannot Execute Python"),
             translate(
                 "AddonsInstaller",
                 "Failed to automatically locate your Python executable, or the path is set "
@@ -809,7 +809,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         result = MessageDialog.show_modal(
             MessageDialog.DialogType.ERROR,
             "AddonManager_CannotExecutePipDialog",
-            translate("AddonsInstaller", "Cannot execute pip"),
+            translate("AddonsInstaller", "Cannot Execute pip"),
             translate(
                 "AddonsInstaller",
                 "Failed to execute pip, which may be missing from your Python installation. Please "
@@ -837,7 +837,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         result = MessageDialog.show_modal(
             MessageDialog.DialogType.ERROR,
             "AddonManager_PackageInstallationFailedDialog",
-            translate("AddonsInstaller", "Package installation failed"),
+            translate("AddonsInstaller", "Package Installation Failed"),
             short_message
             + "\n\n"
             + translate("AddonsInstaller", "See Report View for detailed failure log.")

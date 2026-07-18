@@ -138,7 +138,7 @@ class Ui_ExpandedView(object):
         #        ExpandedView.setWindowTitle(QCoreApplication.translate("ExpandedView", "Form", None))
         self.labelIcon.setText(QtCore.QCoreApplication.translate("ExpandedView", "Icon", None))
         self.labelPackageName.setText(
-            QtCore.QCoreApplication.translate("ExpandedView", "<h1>Package Name</h1>", None)
+            QtCore.QCoreApplication.translate("ExpandedView", "<h1>Package name</h1>", None)
         )
         self.labelVersion.setText(
             QtCore.QCoreApplication.translate("ExpandedView", "Version", None)
