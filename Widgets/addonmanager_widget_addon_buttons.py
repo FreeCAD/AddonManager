@@ -169,8 +169,8 @@ class WidgetAddonButtons(QtWidgets.QWidget):
         self.enable.setText(translate("AddonsInstaller", "Enable"))
         self.update.setText(translate("AddonsInstaller", "Update"))
         self.run_macro.setText(translate("AddonsInstaller", "Run"))
-        self.back.setToolTip(translate("AddonsInstaller", "Return to Package List"))
-        self.spinner.setToolTip(translate("AddonsInstaller", "Checking for Updates…"))
+        self.back.setToolTip(translate("AddonsInstaller", "Returns to the package list"))
+        self.spinner.setToolTip(translate("AddonsInstaller", "Checking for updates…"))
         if self.is_addon_manager:
             self.uninstall.setText(translate("AddonsInstaller", "Revert to Built-In"))
         else:
