@@ -515,17 +515,14 @@ class CustomRepoDataModel(QtCore.QAbstractTableModel):
         pref_entry: str = self.pref.GetString("CustomRepositories", "")
 
         # The entry is saved as a space- and newline-delimited text block: break it into its
-        # constituent parts
+        # constituent parts. A line with no branch means the repository's default branch.
         lines = pref_entry.split("\n")
         self.model = []
         for line in lines:
             if not line:
                 continue
             split_data = line.split()
-            if len(split_data) > 1:
-                branch = split_data[1]
-            else:
-                branch = "master"
+            branch = split_data[1] if len(split_data) > 1 else ""
             url = split_data[0]
             self.model.append([url, branch])
 
@@ -533,7 +530,8 @@ class CustomRepoDataModel(QtCore.QAbstractTableModel):
         """Save the data into a preferences entry"""
         entry = ""
         for row in self.model:
-            entry += f"{row[0]} {row[1]}\n"
+            url, branch = row[0], row[1]
+            entry += f"{url} {branch}\n" if branch else f"{url}\n"
         self.pref.SetString("CustomRepositories", entry)
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
