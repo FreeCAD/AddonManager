@@ -89,7 +89,7 @@ class Ui_CompactView(object):
         #        CompactView.setWindowTitle(QCoreApplication.translate("CompactView", "Form", None))
         self.labelIcon.setText(QtCore.QCoreApplication.translate("CompactView", "Icon", None))
         self.labelPackageName.setText(
-            QtCore.QCoreApplication.translate("CompactView", "<b>Package Name</b>", None)
+            QtCore.QCoreApplication.translate("CompactView", "<b>Package name</b>", None)
         )
         self.labelVersion.setText(QtCore.QCoreApplication.translate("CompactView", "Version", None))
         self.labelDescription.setText(

@@ -207,7 +207,7 @@ class ReadmeController(QtCore.QObject):
         self.widget.setUrl(self.url)
 
         self.widget.setText(
-            translate("AddonsInstaller", "Loading page for {} from {}...").format(
+            translate("AddonsInstaller", "Loading page for {} from {}…").format(
                 self.addon.display_name, self.url
             )
         )

@@ -137,6 +137,6 @@ class WidgetViewSelector(QtWidgets.QWidget):
         )
 
     def retranslateUi(self, _):
-        self.composite_button.setToolTip(translate("AddonsInstaller", "Composite view"))
-        self.expanded_button.setToolTip(translate("AddonsInstaller", "Expanded view"))
-        self.compact_button.setToolTip(translate("AddonsInstaller", "Compact view"))
+        self.composite_button.setToolTip(translate("AddonsInstaller", "Shows the composite view"))
+        self.expanded_button.setToolTip(translate("AddonsInstaller", "Shows the expanded view"))
+        self.compact_button.setToolTip(translate("AddonsInstaller", "Shows the compact view"))
