@@ -107,7 +107,7 @@ class DependencyInstaller(QtCore.QObject):
         no_pip signal if pip cannot execute."""
         try:
             proc = self._run_pip(["--version"])
-            fci.Console.PrintMessage(proc.stdout + "\n")
+            fci.Console.PrintLog(proc.stdout + "\n")
             if proc.returncode != 0:
                 return False
         except subprocess.CalledProcessError:
@@ -134,7 +134,7 @@ class DependencyInstaller(QtCore.QObject):
                         pymod,
                     ]
                 )
-                fci.Console.PrintMessage(proc.stdout + "\n")
+                fci.Console.PrintLog(proc.stdout + "\n")
             except subprocess.CalledProcessError as e:
                 fci.Console.PrintError(str(e) + "\n")
                 self.failure.emit(
@@ -162,7 +162,7 @@ class DependencyInstaller(QtCore.QObject):
                         pymod,
                     ]
                 )
-                fci.Console.PrintMessage(proc.stdout + "\n")
+                fci.Console.PrintLog(proc.stdout + "\n")
             except subprocess.CalledProcessError as e:
                 fci.Console.PrintError(
                     translate("AddonsInstaller", "Installation of optional package failed")

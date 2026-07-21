@@ -103,7 +103,7 @@ class InstallationManifest:
                         "freecad_version": "",
                     }
             else:
-                fci.Console.PrintMessage("Migrate to Manifest, skipping file: " + addon_id + "\n")
+                fci.Console.PrintLog("Migrate to Manifest, skipping file: " + addon_id + "\n")
 
     def load_manifest(self):
         """Load the manifest from the disk"""
@@ -125,11 +125,13 @@ class InstallationManifest:
             branches = catalog.get_available_branches(addon_id)
             if not branches:
                 if "backup" in addon_id:
-                    fci.Console.PrintMessage("Found old backup directory: " + addon_id + "\n")
+                    fci.Console.PrintLog("Found old backup directory: " + addon_id + "\n")
                     self.old_backups.append(addon_id)
                 else:
                     fci.Console.PrintMessage(
-                        "Found addon not in main AM catalog: " + addon_id + "\n"
+                        "Found installed addon that is not in the official index: "
+                        + addon_id
+                        + "\n"
                     )
                     self.unrecognized_directories.append(addon_id)
 
