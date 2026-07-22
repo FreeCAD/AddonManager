@@ -479,9 +479,8 @@ class CacheWriter:
 
     def clone_or_update(self, name: str, url: str, branch: str) -> None:
         """If a directory called "name" exists, and it contains a subdirectory called .git,
-        then 'git fetch' is called; otherwise we use 'git clone' to make a bare, shallow
-        copy of the repo (in the normal case where minimal is True), or a normal clone,
-        if minimal is set to False."""
+        then the local copy is fetched and hard reset onto the requested ref; otherwise we use
+        'git clone' to make a shallow copy of the repo."""
 
         if not os.path.exists(os.path.join(os.getcwd(), name, ".git")):
             print(f"Cloning {url} to {name}", flush=True)
@@ -510,24 +509,7 @@ class CacheWriter:
             old_dir = os.getcwd()
             os.chdir(os.path.join(old_dir, name))
             try:
-                # Determine if we are dealing with a tag, branch, or hash
-                git_ref_type = CacheWriter.determine_git_ref_type(name, url, branch)
-                command = ["git", "fetch"]
-                completed_process = subprocess.run(command)
-                if completed_process.returncode != 0:
-                    os.chdir(old_dir)
-                    raise RuntimeError(f"git fetch failed for {name}")
-                command = ["git", "checkout", branch, "--quiet"]
-                completed_process = subprocess.run(command)
-                if completed_process.returncode != 0:
-                    os.chdir(old_dir)
-                    raise RuntimeError(f"git checkout failed for {name} branch {branch}")
-                if git_ref_type == GitRefType.BRANCH:
-                    command = ["git", "merge", "--quiet"]
-                    completed_process = subprocess.run(command)
-                    if completed_process.returncode != 0:
-                        os.chdir(old_dir)
-                        raise RuntimeError(f"git merge failed for {name} branch {branch}")
+                CacheWriter.fetch_and_reset(name, url, branch)
             except RuntimeError as e:
                 # In the event of basically ANY error, delete the original and re-clone.
                 print(e)
@@ -576,21 +558,29 @@ class CacheWriter:
             cwd = os.getcwd()
             os.chdir(os.path.join(cwd, name))
             try:
-                subprocess.run(["git", "pull", "--depth=1"], check=True)
+                subprocess.run(
+                    ["git", "fetch", "--force", "--depth=1", "origin", branch],
+                    check=True,
+                    timeout=CLONE_TIMEOUT,
+                )
+                subprocess.run(["git", "reset", "--hard", "FETCH_HEAD", "--quiet"], check=True)
+                subprocess.run(["git", "clean", "-x", "-f", "-d", "--quiet"], check=True)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 self.clone_errors[name] = str(e)
                 print(f"ERROR: {e}")
             os.chdir(cwd)
 
     def add_to_sparse_clone(self, name: str, files: List[str]) -> None:
-        """Clones additional files to an existing sparse clone."""
+        """Checks out additional files in an existing sparse clone. The files are extracted from the
+        commit that is already checked out, so no network access is required."""
         cwd = os.getcwd()
         clone_path = os.path.join(cwd, name)
         os.chdir(clone_path)
         with open(".git/info/sparse-checkout", "a") as f:
             f.write("\n".join(files))
+            f.write("\n")  # So we are safe appending later
         try:
-            subprocess.run(["git", "pull", "--depth=1"], check=True)
+            subprocess.run(["git", "read-tree", "-m", "-u", "HEAD"], check=True)
         except subprocess.CalledProcessError as e:
             self.clone_errors[name] = str(e)
             print(f"ERROR: {e}")
@@ -617,6 +607,30 @@ class CacheWriter:
         specified for this Addon (which is not allowed by the standard, but we don't want to crash
         the cache writer)."""
         return addonmanager_metadata.get_icon_from_metadata(metadata)
+
+    @staticmethod
+    def fetch_and_reset(name: str, url: str, branch: str) -> None:
+        """Update the git clone in the current working directory by fetching from its remote and
+        hard resetting onto the requested ref, discarding any local state. A RuntimeError is raised
+        if any of the git calls fails."""
+
+        try:
+            completed_process = subprocess.run(["git", "fetch", "--force"], timeout=CLONE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"git fetch for {name} timed out after {CLONE_TIMEOUT} seconds")
+        if completed_process.returncode != 0:
+            raise RuntimeError(f"git fetch failed for {name}")
+
+        git_ref_type = CacheWriter.determine_git_ref_type(name, url, branch)
+        reset_target = f"origin/{branch}" if git_ref_type == GitRefType.BRANCH else branch
+
+        completed_process = subprocess.run(["git", "reset", "--hard", reset_target, "--quiet"])
+        if completed_process.returncode != 0:
+            raise RuntimeError(f"git reset failed for {name} ref {reset_target}")
+
+        completed_process = subprocess.run(["git", "clean", "-x", "-f", "-d", "--quiet"])
+        if completed_process.returncode != 0:
+            raise RuntimeError(f"git clean failed for {name}")
 
     @staticmethod
     def determine_git_ref_type(name: str, _url: str, branch: str) -> GitRefType:

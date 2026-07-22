@@ -324,3 +324,127 @@ class TestCacheWriter(TestCase):
         mock_create_single_addon.assert_any_call("TestMod1", mock.ANY)
         mock_create_single_addon.assert_any_call("TestMod2", mock.ANY)
         self.assertEqual(3, mock_create_single_addon.call_count)
+
+
+class TestCacheWriterGitUpdate(TestCase):
+    """Tests of the git commands used to bring an existing local clone up to date."""
+
+    def setUp(self):
+        self.setUpPyfakefs()
+
+    @staticmethod
+    def issued_commands(mock_run):
+        """Return the list of command argument lists passed to the mocked subprocess.run."""
+        return [call.args[0] for call in mock_run.call_args_list]
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
+    def test_fetch_and_reset_with_branch(self, mock_ref_type, mock_run):
+        """A branch is reset onto the remote tracking branch, not merged."""
+        mock_ref_type.return_value = accc.GitRefType.BRANCH
+        mock_run.return_value.returncode = 0
+        accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+        commands = self.issued_commands(mock_run)
+        self.assertEqual(["git", "fetch", "--force"], commands[0])
+        self.assertIn(["git", "reset", "--hard", "origin/main", "--quiet"], commands)
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
+    def test_fetch_and_reset_with_tag(self, mock_ref_type, mock_run):
+        """A tag is reset onto the tag itself, which has no remote tracking equivalent."""
+        mock_ref_type.return_value = accc.GitRefType.TAG
+        mock_run.return_value.returncode = 0
+        accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "v1.0")
+        self.assertIn(["git", "reset", "--hard", "v1.0", "--quiet"], self.issued_commands(mock_run))
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
+    def test_fetch_and_reset_with_hash(self, mock_ref_type, mock_run):
+        """A hash is reset onto the hash itself."""
+        mock_ref_type.return_value = accc.GitRefType.HASH
+        mock_run.return_value.returncode = 0
+        accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "abc123")
+        self.assertIn(
+            ["git", "reset", "--hard", "abc123", "--quiet"], self.issued_commands(mock_run)
+        )
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
+    def test_fetch_and_reset_does_not_merge_or_pull(self, mock_ref_type, mock_run):
+        """Neither pull nor merge is used, so a force push on the remote cannot fail the update."""
+        mock_ref_type.return_value = accc.GitRefType.BRANCH
+        mock_run.return_value.returncode = 0
+        accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+        for command in self.issued_commands(mock_run):
+            self.assertNotIn("pull", command)
+            self.assertNotIn("merge", command)
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
+    def test_fetch_and_reset_removes_untracked_files(self, mock_ref_type, mock_run):
+        """Files left over from a previous run are removed."""
+        mock_ref_type.return_value = accc.GitRefType.BRANCH
+        mock_run.return_value.returncode = 0
+        accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+        self.assertIn(["git", "clean", "-x", "-f", "-d", "--quiet"], self.issued_commands(mock_run))
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    def test_fetch_and_reset_raises_when_fetch_fails(self, mock_run):
+        """A failed fetch is reported as a RuntimeError so that the caller can re-clone."""
+        mock_run.return_value.returncode = 1
+        with self.assertRaises(RuntimeError):
+            accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    def test_fetch_and_reset_raises_when_fetch_times_out(self, mock_run):
+        """A timed-out fetch is reported as a RuntimeError so that the caller can re-clone."""
+        mock_run.side_effect = accc.subprocess.TimeoutExpired("git fetch", 1)
+        with self.assertRaises(RuntimeError):
+            accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
+    def test_fetch_and_reset_raises_when_reset_fails(self, mock_ref_type, mock_run):
+        """A failed reset is reported as a RuntimeError so that the caller can re-clone."""
+        mock_ref_type.return_value = accc.GitRefType.BRANCH
+        mock_run.side_effect = [MagicMock(returncode=0), MagicMock(returncode=1)]
+        with self.assertRaises(RuntimeError):
+            accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.fetch_and_reset")
+    def test_clone_or_update_reclones_when_update_fails(self, mock_update, mock_run):
+        """If the update fails, the local copy is deleted and cloned again."""
+        mock_update.side_effect = RuntimeError("Update failed")
+        mock_run.return_value.returncode = 0
+        clone_path = os.path.join(os.getcwd(), "TestMod")
+        self.fake_fs().create_dir(os.path.join(clone_path, ".git"))
+        writer = accc.CacheWriter()
+        writer.clone_or_update("TestMod", "https://some.url", "main")
+        self.assertFalse(os.path.exists(clone_path))
+        self.assertIn("clone", self.issued_commands(mock_run)[0])
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    def test_sparse_clone_update_uses_fetch_and_reset(self, mock_run):
+        """An existing sparse clone is updated by fetching and resetting, not by pulling."""
+        mock_run.return_value.returncode = 0
+        self.fake_fs().create_dir(os.path.join(os.getcwd(), "TestMod", ".git"))
+        writer = accc.CacheWriter()
+        writer.sparse_clone("TestMod", "https://some.url", "main", ["package.xml"])
+        commands = self.issued_commands(mock_run)
+        self.assertEqual(["git", "fetch", "--force", "--depth=1", "origin", "main"], commands[0])
+        self.assertIn(["git", "reset", "--hard", "FETCH_HEAD", "--quiet"], commands)
+        self.assertEqual({}, writer.clone_errors)
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    def test_add_to_sparse_clone_checks_out_without_network_access(self, mock_run):
+        """New sparse checkout entries are taken from the commit that is already local."""
+        mock_run.return_value.returncode = 0
+        sparse_file = os.path.join(os.getcwd(), "TestMod", ".git", "info", "sparse-checkout")
+        self.fake_fs().create_file(sparse_file, contents="package.xml\n")
+        writer = accc.CacheWriter()
+        writer.add_to_sparse_clone("TestMod", ["icon.svg"])
+        commands = self.issued_commands(mock_run)
+        self.assertEqual([["git", "read-tree", "-m", "-u", "HEAD"]], commands)
+        with open(sparse_file, encoding="utf-8") as f:
+            self.assertEqual("package.xml\nicon.svg\n", f.read())
