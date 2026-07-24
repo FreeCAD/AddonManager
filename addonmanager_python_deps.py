@@ -41,6 +41,7 @@ from addonmanager_utilities import (
 )
 
 import addonmanager_freecad_interface as fci
+from addonmanager_python_constraints import get_constraints
 
 from PySideWrapper import QtCore
 
@@ -49,16 +50,6 @@ translate = fci.translate
 
 class PipFailed(Exception):
     """Exception thrown when pip times out or otherwise fails to return valid results"""
-
-
-def pip_has_dry_run_support() -> bool:
-    """Returns True if pip supports the --dry-run option, False otherwise."""
-    try:
-        pip_version_string = call_pip(["--version"])[0]
-        version_str = pip_version_string.split()[1]
-        return Version(version_str) >= Version("23.1")
-    except PipFailed:
-        return False
 
 
 def call_pip(args: List[str]) -> List[str]:
@@ -92,21 +83,17 @@ class PackageInfo:
     dependencies: List[str]
 
 
-def parse_pip_list_output(all_packages, outdated_packages) -> List[PackageInfo]:
-    """Parses the output from pip into a dictionary with update information in it. The pip
-    output should be an array of lines of text."""
+def parse_pip_list_output(all_packages, constrained_versions: Dict[str, str]) -> List[PackageInfo]:
+    """Parse 'pip list --path' output into package information, marking an update as available
+    whenever the vetted (constrained) version differs from the installed one. The pip output
+    should be an array of lines of text.
 
-    # All Packages output looks like this:
-    # Package    Version
-    # ---------- -------
-    # gitdb      4.0.9
-    # setuptools 41.2.0
-
-    # Outdated Packages output looks like this:
-    # Package    Version Latest Type
-    # ---------- ------- ------ -----
-    # pip        21.0.1  22.1.2 wheel
-    # setuptools 41.2.0  63.2.0 wheel
+    All Packages output looks like this:
+        Package    Version
+        ---------- -------
+        gitdb      4.0.9
+        setuptools 41.2.0
+    """
 
     packages: Dict[str, PackageInfo] = {}
     skip_counter = 0
@@ -118,24 +105,22 @@ def parse_pip_list_output(all_packages, outdated_packages) -> List[PackageInfo]:
         if len(entries) > 1:
             package_name = pep503_normalize(entries[0])
             installed_version = entries[1]
-            packages[package_name] = PackageInfo(package_name, installed_version, "", [])
-
-    skip_counter = 0
-    for line in outdated_packages:
-        if skip_counter < 2:
-            skip_counter += 1
-            continue
-        entries = line.split()
-        if len(entries) > 1:
-            package_name = pep503_normalize(entries[0])
-            available_version = entries[2]
-            if package_name not in packages:
-                raise RuntimeError(
-                    "all_packages does not contain all packages in outdated_packages"
-                )
-            packages[package_name].available_version = available_version
+            available_version = _available_update(
+                installed_version, constrained_versions.get(package_name)
+            )
+            packages[package_name] = PackageInfo(
+                package_name, installed_version, available_version, []
+            )
 
     return list(packages.values())
+
+
+def _available_update(installed_version: str, constrained_version: Optional[str]) -> str:
+    """Return the constrained version when it is set and differs from the installed one,
+    signaling that an update to the vetted version is available, otherwise an empty string."""
+    if constrained_version and constrained_version != installed_version:
+        return constrained_version
+    return ""
 
 
 class PipCommand(Enum):
@@ -196,9 +181,9 @@ class AsynchronousPipWorker(QtCore.QObject):
 
     def _list(self) -> None:
         try:
-            outdated_packages_stdout = call_pip(["list", "-o", "--path", self.vendor_path])
             all_packages_stdout = call_pip(["list", "--path", self.vendor_path])
-            self.package_list = parse_pip_list_output(all_packages_stdout, outdated_packages_stdout)
+            constrained_versions = get_constraints().constrained_versions()
+            self.package_list = parse_pip_list_output(all_packages_stdout, constrained_versions)
         except PipFailed as e:
             self.error = str(e)
 
@@ -413,36 +398,20 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
                     fci.Console.PrintWarning(f"Error processing versions for {package_name}: {e}\n")
 
     def determine_new_python_dependencies(self, addons) -> Set[str]:
-        """Given a list of Addon objects, finds the Python dependencies for those addons. Also
-        accepts a single Addon object, in which case only its dependencies are evaluated. If using
-        a recent version of pip, the dry-run option is used to determine which packages would be
-        installed, otherwise just lists the dependencies as they are listed in the
-        addon metadata, filtered to only show new ones."""
+        """Given a single Addon or a list of Addons, return the declared Python dependencies
+        (required and optional) that are not already installed. Names are compared using PEP 503
+        normalization, and the original declared names are returned."""
 
         if not isinstance(addons, Iterable):
             addons = [addons]
 
-        python_dependencies = set()
+        declared_dependencies = set()
         for addon in addons:
-            python_dependencies.update(addon.python_requires)
-            python_dependencies.update(addon.python_optional)
+            declared_dependencies.update(addon.python_requires)
+            declared_dependencies.update(addon.python_optional)
 
-        result = set()
-        # If we have at least pip 23.1, we can use dry-run:
-        if pip_has_dry_run_support():
-            command = ["install", "--upgrade", "--dry-run"]
-            command.extend(python_dependencies)
-            output = call_pip(command)
-
-            for line in output:
-                match = re.match(r"Would install ([\w\-.]+)-([\d.]+)", line)
-                if match:
-                    name, _ = match.groups()
-                    result.add(name)
-        else:
-            result.update(python_dependencies)
-            result.difference_update(set([p.name for p in self.package_list]))
-        return result
+        installed = {package.name for package in self.package_list}
+        return {dep for dep in declared_dependencies if pep503_normalize(dep) not in installed}
 
     def all_dependencies_installed(self, addon) -> bool:
         """Returns True if all dependencies for the given addon are installed, or False if not."""
