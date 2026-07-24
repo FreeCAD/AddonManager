@@ -35,6 +35,7 @@ from addonmanager_utilities import (
     create_pip_call,
     run_interruptable_subprocess,
     get_pip_target_directory,
+    pep503_normalize,
     translate,
     using_system_pip_installation_location,
 )
@@ -89,15 +90,6 @@ class PackageInfo:
     installed_version: str
     available_version: str
     dependencies: List[str]
-
-
-def pep503_normalize(package_name: str) -> str:
-    """Given a Python package name, normalize it per PEP 503, making it all lowercase, and replacing
-    underscores and dots with dashes."""
-
-    result = package_name.replace("_", "-")
-    result = result.replace(".", "-")
-    return result.lower()
 
 
 def parse_pip_list_output(all_packages, outdated_packages) -> List[PackageInfo]:
