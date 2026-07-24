@@ -73,7 +73,6 @@ SET(AddonManager_SRCS
     AddonManagerOptions.py
     AddonManagerOptions.ui
     AddonStats.py
-    ALLOWED_PYTHON_PACKAGES.txt
     compact_view.py
     compact_view.ui
     composite_view.py
