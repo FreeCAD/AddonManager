@@ -51,6 +51,7 @@ class DependencyInstaller(QtCore.QObject):
     no_pip = QtCore.Signal(str)  # Attempted command
     failure = QtCore.Signal(str, str)  # Short message, detailed message
     finished = QtCore.Signal(bool)  # True if everything completed normally, otherwise false
+    progress_message = QtCore.Signal(str)  # A human-readable line describing current activity
 
     def __init__(
         self,
@@ -125,10 +126,15 @@ class DependencyInstaller(QtCore.QObject):
                 continue  # Do not attempt to install PySide, which must be part of FreeCAD already
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return False
+            self.progress_message.emit(
+                translate("AddonsInstaller", "Installing Python package {}").format(pymod)
+            )
             try:
                 proc = self._run_pip(
                     [
                         "install",
+                        "--progress-bar",
+                        "off",
                         "--target",
                         vendor_path,
                         pymod,
@@ -153,10 +159,15 @@ class DependencyInstaller(QtCore.QObject):
         for pymod in self.python_optional:
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return
+            self.progress_message.emit(
+                translate("AddonsInstaller", "Installing Python package {}").format(pymod)
+            )
             try:
                 proc = self._run_pip(
                     [
                         "install",
+                        "--progress-bar",
+                        "off",
                         "--target",
                         vendor_path,
                         pymod,
@@ -175,10 +186,10 @@ class DependencyInstaller(QtCore.QObject):
         final_args = utils.create_pip_call(args)
         return self._subprocess_wrapper(final_args)
 
-    @staticmethod
-    def _subprocess_wrapper(args) -> subprocess.CompletedProcess:
-        """Wrap subprocess call so test code can mock it."""
-        return utils.run_interruptable_subprocess(args, timeout_secs=120)
+    def _subprocess_wrapper(self, args) -> subprocess.CompletedProcess:
+        """Run pip with no wall-clock timeout, forwarding each output line as a progress message.
+        Wrapped in a single method so test code can mock it."""
+        return utils.run_monitored_subprocess(args, line_callback=self.progress_message.emit)
 
     def _install_addons(self):
         for addon in self.addons:
