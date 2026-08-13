@@ -702,11 +702,12 @@ class CommandAddonManager(QtCore.QObject):
         if not macro or not macro.code:
             return
 
+        mw = fci.FreeCADGui.getMainWindow()
         if macro.is_installed():
             macro_path = os.path.join(fci.DataPaths().macro_dir, macro.filename)
             fci.FreeCADGui.open(str(macro_path))
             self.dialog.hide()
-            fci.FreeCADGui.SendMsgToActiveView("Run")
+            mw.getActiveWindow().sendMessage("Run")
         else:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_install_succeeded = macro.install(temp_dir)
@@ -718,7 +719,7 @@ class CommandAddonManager(QtCore.QObject):
                 macro_path = os.path.join(temp_dir, macro.filename)
                 fci.FreeCADGui.open(str(macro_path))
                 self.dialog.hide()
-                fci.FreeCADGui.SendMsgToActiveView("Run")
+                mw.getActiveWindow().sendMessage("Run")
 
     def remove(self, addon: Addon) -> None:
         """Remove this addon."""
