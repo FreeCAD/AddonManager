@@ -46,8 +46,8 @@ from addonmanager_utilities import (
     get_zip_url,
     git_host_of,
     identify_git_host,
-    points_at_a_repository,
     pep503_normalize,
+    points_at_a_repository,
     process_date_string_to_python_datetime,
     recognized_git_location,
     reload_git_hosts,
@@ -66,9 +66,13 @@ class _FakeStream:
 
     def __init__(self, lines):
         self._lines = list(lines)
+        self.closed = False
 
     def readline(self):
         return self._lines.pop(0) if self._lines else ""
+
+    def close(self):
+        self.closed = True
 
 
 class _FakeProcess:
@@ -78,6 +82,7 @@ class _FakeProcess:
         self.stdout = _FakeStream(lines)
         self.returncode = returncode
         self.killed = False
+        self.pid = -1  # A real Popen has one, and the tree-killing code asks for it
 
     def wait(self):
         return self.returncode
@@ -381,14 +386,20 @@ class TestUtilities(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             run_monitored_subprocess(["pip", "install", "x"])
 
+    # subprocess.run is patched as well as Popen: killing the process tree shells out to a system
+    # command, which a unit test must not really run against whatever holds that process ID
+    @patch("addonmanager_utilities.subprocess.run")
     @patch("subprocess.Popen")
     @patch("addonmanager_utilities._interruption_requested", return_value=True)
-    def test_run_monitored_subprocess_interruption_raises(self, _mock_interrupt, mock_popen):
+    def test_run_monitored_subprocess_interruption_raises(
+        self, _mock_interrupt, mock_popen, _mock_run
+    ):
         process = _FakeProcess(["Collecting x\n"], 0)
         mock_popen.return_value = process
         with self.assertRaises(ProcessInterrupted):
             run_monitored_subprocess(["pip", "install", "x"])
         self.assertTrue(process.killed)
+        self.assertTrue(process.stdout.closed, "The output pipe was left open")
 
     def test_process_date_string_to_python_datetime_non_numeric(self):
         with self.assertRaises(ValueError):

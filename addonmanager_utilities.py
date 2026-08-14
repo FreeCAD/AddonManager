@@ -762,26 +762,31 @@ def run_monitored_subprocess(
 
     collected: List[str] = []
     finished_reading = False
-    while not finished_reading:
-        try:
-            line = lines.get(timeout=0.2)
-        except queue.Empty:
+    try:
+        while not finished_reading:
+            try:
+                line = lines.get(timeout=0.2)
+            except queue.Empty:
+                if _interruption_requested():
+                    raise ProcessInterrupted()
+                continue
+            if line is None:
+                finished_reading = True
+                continue
+            collected.append(line)
+            if line_callback is not None:
+                line_callback(line.rstrip())
             if _interruption_requested():
-                _terminate(process, reader)
                 raise ProcessInterrupted()
-            continue
-        if line is None:
-            finished_reading = True
-            continue
-        collected.append(line)
-        if line_callback is not None:
-            line_callback(line.rstrip())
-        if _interruption_requested():
-            _terminate(process, reader)
-            raise ProcessInterrupted()
+    except BaseException:
+        # Whatever went wrong, including a callback that raised, the process must not be left
+        # running: it holds files open and goes on doing work nobody is waiting for any more
+        _terminate(process, reader)
+        raise
 
     process.wait()
     reader.join()
+    process.stdout.close()
     output = "".join(collected)
     if process.returncode != 0:
         raise subprocess.CalledProcessError(process.returncode, args, output, "")
@@ -800,9 +805,32 @@ def _enqueue_lines(stream, lines: "queue.Queue[Optional[str]]") -> None:
 def _terminate(process: subprocess.Popen, reader: threading.Thread) -> None:
     """Kill a process and wait for its reader thread to drain, so no output thread is left
     running after an interruption."""
-    process.kill()
+    _kill_process_tree(process)
     process.wait()
-    reader.join()
+    # The reader is blocked reading the pipe, and it only reaches the end of it once every process
+    # holding the writing end has gone. A child that outlived its parent can hold it open for a
+    # long time, so this waits briefly and then closes the pipe itself rather than waiting forever.
+    reader.join(timeout=2.0)
+    process.stdout.close()
+    reader.join(timeout=2.0)
+
+
+def _kill_process_tree(process: subprocess.Popen) -> None:
+    """Kill a process along with any children it started. Killing only the process itself leaves
+    its children running, and on Windows they are the ones that do the work for commands such as
+    git clone: they go on downloading, and they keep its output pipe open."""
+    if sys.platform == "win32":
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                capture_output=True,
+                check=False,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                timeout=10,
+            )
+        except (OSError, subprocess.SubprocessError):
+            pass  # Fall through to killing just the process itself
+    process.kill()
 
 
 def process_date_string_to_python_datetime(date_string: str) -> datetime:
