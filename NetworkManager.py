@@ -348,7 +348,7 @@ class NetworkManager(QtCore.QObject):
                 return None
             if not quiet:
                 fci.Console.PrintWarning(
-                    f"Failed to get {url}, retrying in {delay_ms}ms... (attempt {attempt} of {max_attempts})\n"
+                    f"Failed to get {url}, retrying in {delay_ms}ms… (attempt {attempt} of {max_attempts})\n"
                 )
             time.sleep(delay_ms / 1000)
 

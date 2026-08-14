@@ -339,7 +339,7 @@ class Addon:
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in the cache for"
                 )
-                fci.Console.PrintWarning(f" {self.name}... ignoring the bad data.\n")
+                fci.Console.PrintWarning(f" {self.name}… ignoring the bad data.\n")
                 return
             self.set_metadata(metadata)
             self._clean_url()
@@ -358,7 +358,7 @@ class Addon:
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in installation of"
                 )
-                fci.Console.PrintWarning(f" {self.name}... ignoring the bad data.\n")
+                fci.Console.PrintWarning(f" {self.name}… ignoring the bad data.\n")
                 return
 
     def set_metadata(self, metadata: Metadata) -> None:
@@ -847,7 +847,7 @@ class MissingDependencies:
         # can do the check by PyPI package name:
         if importlib_metadata is None:
             fci.Console.PrintMessage(
-                f"Cannot check for installation of `{package_name}`... marking it for "
+                f"Cannot check for installation of `{package_name}`… marking it for "
                 "reinstallation to be safe\n"
             )
             return False
