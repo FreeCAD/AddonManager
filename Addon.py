@@ -179,6 +179,12 @@ class Addon:
         self.display_name = self.name
         self.url = url.strip()
         self.relative_cache_path = ""
+
+        # A remote location for a zip of this Addon's contents. This is used for Addons that are
+        # not cached in their entirety (typically due to their size). The canonical example here is
+        # the Parts Library.
+        self.zip_url = ""
+
         self.branch = branch.strip()
         self.branch_display_name = branch.strip()
         self.repo_type = Addon.Kind.WORKBENCH
@@ -688,7 +694,9 @@ class Addon:
         return ""
 
     def get_zip_url(self) -> str:
-        if self.url.endswith(".zip"):
+        if self.zip_url:
+            zip_url = self.zip_url
+        elif self.url.endswith(".zip"):
             zip_url = self.url
         else:
             # The ZIP url is based on the location of the main cache file:
