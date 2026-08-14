@@ -130,6 +130,71 @@ class TestAddonInstallerGUI(unittest.TestCase):
         self.addCleanup(gui.installing_dialog.close)
         return gui
 
+    def test_dialog_titles_say_which_operation_is_happening(self):
+        """The dialog says whether it is installing or updating, matching the button the user
+        pressed, rather than the generic title the shared .ui file carries."""
+        being_installed = Addon("Test Addon")
+        being_installed.set_status(Addon.Status.NOT_INSTALLED)
+        installing = AddonInstallerGUI(being_installed)
+        installing.create_installing_dialog()
+        self.addCleanup(installing.installing_dialog.close)
+
+        being_updated = Addon("Test Addon")
+        being_updated.set_status(Addon.Status.UPDATE_AVAILABLE)
+        updating = AddonInstallerGUI(being_updated)
+        updating.create_installing_dialog()
+        self.addCleanup(updating.installing_dialog.close)
+
+        self.assertIn("Installing", installing.installing_dialog.windowTitle())
+        self.assertIn("Installing", installing.installing_dialog.label.text())
+        self.assertIn("Updating", updating.installing_dialog.windowTitle())
+        self.assertIn("Updating", updating.installing_dialog.label.text())
+
+    def test_dialog_says_when_git_is_being_used(self):
+        """Installing with git is slower than downloading a zip, so the dialog explains why it is
+        worth the wait."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: True
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertIn("git", gui.installing_dialog.label.text())
+        self.assertIn("Test Addon", gui.installing_dialog.label.text())
+
+    def test_dialog_does_not_mention_git_for_a_zip_install(self):
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: False
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertNotIn("git", gui.installing_dialog.label.text())
+
+    def test_progress_update_shows_how_much_has_been_downloaded(self):
+        """A download of an Addon that is gigabytes in size says so, rather than only moving a
+        bar that gives no sense of how long the wait will be."""
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_update(150_000_000, 2_100_000_000)
+
+        # Qt formats the sizes themselves, in the units and the notation of the user's locale
+        locale = QtCore.QLocale()
+        received = locale.formattedDataSize(150_000_000)
+        total = locale.formattedDataSize(2_100_000_000)
+        self.assertIn(f"{received} of {total}", gui.installing_dialog.label.text())
+        self.assertEqual(2_100_000_000, gui.installing_dialog.progressBar.maximum())
+        self.assertEqual(150_000_000, gui.installing_dialog.progressBar.value())
+
+    def test_progress_update_of_an_unknown_download_size(self):
+        """When the server does not say how large the download is, the amount received so far is
+        still shown."""
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_update(150_000_000, 0)
+
+        received = QtCore.QLocale().formattedDataSize(150_000_000)
+        self.assertIn(received, gui.installing_dialog.label.text())
+        self.assertNotIn(" of ", gui.installing_dialog.label.text())
+
     def test_progress_message_shows_what_git_is_doing(self):
         """A git clone reports its progress as text, which is shown as git worded it, with its
         percentage driving the bar."""

@@ -130,22 +130,61 @@ class AddonInstallerGUI(QtCore.QObject):
         self.installing_dialog.show()
         self.worker_thread.start()  # Returns immediately
 
+    def _is_an_update(self) -> bool:
+        """Whether the Addon is already installed, so that the dialogs can say that they are
+        updating it rather than installing it. This is the same question the details view asks to
+        decide which button to offer, so the dialog agrees with the button that opened it."""
+        return self.addon_to_install.status() != Addon.Status.NOT_INSTALLED
+
     def create_installing_dialog(self) -> None:
         """Create the dialog that reports the progress of the installation."""
         self.installing_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
         self.installing_dialog.setObjectName("AddonManager_InstallingDialog")
-        self.installation_message = translate("AddonsInstaller", "Installing '{}'").format(
-            self.addon_to_install.display_name
-        )
+        name = self.addon_to_install.display_name
+        if self._is_an_update():
+            self.installing_dialog.setWindowTitle(
+                translate("AddonsInstaller", "Updating Addon", "Window title")
+            )
+            if self.installer.will_use_git():
+                self.installation_message = translate(
+                    "AddonsInstaller", "Updating '{}' with git, so only the changes are downloaded"
+                ).format(name)
+            else:
+                self.installation_message = translate("AddonsInstaller", "Updating '{}'").format(
+                    name
+                )
+        else:
+            self.installing_dialog.setWindowTitle(
+                translate("AddonsInstaller", "Installing Addon", "Window title")
+            )
+            if self.installer.will_use_git():
+                self.installation_message = translate(
+                    "AddonsInstaller", "Installing '{}' with git (for more efficient updating)"
+                ).format(name)
+            else:
+                self.installation_message = translate("AddonsInstaller", "Installing '{}'").format(
+                    name
+                )
         self.installing_dialog.label.setText(self.installation_message)
         # Git's progress reports are long: give the label enough room to show both the activity
         # one names and the transfer rate it ends with
         self.installing_dialog.label.setMinimumWidth(560)
+        self.installing_dialog.progressBar.setRange(0, 0)  # Start in indeterminate mode
         self.installing_dialog.rejected.connect(self._cancel_addon_installation)
 
     def _progress_update(self, bytes_read: int, data_size: int) -> None:
+        """Show how much of a download has arrived. A data_size of zero means the server did not
+        say how large the download is, so only the amount received so far can be shown."""
         self.installing_dialog.progressBar.setMaximum(data_size)
         self.installing_dialog.progressBar.setValue(bytes_read)
+        locale = QtCore.QLocale()
+        if data_size > 0:
+            amount = translate("AddonsInstaller", "{} of {}").format(
+                locale.formattedDataSize(bytes_read), locale.formattedDataSize(data_size)
+            )
+        else:
+            amount = locale.formattedDataSize(bytes_read)
+        self._set_installation_detail(amount)
 
     def _progress_message(self, message: str, percentage: int) -> None:
         """Show what an installation that reports its progress as text, as git does, is doing."""
