@@ -25,6 +25,7 @@ import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import os
 import subprocess
+import sys
 
 from AddonManagerTest.app.mocks import MockAddon as Addon
 
@@ -35,6 +36,7 @@ from addonmanager_utilities import (
     GITLAB,
     IDENTIFIED_HOSTS_PREFERENCE,
     construct_git_url,
+    create_pip_call,
     forget_git_host,
     forget_git_hosts,
     get_assigned_string_literal,
@@ -44,10 +46,12 @@ from addonmanager_utilities import (
     get_zip_url,
     git_host_of,
     identify_git_host,
+    pep503_normalize,
     process_date_string_to_python_datetime,
     recognized_git_location,
     reload_git_hosts,
     remember_git_host,
+    resolve_constraints_location,
     run_interruptable_subprocess,
 )
 
@@ -312,6 +316,66 @@ class TestUtilities(unittest.TestCase):
             with self.subTest(separator=separator):
                 with self.assertRaises(ValueError):
                     process_date_string_to_python_datetime(f"2024{separator}01{separator}31")
+
+
+class TestPep503Normalize(unittest.TestCase):
+    """Tests for PEP 503 package-name normalization."""
+
+    def test_normalizes_case_underscores_and_dots(self):
+        self.assertEqual(pep503_normalize("KiCad_Python"), "kicad-python")
+        self.assertEqual(pep503_normalize("Some.Package"), "some-package")
+        self.assertEqual(pep503_normalize("already-normalized"), "already-normalized")
+
+
+class TestConstraintsLocation(unittest.TestCase):
+    """Tests for resolving and applying the pip constraints file location."""
+
+    def _relative(self) -> str:
+        return f"{sys.version_info.major}.{sys.version_info.minor}/constraints.txt"
+
+    def test_disabled_when_preference_is_empty(self):
+        Preferences().set("pip_constraints_path", "")
+        self.assertIsNone(resolve_constraints_location())
+
+    def test_https_base_appends_versioned_relative_path(self):
+        Preferences().set("pip_constraints_path", "https://example.test/Data/Python/")
+        self.assertEqual(
+            resolve_constraints_location(),
+            "https://example.test/Data/Python/" + self._relative(),
+        )
+
+    def test_https_base_without_trailing_slash(self):
+        Preferences().set("pip_constraints_path", "https://example.test/Data/Python")
+        self.assertEqual(
+            resolve_constraints_location(),
+            "https://example.test/Data/Python/" + self._relative(),
+        )
+
+    def test_local_base_uses_os_path(self):
+        Preferences().set("pip_constraints_path", os.path.join("local", "constraints"))
+        expected = os.path.join("local", "constraints", self._relative().replace("/", os.path.sep))
+        self.assertEqual(resolve_constraints_location(), expected)
+
+    @patch("addonmanager_utilities.resolve_constraints_location")
+    @patch("addonmanager_utilities.fci.get_python_exe")
+    def test_create_pip_call_adds_constraint_on_install(
+        self, mock_python_exe: MagicMock, mock_resolve: MagicMock
+    ):
+        mock_python_exe.return_value = "python3"
+        mock_resolve.return_value = "https://example.test/3.13/constraints.txt"
+        call = create_pip_call(["install", "somepackage"])
+        self.assertIn("--constraint", call)
+        self.assertIn("https://example.test/3.13/constraints.txt", call)
+
+    @patch("addonmanager_utilities.resolve_constraints_location")
+    @patch("addonmanager_utilities.fci.get_python_exe")
+    def test_create_pip_call_omits_constraint_when_disabled(
+        self, mock_python_exe: MagicMock, mock_resolve: MagicMock
+    ):
+        mock_python_exe.return_value = "python3"
+        mock_resolve.return_value = None
+        call = create_pip_call(["install", "somepackage"])
+        self.assertNotIn("--constraint", call)
 
 
 class TestGitHostDetection(unittest.TestCase):

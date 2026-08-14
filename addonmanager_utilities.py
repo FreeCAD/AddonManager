@@ -589,6 +589,28 @@ def get_cache_file_name(file: str) -> str:
     return os.path.join(am_path, file)
 
 
+def pep503_normalize(package_name: str) -> str:
+    """Normalize a Python package name per PEP 503, lowercasing it and replacing underscores
+    and dots with dashes."""
+    result = package_name.replace("_", "-")
+    result = result.replace(".", "-")
+    return result.lower()
+
+
+def resolve_constraints_location() -> Optional[str]:
+    """Return the pip constraints file location for the running Python version, or None if the
+    user has disabled constraints by clearing the 'pip_constraints_path' preference."""
+    base = fci.Preferences().get("pip_constraints_path")
+    if not base:
+        return None
+    relative_path = f"{sys.version_info.major}.{sys.version_info.minor}/constraints.txt"
+    if urlparse(base).scheme == "https":
+        if not base.endswith("/"):
+            base += "/"
+        return base + relative_path
+    return os.path.join(base, relative_path.replace("/", os.path.sep))
+
+
 def blocking_get(url: str, method=None) -> bytes:
     """Wrapper around three possible ways of accessing data, depending on the current run mode and
     Python installation. Blocks until complete, and returns the text results of the call if it
@@ -801,25 +823,13 @@ def create_pip_call(args: List[str]) -> List[str]:
         call_args.extend(["--proxy", f"http://{host}:{port}"])
 
     if "install" in args:
-        constraints = fci.Preferences().get("pip_constraints_path")
-        if not constraints:
+        constraints = resolve_constraints_location()
+        if constraints:
+            args.extend(["--constraint", constraints])
+        else:
             fci.Console.PrintWarning(
                 "pip constraints explicitly disabled by unsetting 'pip_constraints_path'\n"
             )
-        else:
-            parsed_url = urlparse(constraints)
-            major = sys.version_info.major
-            minor = sys.version_info.minor
-            expected_rel_path = f"{major}.{minor}/constraints.txt"
-            if parsed_url.scheme == "https":
-                # The only supported remote scheme is https, and this is the default setup
-                if not constraints.endswith("/"):
-                    constraints += "/"
-                constraints += expected_rel_path
-            else:
-                # If it wasn't https, treat it like it's a local path
-                constraints = os.path.join(constraints, expected_rel_path.replace("/", os.path.sep))
-            args.extend(["--constraint", constraints])
 
     call_args.extend(args)
     return call_args

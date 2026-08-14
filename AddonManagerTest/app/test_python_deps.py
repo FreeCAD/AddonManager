@@ -30,7 +30,6 @@ from addonmanager_python_deps import (
     PythonPackageListModel,
     parse_pip_list_output,
     call_pip,
-    pip_has_dry_run_support,
     PipFailed,
 )
 
@@ -70,13 +69,13 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         self.assertEqual(len(result), 3)
 
     def test_parse_pip_list_output_no_input(self):
-        results_dict = parse_pip_list_output("", "")
+        results_dict = parse_pip_list_output("", {})
         self.assertEqual(len(results_dict), 0)
 
     def test_parse_pip_list_output_all_packages_no_updates(self):
         results_list = parse_pip_list_output(
             ["Package    Version", "---------- -------", "gitdb      4.0.9", "setuptools 41.2.0"],
-            [],
+            {},
         )
         self.assertEqual(len(results_list), 2)
         self.assertEqual("gitdb", results_list[0].name)
@@ -86,47 +85,32 @@ class TestPythonDepsStandaloneFunctions(unittest.TestCase):
         self.assertEqual("41.2.0", results_list[1].installed_version)
         self.assertEqual("", results_list[1].available_version)
 
-    def test_parse_pip_list_output_all_packages_with_updates(self):
+    def test_parse_pip_list_output_update_available_when_constrained_version_differs(self):
+        """An update is available when the constrained version differs from what is installed;
+        a package without a constraint, or already at its constrained version, shows no update."""
         results_list = parse_pip_list_output(
             [
-                "Package    Version Type",
-                "---------- ------- -----",
-                "pip        21.0.1  wheel",
-                "setuptools 41.2.0  wheel",
+                "Package    Version",
+                "---------- -------",
+                "pip        21.0.1",
+                "numpy      2.4.6",
+                "setuptools 41.2.0",
             ],
-            [
-                "Package    Version Latest Type",
-                "---------- ------- ------ -----",
-                "pip        21.0.1  22.1.2 wheel",
-            ],
+            {"pip": "22.1.2", "numpy": "2.4.6"},
         )
-        self.assertEqual(len(results_list), 2)
-        self.assertEqual("pip", results_list[0].name)
-        self.assertEqual("21.0.1", results_list[0].installed_version)
-        self.assertEqual("22.1.2", results_list[0].available_version)
-        self.assertEqual("setuptools", results_list[1].name)
-        self.assertEqual("41.2.0", results_list[1].installed_version)
+        by_name = {package.name: package for package in results_list}
+        self.assertEqual("22.1.2", by_name["pip"].available_version)
+        self.assertEqual("", by_name["numpy"].available_version)
+        self.assertEqual("", by_name["setuptools"].available_version)
 
-    @patch("addonmanager_python_deps.run_interruptable_subprocess")
-    def test_pip_has_dry_run_support_true(self, mock_run_subprocess: MagicMock):
-        result_mock = MagicMock()
-        result_mock.stdout = (
-            "pip 25.0 from /opt/homebrew/lib/python3.13/site-packages/pip (python 3.13)"
+    def test_parse_pip_list_output_normalizes_names_for_constraint_lookup(self):
+        """A constraint keyed by the normalized name still matches an installed package whose
+        reported name uses different separators or casing."""
+        results_list = parse_pip_list_output(
+            ["Package     Version", "----------- -------", "KiCad_Python 0.6.0"],
+            {"kicad-python": "0.7.1"},
         )
-        result_mock.returncode = 0
-        mock_run_subprocess.return_value = result_mock
-        result = pip_has_dry_run_support()
-        self.assertTrue(result)
-
-    @patch("addonmanager_python_deps.run_interruptable_subprocess")
-    def test_pip_has_dry_run_support_false(self, mock_run_subprocess: MagicMock):
-        result_mock = MagicMock()
-        # Dry run support was added in 23.1
-        result_mock.stdout = "pip 23.0 from /usr/bin/python3.11/site-packages/pip (python 3.11)"
-        result_mock.returncode = 0
-        mock_run_subprocess.return_value = result_mock
-        result = pip_has_dry_run_support()
-        self.assertFalse(result)
+        self.assertEqual("0.7.1", results_list[0].available_version)
 
 
 class TestPythonPackageListModel(unittest.TestCase):
@@ -136,24 +120,29 @@ class TestPythonPackageListModel(unittest.TestCase):
         self.assertIsNotNone(model)
 
     def test_reset_package_list_resets_model(self):
-        fake_outdated = "Package    Version Latest Type\n---------- ------- ------ -----\nnumpy      1.24.0  1.25.2 wheel"
         fake_all = "Package    Version\n---------- -------\nnumpy      1.24.0\npandas     2.1.0"
 
         def fake_call_pip(args):
-            if "-o" in args:
-                return fake_outdated.splitlines()
-            elif "list" in args:
+            if "list" in args:
                 return fake_all.splitlines()
             raise ValueError(f"Unexpected pip args: {args}")
 
-        with patch("addonmanager_python_deps.call_pip", side_effect=fake_call_pip):
+        fake_constraints = MagicMock()
+        fake_constraints.constrained_versions.return_value = {"numpy": "1.25.2"}
+
+        with (
+            patch("addonmanager_python_deps.call_pip", side_effect=fake_call_pip),
+            patch("addonmanager_python_deps.get_constraints", return_value=fake_constraints),
+        ):
             model = PythonPackageListModel([])
             catcher = SignalCatcher()
             model.modelReset.connect(catcher.catch_signal)
             model.reset_package_list()
             self.assertTrue(catcher.caught)
             self.assertEqual("numpy", model.package_list[0].name)
+            self.assertEqual("1.25.2", model.package_list[0].available_version)
             self.assertEqual("pandas", model.package_list[1].name)
+            self.assertEqual("", model.package_list[1].available_version)
 
     class MinimalAddon:
         def __init__(self, name, python_requires=None, python_optional=None):
@@ -161,10 +150,9 @@ class TestPythonPackageListModel(unittest.TestCase):
             self.python_requires = python_requires if python_requires else []
             self.python_optional = python_optional if python_optional else []
 
-    @patch("addonmanager_python_deps.pip_has_dry_run_support", return_value=False)
-    def test_determine_new_python_dependencies_without_dry_run_no_existing(self, _):
-        """With no dry-run support, the returned set is just the union of the two lists (if no
-        packages are installed)."""
+    def test_determine_new_python_dependencies_no_existing(self):
+        """With nothing installed, the returned set is the union of every addon's required and
+        optional dependencies."""
         addon_1 = self.MinimalAddon("addon_1", ["py_req_1", "py_req_2"], ["py_opt_1", "py_opt_2"])
         addon_2 = self.MinimalAddon("addon_2", ["py_req_3", "py_req_4"], ["py_opt_2", "py_opt_3"])
 
@@ -176,19 +164,17 @@ class TestPythonPackageListModel(unittest.TestCase):
             python_deps,
         )
 
-    @patch("addonmanager_python_deps.pip_has_dry_run_support", return_value=False)
-    def test_determine_new_python_dependencies_without_dry_run_with_existing(self, _):
-        """With no dry-run support, the returned set is just the union of the two lists, minus the
-        packages that are already installed."""
+    def test_determine_new_python_dependencies_with_existing(self):
+        """Dependencies that are already installed are excluded from the returned set."""
         addon_1 = self.MinimalAddon("addon_1", ["py_req_1", "py_req_2"], ["py_opt_1", "py_opt_2"])
         addon_2 = self.MinimalAddon("addon_2", ["py_req_3", "py_req_4"], ["py_opt_2", "py_opt_3"])
 
         addons = [addon_1, addon_2]
         model = PythonPackageListModel([])
         model.package_list = [
-            PackageInfo("py_req_1", "1", "", []),
-            PackageInfo("py_req_2", "1", "", []),
-            PackageInfo("py_opt_1", "1", "", []),
+            PackageInfo("py-req-1", "1", "", []),
+            PackageInfo("py-req-2", "1", "", []),
+            PackageInfo("py-opt-1", "1", "", []),
         ]
         python_deps = model.determine_new_python_dependencies(addons)
         self.assertEqual(
@@ -196,36 +182,17 @@ class TestPythonPackageListModel(unittest.TestCase):
             python_deps,
         )
 
-    @patch("addonmanager_python_deps.call_pip")
-    @patch("addonmanager_python_deps.pip_has_dry_run_support", return_value=True)
-    def test_determine_new_python_dependencies_with_dry_run(self, _, mock_call_pip: MagicMock):
-        """If pip supports dry-run, then this method should use pip to get a complete list of new
-        dependencies. It should ONLY return new ones, not existing ones, and should include
-        resolution of the complete dependency chain as determined by pip. Updates are not
-        reported, only newly required packages."""
+    def test_determine_new_python_dependencies_normalizes_installed_names(self):
+        """An installed package matches a declared dependency even when their names differ only
+        by PEP 503 normalization, so it is not reported as new."""
+        addon = self.MinimalAddon("addon", ["KiCad_Python"], [])
 
-        addon_1 = self.MinimalAddon("addon_1", ["py_req_1", "py_req_2"], ["py_opt_1", "py_opt_2"])
-        addon_2 = self.MinimalAddon("addon_2", ["py_req_3", "py_req_4"], ["py_opt_2", "py_opt_3"])
-
-        mock_call_pip.return_value = [
-            "Would install requests-2.31.0",
-            "Would install numpy-1.25.2",
-            "Would update urllib3-1.26.15 to urllib3-2.0.4",
-            "Would update chardet-4.0.0 to charset_normalizer-3.3.0",
-            "Would install idna-3.4",
-            "Ignoring already satisfied: pandas",
-        ]
-
-        addons = [addon_1, addon_2]
         model = PythonPackageListModel([])
-        python_deps = model.determine_new_python_dependencies(addons)
-        self.assertEqual(
-            {"idna", "requests", "numpy"},
-            python_deps,
-        )
+        model.package_list = [PackageInfo("kicad-python", "0.7.1", "", [])]
+        python_deps = model.determine_new_python_dependencies(addon)
+        self.assertEqual(set(), python_deps)
 
-    @patch("addonmanager_python_deps.pip_has_dry_run_support", return_value=False)
-    def test_determine_new_python_dependencies_single_addon_given(self, _):
+    def test_determine_new_python_dependencies_single_addon_given(self):
         """Ensure the code still works with only a single addon passed in"""
         addon_1 = self.MinimalAddon("addon_1", ["py_req_1", "py_req_2"], ["py_opt_1", "py_opt_2"])
 

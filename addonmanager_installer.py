@@ -38,6 +38,7 @@ from PySideWrapper import QtCore
 
 from Addon import Addon
 import addonmanager_utilities as utils
+from addonmanager_python_constraints import get_constraints
 from addonmanager_installation_manifest import InstallationManifest
 from addonmanager_metadata import get_branch_from_metadata
 from addonmanager_git import initialize_git, GitFailed
@@ -144,10 +145,9 @@ class AddonInstaller(QtCore.QObject):
             self.git_manager = None
 
         if allow_list is not None:
-            AddonInstaller.allowed_packages = set(allow_list if allow_list is not None else [])
+            AddonInstaller.allowed_packages = set(allow_list)
         elif not AddonInstaller.allowed_packages:
-            AddonInstaller._load_local_allowed_packages_list()
-            AddonInstaller._update_allowed_packages_list()
+            AddonInstaller.allowed_packages = get_constraints().allowed_packages()
 
         self.installation_path = fci.DataPaths().mod_dir
         self.macro_installation_path = fci.DataPaths().macro_dir
@@ -192,41 +192,6 @@ class AddonInstaller(QtCore.QObject):
                 self.addon_to_install.set_status(Addon.Status.NO_UPDATE_AVAILABLE)
         self.finished.emit()
         return success
-
-    @classmethod
-    def _load_local_allowed_packages_list(cls) -> None:
-        """Read in the local allowlist, in case the remote one is unavailable."""
-        cls.allowed_packages.clear()
-        allow_file = os.path.join(os.path.dirname(__file__), "ALLOWED_PYTHON_PACKAGES.txt")
-        if os.path.exists(allow_file):
-            with open(allow_file, encoding="utf8") as f:
-                lines = f.readlines()
-                for line in lines:
-                    if line and len(line) > 0 and line[0] != "#":
-                        cls.allowed_packages.add(line.strip().lower())
-
-    @classmethod
-    def _update_allowed_packages_list(cls) -> None:
-        """Get a new remote copy of the allowed packages list from GitHub."""
-        fci.Console.PrintLog("Attempting to fetch remote copy of ALLOWED_PYTHON_PACKAGES.txt...\n")
-        p = utils.blocking_get(
-            "https://raw.githubusercontent.com/"
-            "FreeCAD/FreeCAD-addons/master/ALLOWED_PYTHON_PACKAGES.txt"
-        )
-        if p:
-            fci.Console.PrintLog(
-                "Overriding local ALLOWED_PYTHON_PACKAGES.txt with newer remote version\n"
-            )
-            p = p.decode("utf8")
-            lines = p.split("\n")
-            cls.allowed_packages.clear()  # Unset the locally defined list
-            for line in lines:
-                if line and len(line) > 0 and line[0] != "#":
-                    cls.allowed_packages.add(line.strip().lower())
-        else:
-            fci.Console.PrintLog(
-                "Could not fetch remote ALLOWED_PYTHON_PACKAGES.txt, using local copy\n"
-            )
 
     def _determine_install_method(
         self, addon_url: str, install_method: InstallationMethod

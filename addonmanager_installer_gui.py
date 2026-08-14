@@ -35,6 +35,7 @@ from PySideWrapper import QtCore, QtWidgets
 from addonmanager_installer import AddonInstaller, MacroInstaller
 from addonmanager_dependency_installer import DependencyInstaller
 from addonmanager_metadata import Version
+from addonmanager_python_constraints import PythonConstraints
 import addonmanager_utilities as utils
 from Addon import Addon, MissingDependencies
 
@@ -506,11 +507,15 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
     def _handle_disallowed_python(self) -> bool:
         """Determine if we are missing any required Python packages that are not in the allowed
         packages list. If so, display a message to the user and return True if they want to cancel.
-        Otherwise, return False."""
+        Otherwise, return False. When constraints are disabled there is no authoritative list to
+        check against, so nothing is disallowed."""
+
+        if not PythonConstraints.is_enabled():
+            return False
 
         bad_packages = []
         for dep in self.deps.python_requires:
-            if dep.lower() not in self.installer.allowed_packages:
+            if utils.pep503_normalize(dep) not in self.installer.allowed_packages:
                 bad_packages.append(dep)
 
         if bad_packages and self._all_from_custom_repositories():
@@ -713,6 +718,10 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         return False
 
     def _clean_up_optional(self):
+        if not PythonConstraints.is_enabled():
+            # With constraints disabled there is no authoritative list, so every optional package
+            # is offered to the user rather than being filtered out here.
+            return
         if self._all_from_custom_repositories():
             # The allow-list does not apply to a repository the user chose to trust. Each optional
             # package is offered in the dependency dialog for the user to accept or refuse, so
@@ -720,7 +729,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
             return
         good_packages = []
         for dep in self.deps.python_optional:
-            if dep in self.installer.allowed_packages:
+            if utils.pep503_normalize(dep) in self.installer.allowed_packages:
                 good_packages.append(dep)
             else:
                 fci.Console.PrintWarning(

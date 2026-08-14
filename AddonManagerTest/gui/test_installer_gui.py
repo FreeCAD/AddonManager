@@ -30,6 +30,7 @@ from unittest.mock import MagicMock, Mock, patch
 from PySideWrapper import QtWidgets, QtCore
 
 from Addon import Addon, MissingDependencies
+from addonmanager_installer import AddonInstaller
 from addonmanager_installer_gui import (
     AddonInstallerGUI,
     AddonDependencyInstallerGUI,
@@ -43,10 +44,23 @@ from addonmanager_metadata import Version
 translate = fci.translate
 
 
+def patch_constraints(test_case, allowed=("in-the-allowlist",)):
+    """Give a test a deterministic, network-free constraints source and reset the installer's
+    cached allow-list so each test starts from a known state."""
+    AddonInstaller.allowed_packages = set()
+    fake_constraints = MagicMock()
+    fake_constraints.allowed_packages.return_value = set(allowed)
+    constraints_patch = patch(
+        "addonmanager_installer.get_constraints", return_value=fake_constraints
+    )
+    constraints_patch.start()
+    test_case.addCleanup(constraints_patch.stop)
+
+
 class TestAddonInstallerGUI(unittest.TestCase):
 
     def setUp(self):
-        pass
+        patch_constraints(self)
 
     def tearDown(self):
         pass
@@ -170,7 +184,12 @@ class TestAddonInstallerGUI(unittest.TestCase):
 class TestAddonDependencyInstallerGUI(unittest.TestCase):
 
     def setUp(self):
-        pass
+        patch_constraints(self)
+        constraints_enabled = patch(
+            "addonmanager_installer_gui.PythonConstraints.is_enabled", return_value=True
+        )
+        constraints_enabled.start()
+        self.addCleanup(constraints_enabled.stop)
 
     def tearDown(self):
         pass
@@ -410,6 +429,38 @@ class TestAddonDependencyInstallerGUI(unittest.TestCase):
         self.assertEqual("AddonManager_RequirementFailedDialog", dialog_name)
         self.assertNotIn("not_in_the_allowlist", deps.python_requires)
 
+    def test_underscore_dependency_matches_dashed_allow_entry(self):
+        """A dependency declared with underscores matches a normalized (dashed) allow-list
+        entry, so it is not wrongly refused."""
+        deps = self.create_mock_deps(python_requires=["kicad_python"])
+        gui = AddonDependencyInstallerGUI([self._addon(from_custom_repository=False)], deps)
+        gui.installer = self.MockAddonInstaller([])
+        gui.installer.allowed_packages = ["kicad-python"]
+
+        with patch("addonmanager_installer_gui.MessageDialog.show_modal") as mock_dialog:
+            stop_installation = gui._handle_disallowed_python()
+
+        self.assertFalse(stop_installation)
+        mock_dialog.assert_not_called()
+        self.assertIn("kicad_python", deps.python_requires)
+
+    def test_disabled_constraints_do_not_gate_required_packages(self):
+        """With constraints disabled there is no authoritative list, so a package that is not on
+        the allow-list is allowed through rather than being stripped."""
+        deps = self.create_mock_deps(python_requires=["not_in_the_allowlist"])
+        gui = AddonDependencyInstallerGUI([self._addon(from_custom_repository=False)], deps)
+        gui.installer = self.MockAddonInstaller([])
+
+        with (
+            patch("addonmanager_installer_gui.PythonConstraints.is_enabled", return_value=False),
+            patch("addonmanager_installer_gui.MessageDialog.show_modal") as mock_dialog,
+        ):
+            stop_installation = gui._handle_disallowed_python()
+
+        self.assertFalse(stop_installation)
+        mock_dialog.assert_not_called()
+        self.assertIn("not_in_the_allowlist", deps.python_requires)
+
     def test_custom_repo_unreviewed_optional_package_is_offered(self):
         """An optional package is offered in the dependency dialog for the user to accept or
         refuse, so a custom repository's optional packages are not dropped either."""
@@ -557,7 +608,7 @@ class TestAddonDependencyInstallerGUI(unittest.TestCase):
         def __init__(self, addons: List[Addon]):
             super().__init__()
             self.addons = addons
-            self.allowed_packages = ["in_the_allowlist"]
+            self.allowed_packages = ["in-the-allowlist"]
 
     @patch("addonmanager_installer_gui.utils.blocking_get", MagicMock(return_value=None))
     @patch("addonmanager_installer_gui.AddonInstaller")

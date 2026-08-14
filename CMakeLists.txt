@@ -54,6 +54,7 @@ SET(AddonManager_SRCS
     addonmanager_package_details_controller.py
     addonmanager_preferences_defaults.json
     addonmanager_preferences_migrations.py
+    addonmanager_python_constraints.py
     addonmanager_python_deps_commands.py
     addonmanager_python_deps_gui.py
     addonmanager_python_deps.py
@@ -72,7 +73,6 @@ SET(AddonManager_SRCS
     AddonManagerOptions.py
     AddonManagerOptions.ui
     AddonStats.py
-    ALLOWED_PYTHON_PACKAGES.txt
     compact_view.py
     compact_view.ui
     composite_view.py
