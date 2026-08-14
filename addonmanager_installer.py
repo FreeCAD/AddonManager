@@ -200,6 +200,13 @@ class AddonInstaller(QtCore.QObject):
         self.finished.emit()
         return success
 
+    def will_use_git(self, install_method: InstallationMethod = InstallationMethod.ANY) -> bool:
+        """Whether running this installer will use git, so that callers can say so before the
+        installation starts."""
+
+        addon_url = self.addon_to_install.url.replace(os.path.sep, "/")
+        return self._determine_install_method(addon_url, install_method) == InstallationMethod.GIT
+
     def _determine_install_method(
         self, addon_url: str, install_method: InstallationMethod
     ) -> Optional[InstallationMethod]:

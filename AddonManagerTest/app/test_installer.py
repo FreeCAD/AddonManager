@@ -268,6 +268,21 @@ class TestAddonInstaller(unittest.TestCase):
 
         self.assertEqual([], failures, "Cancelling reported an installation failure")
 
+    def test_will_use_git(self):
+        """Callers can ask what the installation is going to do before it starts."""
+        if not initialize_git():
+            self.skipTest("git is not available")
+        self.real_addon.prefer_git = True
+        installer = AddonInstaller(self.real_addon, [])
+
+        self.assertTrue(installer.will_use_git())
+
+    def test_will_use_git_for_a_normal_addon(self):
+        """An Addon that is not flagged for git is downloaded as a zip."""
+        installer = AddonInstaller(self.real_addon, [])
+
+        self.assertFalse(installer.will_use_git())
+
     def test_report_git_progress(self):
         """Each line of git's progress report is passed on as git worded it, with the percentage
         it contains, so that a long clone can drive a progress bar."""
