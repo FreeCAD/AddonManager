@@ -404,11 +404,22 @@ class TestMetadataReader(unittest.TestCase):
                 mock_create_node.reset_mock()
 
     @patch("addonmanager_metadata.MetadataReader._create_node")
-    def test_parse_content_invalid(self, mock_create_node):
-        content_item = "no_such_content_type"
-        tree_mock = [self.given_mock_tree_node(content_item, None)]
+    def test_parse_content_unknown_type(self, mock_create_node):
+        """Content types that this version of the Addon Manager does not know about are
+        still parsed, so that the metadata standard can be extended."""
+        tree_mock = [self.given_mock_tree_node("no_such_content_type", None)]
         metadata_mock = MagicMock()
         amm.MetadataReader._parse_content("", metadata_mock, tree_mock)
+        mock_create_node.assert_called_once()
+
+    @patch("addonmanager_metadata.MetadataReader._create_node")
+    def test_parse_content_foreign_namespace(self, mock_create_node):
+        """Elements from some other namespace are not content types and are skipped."""
+        tree_mock = [self.given_mock_tree_node("{http://example.com/}workbench", None)]
+        metadata_mock = MagicMock()
+        amm.MetadataReader._parse_content(
+            "{https://wiki.freecad.org/Package_Metadata}", metadata_mock, tree_mock
+        )
         mock_create_node.assert_not_called()
 
 
@@ -501,6 +512,15 @@ class TestMetadataReaderIntegration(unittest.TestCase):
         metadata = amm.MetadataReader.from_file(filename)
         self.assertIn("other", metadata.content)
         self.assertEqual(len(metadata.content["other"]), 1)
+
+    def test_unrecognized_content_type_is_retained(self):
+        filename = os.path.join(self.test_data_dir, "unrecognized_content_only.xml")
+        metadata = amm.MetadataReader.from_file(filename)
+        self.assertIn("contenttypefromthefuture", metadata.content)
+        self.assertEqual(len(metadata.content["contenttypefromthefuture"]), 1)
+        self.assertEqual(
+            "Some Future Content", metadata.content["contenttypefromthefuture"][0].name
+        )
 
     def test_content_combination(self):
         filename = os.path.join(self.test_data_dir, "combination.xml")

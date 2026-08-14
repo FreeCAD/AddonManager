@@ -78,6 +78,12 @@ INTERNAL_WORKBENCHES = {
     "web": "Web",
 }
 
+#  The package metadata content types that have a dedicated category in the Addon Manager's
+#  filter list. Every other content type, whether it is the standard "other" type or a type
+#  introduced after this version of the Addon Manager was released, is shown in the "Other"
+#  category.
+CATEGORIZED_CONTENT_TYPES = frozenset(["workbench", "macro", "preferencepack", "bundle"])
+
 
 class Addon:
     """Encapsulates information about a FreeCAD addon"""
@@ -494,17 +500,21 @@ class Addon:
             return True
         return self.contains_packaged_content("macro")
 
+    def packaged_content_types(self) -> Set[str]:
+        """The content types declared by this package's metadata. Empty for anything that is
+        not a package."""
+        if self.repo_type != Addon.Kind.PACKAGE:
+            return set()
+        if self.metadata is None:
+            fci.Console.PrintLog(
+                f"Addon Manager internal error: lost metadata for package {self.name}\n"
+            )
+            return set()
+        return set(self.metadata.content)
+
     def contains_packaged_content(self, content_type: str):
         """Determine if the package contains content_type"""
-        if self.repo_type == Addon.Kind.PACKAGE:
-            if self.metadata is None:
-                fci.Console.PrintLog(
-                    f"Addon Manager internal error: lost metadata for package {self.name}\n"
-                )
-                return False
-            content = self.metadata.content
-            return content_type in content
-        return False
+        return content_type in self.packaged_content_types()
 
     def contains_preference_pack(self) -> bool:
         """Determine if this package contains a preference pack"""
@@ -515,8 +525,9 @@ class Addon:
         return self.contains_packaged_content("bundle")
 
     def contains_other(self) -> bool:
-        """Determine if this package contains an "other" content item"""
-        return self.contains_packaged_content("other")
+        """Determine if this package contains an "other" content item, or any content type that
+        this version of the Addon Manager does not have a category for."""
+        return bool(self.packaged_content_types() - CATEGORIZED_CONTENT_TYPES)
 
     def walk_dependency_tree(self, all_repos: Dict[str, "Addon"], deps: Dependencies):
         """Compute the total dependency tree for this repo (recursive)

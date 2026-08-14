@@ -158,6 +158,20 @@ class TestAddon(unittest.TestCase):
         # There is no equivalent for preference packs, they are always accompanied by a
         # metadata file
 
+    def test_contains_other_includes_unrecognized_content(self):
+        addon = Addon(
+            "FreeCAD",
+            "https://github.com/FreeCAD/FreeCAD",
+            Addon.Status.NOT_INSTALLED,
+            "master",
+        )
+        addon.load_metadata_file(os.path.join(self.test_dir, "unrecognized_content_only.xml"))
+        self.assertFalse(addon.contains_workbench())
+        self.assertFalse(addon.contains_macro())
+        self.assertFalse(addon.contains_preference_pack())
+        self.assertFalse(addon.contains_bundle())
+        self.assertTrue(addon.contains_other())
+
     def test_create_from_macro(self):
         macro_file = os.path.join(self.test_dir, "DoNothing.FCMacro")
         macro = Macro("DoNothing")
