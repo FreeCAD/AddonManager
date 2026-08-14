@@ -444,6 +444,19 @@ def construct_git_url(repo, filename):
     return _format_url(_host_or_default(repo).raw_file, repo, filename)
 
 
+def should_use_git(repo) -> bool:
+    """Returns whether this Addon is installed and updated with git, rather than by downloading a
+    zip of its contents. Addons that the catalog flags as too large to cache in full always are,
+    because downloading all of a large Addon for every update is expensive; the rest only are if
+    the user has asked for it. Note that this says nothing about whether git is actually available:
+    the caller has to check that separately, and fall back to a zip download if it is not."""
+
+    if getattr(repo, "prefer_git", False):
+        return True
+    forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
+    return repo.name in forced_repos
+
+
 def points_at_a_repository(repo) -> bool:
     """Returns whether this repo's URL is the location of a git repository, rather than of a
     downloadable archive of its contents. A catalog entry that only provides a zip file has no

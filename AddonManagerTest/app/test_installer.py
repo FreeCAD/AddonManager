@@ -251,6 +251,20 @@ class TestAddonInstaller(unittest.TestCase):
             readme = os.path.join(addon_name_dir, "README.md")
             self.assertTrue(os.path.exists(readme))
 
+    def test_determine_install_method_for_a_large_addon(self):
+        """An Addon that is too large to cache in full is installed with git, when git is
+        available, so that later updates only have to fetch what changed."""
+
+        if not initialize_git():
+            self.skipTest("git is not available")
+        self.real_addon.prefer_git = True
+
+        installer = AddonInstaller(self.real_addon, [])
+
+        self.assertIsNotNone(installer.git_manager)
+        method = installer._determine_install_method(self.real_addon.url, InstallationMethod.ANY)
+        self.assertEqual(InstallationMethod.GIT, method)
+
     def test_determine_install_method_local_path(self):
         """Test which install methods are accepted for a local path"""
 

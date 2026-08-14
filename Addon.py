@@ -185,6 +185,10 @@ class Addon:
         # the Parts Library.
         self.zip_url = ""
 
+        # True for Addons that are large enough that downloading all of them for every update is
+        # expensive, so git is used for them whenever it is available. Set by the Addon Index.
+        self.prefer_git = False
+
         self.branch = branch.strip()
         self.branch_display_name = branch.strip()
         self.repo_type = Addon.Kind.WORKBENCH

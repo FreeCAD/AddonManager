@@ -55,6 +55,7 @@ from addonmanager_utilities import (
     resolve_constraints_location,
     run_interruptable_subprocess,
     run_monitored_subprocess,
+    should_use_git,
     ProcessInterrupted,
     SubprocessTimeout,
 )
@@ -154,6 +155,34 @@ class TestUtilities(unittest.TestCase):
         for url, expected_result in expected_urls.items():
             repo = Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
             self.assertEqual(expected_result, get_readme_html_url(repo))
+
+    def test_should_use_git_for_a_normal_addon(self):
+        """An Addon that is neither large nor listed in the preference is downloaded as a zip."""
+        repo = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        with patch("addonmanager_utilities.fci.Preferences") as mock_preferences:
+            mock_preferences.return_value.get.return_value = "SomeOtherAddon"
+            self.assertFalse(should_use_git(repo))
+
+    def test_should_use_git_for_a_large_addon(self):
+        """An Addon that is too large to cache in full is updated with git."""
+        repo = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        repo.prefer_git = True
+        with patch("addonmanager_utilities.fci.Preferences") as mock_preferences:
+            mock_preferences.return_value.get.return_value = "SomeOtherAddon"
+            self.assertTrue(should_use_git(repo))
+
+    def test_should_use_git_when_the_user_asks_for_it(self):
+        """An Addon the user has listed in the preference is updated with git."""
+        repo = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        with patch("addonmanager_utilities.fci.Preferences") as mock_preferences:
+            mock_preferences.return_value.get.return_value = "SomeOtherAddon,Test Repo"
+            self.assertTrue(should_use_git(repo))
 
     def test_points_at_a_repository(self):
         repository = Addon(
