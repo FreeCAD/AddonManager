@@ -30,7 +30,7 @@ from unittest.mock import MagicMock, Mock, patch
 from PySideWrapper import QtWidgets, QtCore
 
 from Addon import Addon, MissingDependencies
-from addonmanager_installer import AddonInstaller
+from addonmanager_installer import AddonInstaller, InstallationMethod
 from addonmanager_installer_gui import (
     AddonInstallerGUI,
     AddonDependencyInstallerGUI,
@@ -179,6 +179,58 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
         self.assertNotIn("git", gui.installing_dialog.label.text())
 
+    def test_a_failed_git_installation_can_be_tried_another_way(self):
+        """Cloning a large Addon fails for reasons a second attempt gets past, so the failure is
+        not the end of the conversation."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: True
+
+        gui.installation_method = InstallationMethod.ANY
+
+        self.assertTrue(gui._can_try_another_way())
+
+    def test_a_failed_zip_installation_is_only_reported(self):
+        """The zip download is the fallback, so there is nothing left to fall back to."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: True
+        gui.installation_method = InstallationMethod.ZIP
+
+        self.assertFalse(gui._can_try_another_way())
+
+    def test_a_failed_installation_that_did_not_use_git_is_only_reported(self):
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: False
+
+        self.assertFalse(gui._can_try_another_way())
+
+    def test_trying_again_starts_a_new_installer(self):
+        """The installer that failed belongs to a thread that has ended, so the second attempt
+        gets one of its own, running by whichever method was chosen."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        failed_installer = gui.installer
+        attempts = []
+        gui.install = lambda method=InstallationMethod.ANY: attempts.append(method)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            gui.installer.installation_path = temp_dir  # Nothing left behind to clean up
+
+            gui._try_again(InstallationMethod.ZIP)
+
+        self.assertEqual([InstallationMethod.ZIP], attempts)
+        self.assertIsNot(failed_installer, gui.installer)
+
+    def test_trying_again_removes_what_the_failed_attempt_left(self):
+        """A half-finished checkout is not something the next attempt can build on."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.install = lambda method=InstallationMethod.ANY: None
+        with tempfile.TemporaryDirectory() as temp_dir:
+            gui.installer.installation_path = temp_dir
+            leftovers = os.path.join(temp_dir, "Test Addon")
+            os.makedirs(os.path.join(leftovers, ".git"))
+
+            gui._try_again(InstallationMethod.ANY)
+
+            self.assertFalse(os.path.exists(leftovers))
+
     def test_cancelling_dialog_shows_that_work_is_going_on(self):
         """Stopping a large installation takes time, so the dialog animates and offers no button:
         a fixed sentence next to an OK button reads as a hang."""
@@ -203,7 +255,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
             with open(os.path.join(partial_download, "subdirectory", "file"), "w") as f:
                 f.write("downloaded so far")
 
-            gui._remove_partial_installation(partial_download)
+            gui._remove_partial_installation(partial_download, gui.cancelling_dialog)
 
             self.assertFalse(os.path.exists(partial_download))
         self.assertIn("Removing", gui.cancelling_dialog.label.text())
