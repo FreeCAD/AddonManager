@@ -55,9 +55,6 @@ CLONE_TIMEOUT = (
     300  # Seconds: repos that take longer than this are assumed to be too large to index
 )
 
-# Repos that are too large, or that should for some reason not be fully cloned here
-FORCE_SPARSE_CLONE = ["parts_library", "offline-documentation", "FreeCAD-Documentation-html"]
-
 
 def recursive_serialize(obj: Any):
     """Recursively serialize an object, supporting non-dataclasses that themselves contain
@@ -205,18 +202,8 @@ class CacheWriter:
         self, addon_id: str, catalog_entries: List[AddonCatalog.AddonCatalogEntry]
     ):
         for index, catalog_entry in enumerate(catalog_entries):
-            if addon_id in FORCE_SPARSE_CLONE:
-                if catalog_entry.repository is None:
-                    print(
-                        f"ERROR: Cannot use sparse clone for {addon_id} because it has no git repo."
-                    )
-                    continue
-                if catalog_entry.zip_url is None:
-                    print(
-                        f"ERROR: Cannot use sparse clone for {addon_id} because it has no zip URL."
-                    )
-                    continue
-                catalog_entry.sparse_cache = True
+            catalog_entry.sparse_cache = self.should_use_sparse_clone(addon_id, catalog_entry)
+            if catalog_entry.sparse_cache:
                 self.create_local_copy_of_single_addon_with_git_sparse(
                     addon_id, index, catalog_entry
                 )
@@ -235,6 +222,24 @@ class CacheWriter:
             git_hash, git_tag = self.get_git_info(addon_id, index, catalog_entry)
             self.catalog.add_git_info_to_entry(addon_id, index, git_hash, git_tag)
             self.create_zip_of_entry(addon_id, index, catalog_entry)
+
+    def should_use_sparse_clone(
+        self, addon_id: str, catalog_entry: AddonCatalog.AddonCatalogEntry
+    ) -> bool:
+        """Whether to cache only the metadata files of this Addon, leaving clients to get the rest
+        of it from its zip URL. The catalog asks for this by setting "sparse_cache" on Addons that
+        are too large to cache in full, but it takes both a repository to clone the files from and
+        a zip URL for the clients to use, so an entry without those is cached normally."""
+
+        if not catalog_entry.sparse_cache:
+            return False
+        if catalog_entry.repository is None:
+            print(f"ERROR: Cannot use sparse clone for {addon_id} because it has no git repo.")
+            return False
+        if catalog_entry.zip_url is None:
+            print(f"ERROR: Cannot use sparse clone for {addon_id} because it has no zip URL.")
+            return False
+        return True
 
     def get_git_info(
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
