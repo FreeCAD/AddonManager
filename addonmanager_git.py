@@ -44,6 +44,12 @@ class GitFailed(RuntimeError):
     """The call to git returned an error of some kind"""
 
 
+class GitCancelled(GitFailed):
+    """The call to git did not finish because the user cancelled it. It is a kind of GitFailed so
+    that existing handlers still catch it, but nothing that repairs a failed call should try to
+    repair this one: the user asked for the work to stop, not to be done differently."""
+
+
 def _ref_format_string() -> str:
     return (
         "--format=%(refname:lstrip=2)\t%(upstream:lstrip=2)\t%(authordate:rfc)\t%("
@@ -151,6 +157,10 @@ class GitManager:
             self._call_git(
                 ["submodule", "update", "--init", "--recursive"] + progress, line_callback
             )
+        except GitCancelled:
+            # The user cancelled: leave their installed copy exactly as it was found
+            os.chdir(old_dir)
+            raise
         except GitFailed as e:
             fci.Console.PrintWarning(
                 translate(
@@ -500,7 +510,7 @@ class GitManager:
                 + f"Returned stderr:\n{e.stderr if e.stderr else e.output}"
             ) from e
         except utils.ProcessInterrupted as e:
-            raise GitFailed(
+            raise GitCancelled(
                 "The git process was interrupted due to a network timeout (or explicit user cancellation)\n"
                 + f"Called with: {' '.join(final_args)}\n"
             ) from e

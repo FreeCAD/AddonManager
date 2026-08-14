@@ -42,7 +42,7 @@ import addonmanager_utilities as utils
 from addonmanager_python_constraints import get_constraints
 from addonmanager_installation_manifest import InstallationManifest
 from addonmanager_metadata import get_branch_from_metadata
-from addonmanager_git import initialize_git, GitFailed
+from addonmanager_git import initialize_git, GitFailed, GitCancelled
 from addonmanager_icon_utilities import get_icon_for_addon
 
 if fci.FreeCADGui:
@@ -299,6 +299,9 @@ class AddonInstaller(QtCore.QObject):
                     line_callback=self._report_git_progress,
                 )
             self.git_manager.checkout(install_path, self.addon_to_install.branch)
+        except GitCancelled as e:
+            # Cancelling is not a failure, so report it like a normal interrupted process
+            raise utils.ProcessInterrupted() from e
         except GitFailed as e:
             self.failure.emit(self.addon_to_install, str(e))
             return False
@@ -346,7 +349,9 @@ class AddonInstaller(QtCore.QObject):
         self.zip_download_index = NetworkManager.AM_NETWORK_MANAGER.submit_monitored_get(zip_url)
         while self.zip_download_index is not None:
             if QtCore.QThread.currentThread().isInterruptionRequested():
-                break
+                NetworkManager.AM_NETWORK_MANAGER.abort(self.zip_download_index)
+                self.zip_download_index = None
+                raise utils.ProcessInterrupted()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
     def _update_zip_status(self, index: int, bytes_read: int, data_size: int):

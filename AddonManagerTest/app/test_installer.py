@@ -31,8 +31,9 @@ from zipfile import ZipFile
 from addonmanager_installer import InstallationMethod, AddonInstaller, MacroInstaller
 from addonmanager_git import initialize_git
 from addonmanager_metadata import MetadataReader
+from addonmanager_utilities import ProcessInterrupted
 from Addon import Addon
-from AddonManagerTest.app.mocks import MockAddon, MockMacro
+from AddonManagerTest.app.mocks import MockAddon, MockGitManager, MockMacro
 
 
 class TestAddonInstaller(unittest.TestCase):
@@ -250,6 +251,22 @@ class TestAddonInstaller(unittest.TestCase):
             self.assertTrue(os.path.exists(addon_name_dir))
             readme = os.path.join(addon_name_dir, "README.md")
             self.assertTrue(os.path.exists(readme))
+
+    def test_cancelling_a_git_installation_is_not_a_failure(self):
+        """Cancelling is something the user asked for, so it is reported as an interruption and
+        not as a failed installation: the user should not be shown an error for it."""
+        installer = AddonInstaller(self.real_addon, [])
+        installer.git_manager = MockGitManager()
+        installer.git_manager.should_be_interrupted = True
+        failures = []
+        installer.failure.connect(lambda addon, message: failures.append(message))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            installer.installation_path = temp_dir
+            with self.assertRaises(ProcessInterrupted):
+                installer._install_by_git()
+
+        self.assertEqual([], failures, "Cancelling reported an installation failure")
 
     def test_report_git_progress(self):
         """Each line of git's progress report is passed on as git worded it, with the percentage
