@@ -252,6 +252,89 @@ class TestCacheWriter(TestCase):
     def test_generate_cache_entry_with_approval(self):
         """If the addon appears in the catalog (as opposed to just the index), it gets marked as approved."""
 
+    def test_should_use_sparse_clone_when_the_catalog_asks_for_it(self):
+        """A catalog entry that asks for a sparse cache and has everything needed for one gets
+        one, even though its addon is not in the hard-coded list."""
+        ace = AddonCatalog.AddonCatalogEntry(
+            {
+                "repository": "https://some.url",
+                "git_ref": "main",
+                "zip_url": "zip",
+                "sparse_cache": True,
+            }
+        )
+        writer = accc.CacheWriter()
+        self.assertTrue(writer.should_use_sparse_clone("SomeLargeAddon", ace))
+
+    def test_should_use_sparse_clone_without_a_zip_url(self):
+        """A sparse cache leaves clients to download the addon from its zip URL, so an entry
+        without one is cached normally instead."""
+        ace = AddonCatalog.AddonCatalogEntry(
+            {"repository": "https://some.url", "git_ref": "main", "sparse_cache": True}
+        )
+        writer = accc.CacheWriter()
+        self.assertFalse(writer.should_use_sparse_clone("SomeLargeAddon", ace))
+
+    def test_should_use_sparse_clone_without_a_repository(self):
+        """The metadata files of a sparse cache come from a git clone, so an entry without a
+        repository is cached normally instead."""
+        ace = AddonCatalog.AddonCatalogEntry({"zip_url": "zip", "sparse_cache": True})
+        writer = accc.CacheWriter()
+        self.assertFalse(writer.should_use_sparse_clone("SomeLargeAddon", ace))
+
+    def test_should_use_sparse_clone_for_a_normal_addon(self):
+        """An addon that does not ask for a sparse cache is cached in full."""
+        ace = AddonCatalog.AddonCatalogEntry(
+            {"repository": "https://some.url", "git_ref": "main", "zip_url": "zip"}
+        )
+        writer = accc.CacheWriter()
+        self.assertFalse(writer.should_use_sparse_clone("SomeNormalAddon", ace))
+
+    @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_git_sparse")
+    def test_create_local_copy_of_single_addon_using_sparse_clone(self, mock_create_with_sparse):
+        """An entry that asks for a sparse cache is fetched with a sparse clone, and is marked so
+        that clients know that only part of it is cached."""
+        catalog_entries = [
+            AddonCatalog.AddonCatalogEntry(
+                {
+                    "repository": "https://some.url",
+                    "git_ref": "main",
+                    "zip_url": "zip",
+                    "sparse_cache": True,
+                }
+            ),
+        ]
+        writer = accc.CacheWriter()
+        writer.catalog = MagicMock()
+        writer.cwd = os.path.abspath(os.path.join("home", "cache"))
+
+        writer.create_local_copy_of_single_addon("SomeLargeAddon", catalog_entries)
+
+        self.assertEqual(1, mock_create_with_sparse.call_count)
+        self.assertTrue(catalog_entries[0].sparse_cache)
+
+    @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_git")
+    @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_git_sparse")
+    def test_create_local_copy_of_single_addon_with_impossible_sparse_clone(
+        self, mock_create_with_sparse, mock_create_with_git
+    ):
+        """An entry that asks for a sparse cache but cannot have one is cached in full, and is not
+        marked as sparse: clients must not be told to look for a zip that does not exist."""
+        catalog_entries = [
+            AddonCatalog.AddonCatalogEntry(
+                {"repository": "https://some.url", "git_ref": "main", "sparse_cache": True}
+            ),
+        ]
+        writer = accc.CacheWriter()
+        writer.catalog = MagicMock()
+        writer.cwd = os.path.abspath(os.path.join("home", "cache"))
+
+        writer.create_local_copy_of_single_addon("SomeLargeAddon", catalog_entries)
+
+        self.assertEqual(0, mock_create_with_sparse.call_count)
+        self.assertEqual(1, mock_create_with_git.call_count)
+        self.assertFalse(catalog_entries[0].sparse_cache)
+
     @patch("AddonCatalogCacheCreator.CacheWriter.create_local_copy_of_single_addon_with_git")
     def test_create_local_copy_of_single_addon_using_git(self, mock_create_with_git):
         """Given a single addon, each catalog entry is fetched with git if git info is available."""
@@ -312,9 +395,15 @@ class TestCacheWriter(TestCase):
                         AddonCatalog.AddonCatalogEntry({"zip_url": "zip1"}),
                         AddonCatalog.AddonCatalogEntry({"zip_url": "zip2"}),
                     ],
-                    accc.FORCE_SPARSE_CLONE[0]: [
-                        AddonCatalog.AddonCatalogEntry({"zip_url": "zip1"}),
-                        AddonCatalog.AddonCatalogEntry({"zip_url": "zip2"}),
+                    "TestMod3": [
+                        AddonCatalog.AddonCatalogEntry(
+                            {
+                                "repository": "https://some.url",
+                                "git_ref": "main",
+                                "zip_url": "zip1",
+                                "sparse_cache": True,
+                            }
+                        ),
                     ],
                 }
 
