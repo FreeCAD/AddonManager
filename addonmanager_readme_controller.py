@@ -143,6 +143,8 @@ class ReadmeController(QtCore.QObject):
 
     def _create_markdown_url(self, file: str) -> str:
         base_url = utils.get_readme_html_url(self.addon)
+        if not base_url:
+            return file
         lhs, slash, _ = base_url.rpartition("/")
         return lhs + slash + file
 
@@ -180,6 +182,22 @@ class ReadmeController(QtCore.QObject):
         self.readme_data_type = ReadmeDataType.Markdown
         self.widget.setMarkdown(markdown)
 
+    def _create_missing_readme_display(self):
+        """Display what is known about an Addon whose README cannot be located: this happens when
+        the catalog provides a download for the Addon, but no repository to read files from, and
+        the Addon's metadata does not give a README location either."""
+
+        markdown = f"# {self.addon.display_name}\n\n"
+        if self.addon.description:
+            markdown += f"{self.addon.description}\n\n"
+        markdown += translate(
+            "AddonsInstaller", "No README information is available for this addon."
+        )
+        self.widget.setUrl("")
+        self.readme_data = markdown
+        self.readme_data_type = ReadmeDataType.Markdown
+        self.widget.setMarkdown(markdown)
+
     def _create_non_wiki_display(self):
         self.url = utils.get_readme_url(self.addon)
         if self.addon.metadata and self.addon.metadata.url:
@@ -203,6 +221,10 @@ class ReadmeController(QtCore.QObject):
                             "Attempting to replace 'src' with 'raw' in codeberg URL..."
                         )
                         self.url = self.url.replace("/src/", "/raw/")
+
+        if not self.url:
+            self._create_missing_readme_display()
+            return
 
         self.widget.setUrl(self.url)
 

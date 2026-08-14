@@ -444,15 +444,29 @@ def construct_git_url(repo, filename):
     return _format_url(_host_or_default(repo).raw_file, repo, filename)
 
 
-def get_readme_url(repo):
-    """Returns the location of a readme file"""
+def points_at_a_repository(repo) -> bool:
+    """Returns whether this repo's URL is the location of a git repository, rather than of a
+    downloadable archive of its contents. A catalog entry that only provides a zip file has no
+    repository for file locations to be constructed from."""
 
+    return not urlparse(repo.url).path.lower().endswith(".zip")
+
+
+def get_readme_url(repo):
+    """Returns the location of a readme file, or an empty string if there is no repository to
+    construct that location from"""
+
+    if not points_at_a_repository(repo):
+        return ""
     return construct_git_url(repo, "README.md")
 
 
 def get_readme_html_url(repo):
-    """Returns the location of a html file containing readme"""
+    """Returns the location of a html file containing readme, or an empty string if there is no
+    repository to construct that location from"""
 
+    if not points_at_a_repository(repo):
+        return ""
     return _format_url(_host_or_default(repo).blob, repo, "README.md")
 
 
