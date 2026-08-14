@@ -138,21 +138,18 @@ class AddonCatalogEntry:
             state = Addon.Status.UNCHECKED
         else:
             state = Addon.Status.NOT_INSTALLED
-        if self.sparse_cache:
-            if self.zip_url:
-                url = self.zip_url
-            else:
-                # Technically, this should never happen, but just in case...
-                raise RuntimeError(f"Sparse cache entry {addon_id} has no zip_url")
-        elif self.repository:
-            url = self.repository
-        else:
-            url = self.zip_url
+        if self.sparse_cache and not self.zip_url:
+            # Technically, this should never happen, but just in case...
+            raise RuntimeError(f"Sparse cache entry {addon_id} has no zip_url")
+        url = self.repository or self.zip_url or ""
         if self.git_ref:
             addon = Addon(addon_id, url, state, branch=self.git_ref)
         else:
             addon = Addon(addon_id, url, state)
         addon.relative_cache_path = self.relative_cache_path
+        if self.sparse_cache or not self.repository:
+            # If the cache is sparse, we need a "real" location to get the thing from when installing
+            addon.zip_url = self.zip_url or ""
 
         if self.metadata:
             try:
