@@ -78,6 +78,25 @@ class TestGit(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(checkout_dir, ".git")))
         self.assertEqual(os.getcwd(), self.cwd, "We should be left in the same CWD we started")
 
+    def test_clone_reports_its_progress(self):
+        """Cloning a large repository takes a long time, so git is asked to report its progress
+        and each line of that report is handed over as it arrives."""
+        checkout_dir = os.path.join(self.test_dir, "test_repo")
+        reported_lines = []
+
+        # --no-local stops git from taking the shortcut it takes for a local clone, so that it
+        # reports its progress the way it does when cloning an Addon from a remote host
+        self.git.clone(
+            self.test_repo_remote, checkout_dir, ["--no-local"], line_callback=reported_lines.append
+        )
+
+        self.assertTrue(os.path.exists(os.path.join(checkout_dir, ".git")))
+        self.assertTrue(reported_lines, "Git did not report any progress at all")
+        self.assertTrue(
+            any("Receiving objects" in line for line in reported_lines),
+            f"Git did not report the progress of its download: {reported_lines}",
+        )
+
     def test_checkout(self):
         """Test git checkout"""
         checkout_dir = self._clone_test_repo()

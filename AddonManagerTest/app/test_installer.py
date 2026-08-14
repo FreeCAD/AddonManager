@@ -251,6 +251,27 @@ class TestAddonInstaller(unittest.TestCase):
             readme = os.path.join(addon_name_dir, "README.md")
             self.assertTrue(os.path.exists(readme))
 
+    def test_report_git_progress(self):
+        """Each line of git's progress report is passed on as git worded it, with the percentage
+        it contains, so that a long clone can drive a progress bar."""
+        installer = AddonInstaller(self.real_addon, [])
+        reported = []
+        installer.progress_message.connect(
+            lambda message, percent: reported.append((message, percent))
+        )
+
+        installer._report_git_progress("Receiving objects:  42% (5218/12345), 120.50 MiB\n")
+        installer._report_git_progress("Cloning into 'FreeCAD-library'...\n")
+        installer._report_git_progress("   \n")
+
+        self.assertEqual(
+            [
+                ("Receiving objects:  42% (5218/12345), 120.50 MiB", 42),
+                ("Cloning into 'FreeCAD-library'...", -1),
+            ],
+            reported,
+        )
+
     def test_determine_install_method_for_a_large_addon(self):
         """An Addon that is too large to cache in full is installed with git, when git is
         available, so that later updates only have to fetch what changed."""

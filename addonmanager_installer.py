@@ -26,6 +26,7 @@ import json
 from datetime import datetime, timezone
 from enum import IntEnum, auto
 import os
+import re
 import shutil
 from typing import List, Optional
 import tempfile
@@ -115,6 +116,13 @@ class AddonInstaller(QtCore.QObject):
     # the number of bytes downloaded, and the number of bytes expected, respectively. Note that the
     # number of bytes expected might be set to 0 to indicate an unknown download size.
     progress_update = QtCore.Signal(int, int)
+
+    # Signal: progress_message
+    # In GUI mode this signal is emitted during an installation whose progress is reported as text
+    # rather than as a byte count, which is how git reports what it is doing. The string is a
+    # human-readable description of the work in progress, and the integer is how far through that
+    # work we are, as a percentage, or -1 when the report did not include one.
+    progress_message = QtCore.Signal(str, int)
 
     # Signals: success and failure
     # Emitted when the installation process is complete. The object emitted is the object that the
@@ -281,17 +289,31 @@ class AddonInstaller(QtCore.QObject):
         install_path = str(os.path.join(self.installation_path, self.addon_to_install.name))
         try:
             if self._can_use_update():
-                self.git_manager.update(install_path)
+                self.git_manager.update(install_path, line_callback=self._report_git_progress)
             else:
                 if os.path.isdir(install_path):
                     utils.rmdir(install_path)
-                self.git_manager.clone(self.addon_to_install.url, install_path)
+                self.git_manager.clone(
+                    self.addon_to_install.url,
+                    install_path,
+                    line_callback=self._report_git_progress,
+                )
             self.git_manager.checkout(install_path, self.addon_to_install.branch)
         except GitFailed as e:
             self.failure.emit(self.addon_to_install, str(e))
             return False
         self._finalize_successful_installation()
         return True
+
+    def _report_git_progress(self, line: str) -> None:
+        """Pass a line of git's progress report on to whatever is displaying it. This is basically
+        all we can do to not appear stalled out when using git to install, there's no way of giving
+        a "real" progress bar. The percentage is sort of a lie here, but it's all we've got."""
+        line = line.strip()
+        if not line:
+            return
+        percentage = re.search(r"(\d{1,3})%", line)
+        self.progress_message.emit(line, int(percentage.group(1)) if percentage else -1)
 
     def _install_by_zip(self) -> bool:
         """Installs the specified url by downloading the file (if it is remote) and unzipping it

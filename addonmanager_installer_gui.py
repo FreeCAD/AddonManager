@@ -69,6 +69,7 @@ class AddonInstallerGUI(QtCore.QObject):
         self.dependency_dialog = None
         self.dependency_installation_dialog = None
         self.installing_dialog = None
+        self.installation_message = ""
         self.worker_thread = None
 
         # Set up the installer connections
@@ -121,24 +122,46 @@ class AddonInstallerGUI(QtCore.QObject):
         self.installer.moveToThread(self.worker_thread)
         self.installer.finished.connect(self.worker_thread.quit)
         self.installer.progress_update.connect(self._progress_update)
+        self.installer.progress_message.connect(self._progress_message)
         self.worker_thread.started.connect(self.installer.run)
 
-        self.installing_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
-        self.installing_dialog.setObjectName("AddonManager_InstallingDialog")
-        self.installing_dialog.label.setText(
-            translate("AddonsInstaller", "Installing '{}'").format(
-                self.addon_to_install.display_name
-            )
-        )
-
-        self.installing_dialog.rejected.connect(self._cancel_addon_installation)
+        self.create_installing_dialog()
         self.installer.finished.connect(self.installing_dialog.hide)
         self.installing_dialog.show()
         self.worker_thread.start()  # Returns immediately
 
+    def create_installing_dialog(self) -> None:
+        """Create the dialog that reports the progress of the installation."""
+        self.installing_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
+        self.installing_dialog.setObjectName("AddonManager_InstallingDialog")
+        self.installation_message = translate("AddonsInstaller", "Installing '{}'").format(
+            self.addon_to_install.display_name
+        )
+        self.installing_dialog.label.setText(self.installation_message)
+        # Git's progress reports are long: give the label enough room to show both the activity
+        # one names and the transfer rate it ends with
+        self.installing_dialog.label.setMinimumWidth(560)
+        self.installing_dialog.rejected.connect(self._cancel_addon_installation)
+
     def _progress_update(self, bytes_read: int, data_size: int) -> None:
         self.installing_dialog.progressBar.setMaximum(data_size)
         self.installing_dialog.progressBar.setValue(bytes_read)
+
+    def _progress_message(self, message: str, percentage: int) -> None:
+        """Show what an installation that reports its progress as text, as git does, is doing."""
+        if percentage >= 0:
+            self.installing_dialog.progressBar.setMaximum(100)
+            self.installing_dialog.progressBar.setValue(percentage)
+        self._set_installation_detail(message)
+
+    def _set_installation_detail(self, detail: str) -> None:
+        """Show what the installation is doing right now, on a line of its own below the name of
+        the Addon being installed. Git's reports in particular are long, so the detail is elided
+        in the middle, keeping both the activity it names and the numbers it ends with."""
+        label = self.installing_dialog.label
+        available_width = max(label.width(), label.minimumWidth())
+        elided = label.fontMetrics().elidedText(detail, QtCore.Qt.ElideMiddle, available_width)
+        label.setText(f"{self.installation_message}\n{elided}")
 
     def _cancel_addon_installation(self):
         dlg = QtWidgets.QMessageBox(

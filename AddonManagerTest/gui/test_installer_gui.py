@@ -92,6 +92,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
     class MockInstaller(QtCore.QObject):
         progress_update = QtCore.Signal(int, int)
+        progress_message = QtCore.Signal(str, int)
         success = QtCore.Signal(object)
         failure = QtCore.Signal(object, str)
         finished = QtCore.Signal()
@@ -120,6 +121,35 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
         def moveToThread(self, thread):
             self.moved_to_thread = True
+
+    def _installer_gui_with_dialog(self) -> AddonInstallerGUI:
+        """An AddonInstallerGUI with its progress dialog set up, as install() leaves it, but
+        without the installation itself running."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+        return gui
+
+    def test_progress_message_shows_what_git_is_doing(self):
+        """A git clone reports its progress as text, which is shown as git worded it, with its
+        percentage driving the bar."""
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_message("Receiving objects:  42% (5218/12345)", 42)
+
+        self.assertIn("Receiving objects", gui.installing_dialog.label.text())
+        self.assertEqual(100, gui.installing_dialog.progressBar.maximum())
+        self.assertEqual(42, gui.installing_dialog.progressBar.value())
+
+    def test_progress_message_without_a_percentage(self):
+        """A git report with no percentage in it leaves the bar alone rather than resetting it."""
+        gui = self._installer_gui_with_dialog()
+        gui._progress_message("Receiving objects:  42% (5218/12345)", 42)
+
+        gui._progress_message("Resolving deltas", -1)
+
+        self.assertIn("Resolving deltas", gui.installing_dialog.label.text())
+        self.assertEqual(42, gui.installing_dialog.progressBar.value())
 
     @patch("addonmanager_installer_gui.AddonDependencyInstallerGUI")
     @patch("addonmanager_installer_gui.MissingDependencies")

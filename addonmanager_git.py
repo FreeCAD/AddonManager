@@ -27,7 +27,7 @@ import os
 import platform
 import shutil
 import subprocess
-from typing import List, Dict, Optional
+from typing import Callable, List, Dict, Optional
 import time
 
 import addonmanager_utilities as utils
@@ -79,18 +79,23 @@ class GitManager:
         if not self.git_exe:
             raise NoGitFound()
 
-    def clone(self, remote, local_path, args: List[str] = None):
-        """Clones the remote to the local path"""
+    def clone(
+        self,
+        remote,
+        local_path,
+        args: List[str] = None,
+        line_callback: Optional[Callable[[str], None]] = None,
+    ):
+        """Clones the remote to the local path. Cloning a large repository takes a long time, so if
+        a line_callback is given, git is asked to report its progress and each line of that report
+        is handed to the callback as it arrives."""
         final_args = ["clone", "--recurse-submodules"]
+        if line_callback is not None:
+            final_args.append("--progress")
         if args:
             final_args.extend(args)
         final_args.extend([remote, local_path])
-        self._synchronous_call_git(final_args)
-
-    def async_clone(self, remote, local_path, progress_monitor, args: List[str] = None):
-        """Clones the remote to the local path, sending periodic progress updates
-        to the passed progress_monitor. Returns a handle that can be used to
-        cancel the job."""
+        self._call_git(final_args, line_callback)
 
     def checkout(self, local_path, spec, args: List[str] = None):
         """Checks out a specific git revision, tag, or branch. Any valid argument to
@@ -134,14 +139,18 @@ class GitManager:
         os.chdir(old_dir)
         return result
 
-    def update(self, local_path):
-        """Fetches and pulls the local_path from its remote"""
+    def update(self, local_path, line_callback: Optional[Callable[[str], None]] = None):
+        """Fetches and pulls the local_path from its remote. As with clone, a line_callback is
+        given each line of git's progress report as it arrives."""
         old_dir = os.getcwd()
         os.chdir(local_path)
+        progress = ["--progress"] if line_callback is not None else []
         try:
-            self._synchronous_call_git(["fetch"])
-            self._synchronous_call_git(["pull"])
-            self._synchronous_call_git(["submodule", "update", "--init", "--recursive"])
+            self._call_git(["fetch"] + progress, line_callback)
+            self._call_git(["pull"] + progress, line_callback)
+            self._call_git(
+                ["submodule", "update", "--init", "--recursive"] + progress, line_callback
+            )
         except GitFailed as e:
             fci.Console.PrintWarning(
                 translate(
@@ -156,7 +165,7 @@ class GitManager:
                     "AddonsInstaller",
                     "Backing up the original directory and re-cloning",
                 )
-                + "...\n"
+                + "…\n"
             )
             remote = self.get_remote(local_path)
             with open(os.path.join(local_path, "ADDON_DISABLED"), "w", encoding="utf-8") as f:
@@ -168,7 +177,7 @@ class GitManager:
                 )
             os.chdir("..")
             os.rename(local_path, local_path + ".backup" + str(time.time()))
-            self.clone(remote, local_path)
+            self.clone(remote, local_path, line_callback=line_callback)
         os.chdir(old_dir)
 
     def status(self, local_path) -> str:
@@ -197,9 +206,6 @@ class GitManager:
             os.chdir(old_dir)
             raise e
         os.chdir(old_dir)
-
-    def async_fetch_and_update(self, local_path, progress_monitor, args=None):
-        """Same as fetch_and_update, but asynchronous"""
 
     def update_available(self, local_path) -> bool:
         """Returns True if an update is available from the remote, or false if not"""
@@ -471,16 +477,27 @@ class GitManager:
 
     def _synchronous_call_git(self, args: List[str]) -> str:
         """Calls git and returns its output."""
+        return self._call_git(args, None)
+
+    def _call_git(self, args: List[str], line_callback: Optional[Callable[[str], None]]) -> str:
+        """Calls git and returns its output. Without a line_callback the call has to finish within
+        a fixed timeout, which is fine for the many short-running git commands. With one, each line
+        of output is sent to the callback as it arrives, and there is no timeout: this is for
+        operations such as cloning a very large repository, which the user can cancel and wants to
+        see progress for, but which should not have a timeout."""
         final_args = [self.git_exe]
         final_args.extend(args)
 
         try:
-            proc = utils.run_interruptable_subprocess(final_args)
+            if line_callback is None:
+                proc = utils.run_interruptable_subprocess(final_args)
+            else:
+                proc = utils.run_monitored_subprocess(final_args, line_callback=line_callback)
         except subprocess.CalledProcessError as e:
             raise GitFailed(
                 f"Git returned a non-zero exit status: {e.returncode}\n"
                 + f"Called with: {' '.join(final_args)}\n\n"
-                + f"Returned stderr:\n{e.stderr}"
+                + f"Returned stderr:\n{e.stderr if e.stderr else e.output}"
             ) from e
         except utils.ProcessInterrupted as e:
             raise GitFailed(
