@@ -150,6 +150,16 @@ class TestAddonInstallerGUI(unittest.TestCase):
         self.assertIn("Updating", updating.installing_dialog.windowTitle())
         self.assertIn("Updating", updating.installing_dialog.label.text())
 
+    def test_cancelling_dialog_says_which_operation_is_being_stopped(self):
+        being_updated = Addon("Test Addon")
+        being_updated.set_status(Addon.Status.UPDATE_AVAILABLE)
+        gui = AddonInstallerGUI(being_updated)
+
+        gui.create_cancelling_dialog()
+        self.addCleanup(gui.cancelling_dialog.close)
+
+        self.assertIn("update", gui.cancelling_dialog.label.text())
+
     def test_dialog_says_when_git_is_being_used(self):
         """Installing with git is slower than downloading a zip, so the dialog explains why it is
         worth the wait."""
@@ -168,6 +178,35 @@ class TestAddonInstallerGUI(unittest.TestCase):
         self.addCleanup(gui.installing_dialog.close)
 
         self.assertNotIn("git", gui.installing_dialog.label.text())
+
+    def test_cancelling_dialog_shows_that_work_is_going_on(self):
+        """Stopping a large installation takes time, so the dialog animates and offers no button:
+        a fixed sentence next to an OK button reads as a hang."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.create_cancelling_dialog()
+        self.addCleanup(gui.cancelling_dialog.close)
+
+        self.assertIn("Test Addon", gui.cancelling_dialog.label.text())
+        self.assertEqual(0, gui.cancelling_dialog.progressBar.minimum())
+        self.assertEqual(0, gui.cancelling_dialog.progressBar.maximum())
+        self.assertTrue(gui.cancelling_dialog.buttonBox.isHidden())
+
+    def test_removing_a_partial_installation_keeps_the_interface_alive(self):
+        """The deletion happens off the GUI thread, so the dialog can say what it is doing and go
+        on repainting while it happens."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.create_cancelling_dialog()
+        self.addCleanup(gui.cancelling_dialog.close)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            partial_download = os.path.join(temp_dir, "partial")
+            os.makedirs(os.path.join(partial_download, "subdirectory"))
+            with open(os.path.join(partial_download, "subdirectory", "file"), "w") as f:
+                f.write("downloaded so far")
+
+            gui._remove_partial_installation(partial_download)
+
+            self.assertFalse(os.path.exists(partial_download))
+        self.assertIn("Removing", gui.cancelling_dialog.label.text())
 
     def test_progress_update_shows_how_much_has_been_downloaded(self):
         """A download of an Addon that is gigabytes in size says so, rather than only moving a

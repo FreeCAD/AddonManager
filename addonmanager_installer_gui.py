@@ -44,6 +44,19 @@ translate = fci.translate
 # pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
 
 
+class DirectoryRemover(QtCore.QThread):
+    """Deletes a directory and everything in it, off the calling thread. Removing a partly
+    downloaded Addon can take minutes when the Addon is a large one, which is far too long to
+    stop the interface from repainting."""
+
+    def __init__(self, path: str):
+        super().__init__()
+        self.path = path
+
+    def run(self):
+        utils.rmdir(self.path)
+
+
 class AddonInstallerGUI(QtCore.QObject):
     """GUI functions (sequence of dialog boxes) for installing an addon interactively. The actual
     installation is handled by the AddonInstaller class running in a separate QThread. An instance
@@ -69,6 +82,7 @@ class AddonInstallerGUI(QtCore.QObject):
         self.dependency_dialog = None
         self.dependency_installation_dialog = None
         self.installing_dialog = None
+        self.cancelling_dialog = None
         self.installation_message = ""
         self.worker_thread = None
 
@@ -202,18 +216,28 @@ class AddonInstallerGUI(QtCore.QObject):
         elided = label.fontMetrics().elidedText(detail, QtCore.Qt.ElideMiddle, available_width)
         label.setText(f"{self.installation_message}\n{elided}")
 
+    def create_cancelling_dialog(self) -> None:
+        """Create the dialog shown while an installation is being stopped. Both stopping the work
+        and clearing up after it can take a long time for a large Addon, so this dialog says which
+        of the two is happening and animates while it does, rather than presenting a fixed sentence
+        and a button that does nothing."""
+        self.cancelling_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
+        self.cancelling_dialog.setObjectName("AddonInstaller_CancellingDialog")
+        self.cancelling_dialog.setWindowTitle(translate("AddonsInstaller", "Cancelling"))
+        if self._is_an_update():
+            message = translate("AddonsInstaller", "Cancelling the update of '{}'…")
+        else:
+            message = translate("AddonsInstaller", "Cancelling the installation of '{}'…")
+        self.cancelling_dialog.label.setText(message.format(self.addon_to_install.display_name))
+        self.cancelling_dialog.label.setMinimumWidth(560)
+        self.cancelling_dialog.progressBar.setRange(0, 0)  # Indeterminate: this has no known length
+        # There is nothing to offer the user here: the cancellation cannot itself be cancelled
+        self.cancelling_dialog.buttonBox.hide()
+
     def _cancel_addon_installation(self):
-        dlg = QtWidgets.QMessageBox(
-            QtWidgets.QMessageBox.NoIcon,
-            translate("AddonsInstaller", "Cancelling"),
-            translate("AddonsInstaller", "Cancelling installation of '{}'").format(
-                self.addon_to_install.display_name
-            ),
-            QtWidgets.QMessageBox.NoButton,
-            parent=utils.get_main_am_window(),
-        )
-        dlg.setObjectName("AddonInstaller_CancellingDialog")
-        dlg.show()
+        self.create_cancelling_dialog()
+        self.cancelling_dialog.show()
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         if self.worker_thread.isRunning():
             # Interruption can take a second or more, depending on what was being done. Make sure
             # we stay responsive and update the dialog with the text above, etc.
@@ -224,9 +248,32 @@ class AddonInstallerGUI(QtCore.QObject):
                 QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         path = str(os.path.join(self.installer.installation_path, self.addon_to_install.name))
         if os.path.exists(path):
-            utils.rmdir(path)
-        dlg.hide()
+            self._remove_partial_installation(path)
+        self.cancelling_dialog.hide()
         self.finished.emit()
+
+    def _remove_partial_installation(self, path: str) -> None:
+        """Delete what had been downloaded when the installation was cancelled. For a large Addon
+        this takes long enough that it has to happen off this thread: done here it would freeze the
+        interface, leaving a dialog that cannot even repaint itself to say what it is waiting for.
+        """
+        self.cancelling_dialog.label.setText(
+            translate(
+                "AddonsInstaller", "Removing the part of '{}' that was already downloaded…"
+            ).format(self.addon_to_install.display_name)
+        )
+        fci.Console.PrintMessage(
+            translate(
+                "AddonsInstaller",
+                "Installation of {} was cancelled: removing the partial download at {}",
+            ).format(self.addon_to_install.display_name, path)
+            + "\n"
+        )
+        remover = DirectoryRemover(path)
+        remover.start()
+        while remover.isRunning():
+            remover.wait(50)
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
     def _installation_succeeded(self):
         """Called if the installation was successful."""
