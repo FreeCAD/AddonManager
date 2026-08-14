@@ -171,6 +171,19 @@ class TestDependencyInstaller(unittest.TestCase):
         self.assertEqual(sm.call_count, 1)
         self.assertIn("failure", self.signals_caught)
 
+    def test_install_required_emits_progress_and_disables_progress_bar(self):
+        sm = SubprocessMock()
+        sm.succeed = True
+        self.test_object._subprocess_wrapper = sm.subprocess_interceptor
+        progress = []
+        self.test_object.progress_message.connect(progress.append)
+        self.test_object.python_requires = ["somepackage"]
+        self.test_object._install_required("vendor_path")
+        self.assertTrue(any("somepackage" in message for message in progress))
+        logged_args = sm.arg_log[0]
+        self.assertIn("--progress-bar", logged_args)
+        self.assertIn("off", logged_args)
+
     def test_install_optional_loops(self):
         sm = SubprocessMock()
         sm.succeed = True

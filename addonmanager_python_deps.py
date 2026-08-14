@@ -64,7 +64,7 @@ def call_pip(args: List[str]) -> List[str]:
         raise PipFailed() from exception
 
     try:
-        proc = run_interruptable_subprocess(call_args, 120)
+        proc = run_interruptable_subprocess(call_args, timeout_secs=None)
     except subprocess.CalledProcessError as exception:
         raise PipFailed(f"pip call failed:\n{exception}") from exception
 

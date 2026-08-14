@@ -53,7 +53,35 @@ from addonmanager_utilities import (
     remember_git_host,
     resolve_constraints_location,
     run_interruptable_subprocess,
+    run_monitored_subprocess,
+    ProcessInterrupted,
+    SubprocessTimeout,
 )
+
+
+class _FakeStream:
+    """A minimal stand-in for a process stdout stream that yields preset lines then EOF."""
+
+    def __init__(self, lines):
+        self._lines = list(lines)
+
+    def readline(self):
+        return self._lines.pop(0) if self._lines else ""
+
+
+class _FakeProcess:
+    """A minimal Popen stand-in for exercising run_monitored_subprocess."""
+
+    def __init__(self, lines, returncode=0):
+        self.stdout = _FakeStream(lines)
+        self.returncode = returncode
+        self.killed = False
+
+    def wait(self):
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
 
 
 class TestUtilities(unittest.TestCase):
@@ -256,6 +284,54 @@ class TestUtilities(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             with patch("time.time", fake_time):
                 run_interruptable_subprocess(["arg0", "arg1"], 0.1)
+
+    @patch("subprocess.Popen")
+    def test_run_interruptable_subprocess_none_timeout_never_expires(self, mock_popen):
+        """With no timeout the call keeps waiting through repeated poll timeouts until the
+        process finishes."""
+
+        def communicate(timeout=None):
+            communicate.calls += 1
+            if communicate.calls <= 3:
+                raise subprocess.TimeoutExpired("Test", timeout)
+            return "done", ""
+
+        communicate.calls = 0
+
+        mock_process = MagicMock()
+        mock_process.communicate = communicate
+        mock_process.returncode = 0
+        mock_popen.return_value = mock_process
+
+        result = run_interruptable_subprocess(["arg0", "arg1"], None)
+        self.assertEqual(0, result.returncode)
+        self.assertEqual("done", result.stdout)
+
+    @patch("subprocess.Popen")
+    def test_run_monitored_subprocess_streams_lines_and_collects_output(self, mock_popen):
+        mock_popen.return_value = _FakeProcess(["Collecting x\n", "Downloading x (5 MB)\n"], 0)
+        received = []
+
+        result = run_monitored_subprocess(["pip", "install", "x"], line_callback=received.append)
+
+        self.assertEqual(["Collecting x", "Downloading x (5 MB)"], received)
+        self.assertEqual("Collecting x\nDownloading x (5 MB)\n", result.stdout)
+        self.assertEqual(0, result.returncode)
+
+    @patch("subprocess.Popen")
+    def test_run_monitored_subprocess_nonzero_exit_raises(self, mock_popen):
+        mock_popen.return_value = _FakeProcess(["error occurred\n"], 1)
+        with self.assertRaises(subprocess.CalledProcessError):
+            run_monitored_subprocess(["pip", "install", "x"])
+
+    @patch("subprocess.Popen")
+    @patch("addonmanager_utilities._interruption_requested", return_value=True)
+    def test_run_monitored_subprocess_interruption_raises(self, _mock_interrupt, mock_popen):
+        process = _FakeProcess(["Collecting x\n"], 0)
+        mock_popen.return_value = process
+        with self.assertRaises(ProcessInterrupted):
+            run_monitored_subprocess(["pip", "install", "x"])
+        self.assertTrue(process.killed)
 
     def test_process_date_string_to_python_datetime_non_numeric(self):
         with self.assertRaises(ValueError):

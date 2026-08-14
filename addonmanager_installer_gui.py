@@ -763,6 +763,7 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         self.dependency_installer.no_pip.connect(self._report_no_pip)
         self.dependency_installer.failure.connect(self._report_dependency_failure)
         self.dependency_installer.finished.connect(self._dependencies_finished)
+        self.dependency_installer.progress_message.connect(self._update_dependency_progress)
 
         self.dependency_worker_thread = QtCore.QThread(self)
         self.dependency_worker_thread.setObjectName("Dependency Installer Thread")
@@ -770,19 +771,33 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         self.dependency_worker_thread.started.connect(self.dependency_installer.run)
         self.dependency_installer.finished.connect(self.dependency_worker_thread.quit)
 
-        self.dependency_installation_dialog = QtWidgets.QMessageBox(
-            QtWidgets.QMessageBox.Information,
-            translate("AddonsInstaller", "Installing Dependencies", "Window title"),
-            translate("AddonsInstaller", "Installing dependencies…", "Window text"),
-            QtWidgets.QMessageBox.Cancel,
-            parent=utils.get_main_am_window(),
+        self.dependency_installation_dialog = fci.loadUi(
+            os.path.join(os.path.dirname(__file__), "progress.ui")
         )
         self.dependency_installation_dialog.setObjectName(
             "AddonManager_InstallingDependenciesDialog"
         )
+        self.dependency_installation_dialog.setWindowTitle(
+            translate("AddonsInstaller", "Installing Dependencies", "Window title")
+        )
+        self.dependency_installation_dialog.label.setText(
+            translate("AddonsInstaller", "Installing dependencies…", "Window text")
+        )
+        # An indeterminate range animates the bar so the user can see work is ongoing during a
+        # download whose duration is not known in advance.
+        self.dependency_installation_dialog.progressBar.setRange(0, 0)
         self.dependency_installation_dialog.rejected.connect(self._cancel_dependency_installation)
         self.dependency_installation_dialog.show()
         self.dependency_worker_thread.start()
+
+    def _update_dependency_progress(self, message: str) -> None:
+        """Show the latest line of pip activity in the dependency installation dialog, elided so
+        a long line does not resize the dialog."""
+        if self.dependency_installation_dialog is None:
+            return
+        label = self.dependency_installation_dialog.label
+        elided = label.fontMetrics().elidedText(message, QtCore.Qt.ElideMiddle, 360)
+        label.setText(elided)
 
     def _report_no_python_exe(self) -> None:
         """Callback for the dependency installer failing to locate a Python executable."""
@@ -839,8 +854,6 @@ class AddonDependencyInstallerGUI(QtCore.QObject):
         """Callback for dependency installation failure."""
         if self.dependency_installation_dialog is not None:
             self.dependency_installation_dialog.hide()
-        if self.dependency_installer and hasattr(self.dependency_installer, "finished"):
-            self.dependency_installer.finished.disconnect(self._report_dependency_success)
         fci.Console.PrintError(details + "\n")
         result = MessageDialog.show_modal(
             MessageDialog.DialogType.ERROR,

@@ -561,6 +561,7 @@ class TestAddonDependencyInstallerGUI(unittest.TestCase):
         no_pip = QtCore.Signal(str)
         failure = QtCore.Signal(str, str)
         finished = QtCore.Signal(bool)
+        progress_message = QtCore.Signal(str)
 
         class MockResult(IntEnum):
             OK = 0
@@ -646,6 +647,17 @@ class TestAddonDependencyInstallerGUI(unittest.TestCase):
         self.assertTrue(gui.dependency_installer.moved_to_thread)
         self.assertEqual(["in_the_allowlist"], gui.dependency_installer.python_requires)
 
+    def test_update_dependency_progress_shows_message_in_label(self):
+        """A progress message from the installer is displayed in the dialog's label."""
+        gui = AddonDependencyInstallerGUI([], self.create_mock_deps())
+        holder = QtWidgets.QWidget()
+        holder.label = QtWidgets.QLabel(holder)
+        gui.dependency_installation_dialog = holder
+
+        gui._update_dependency_progress("Collecting somepackage")
+
+        self.assertIn("Collecting", holder.label.text())
+
     @patch("addonmanager_installer_gui.utils.blocking_get", MagicMock(return_value=None))
     @patch("addonmanager_installer_gui.AddonInstaller")
     @patch("addonmanager_installer_gui.DependencyInstaller")
@@ -677,9 +689,10 @@ class TestAddonDependencyInstallerGUI(unittest.TestCase):
         self.assertTrue(
             dialog_watcher.dialog_found, "Failed to find the Resolve Dependencies dialog box"
         )
-        self.assertTrue(
+        # Nothing was selected, so no dependency installation runs and no installing dialog opens.
+        self.assertFalse(
             installing_dialog_watcher.dialog_found,
-            "Failed to find the Installing Dependencies dialog box",
+            "Unexpectedly found an Installing Dependencies dialog when nothing was selected",
         )
         proceed_monitor.wait_for_at_most(500)
         self.assertTrue(proceed_monitor.good())

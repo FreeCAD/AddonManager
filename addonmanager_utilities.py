@@ -26,10 +26,11 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Optional, Any, List, Tuple
+from typing import Callable, Dict, Optional, Any, List, Tuple
 import json
 import os
 import platform
+import queue
 import shutil
 import stat
 import subprocess
@@ -109,6 +110,15 @@ translate = fci.translate
 
 class ProcessInterrupted(RuntimeError):
     """An interruption request was received and the process killed because of it."""
+
+
+class SubprocessTimeout(subprocess.CalledProcessError):
+    """A subprocess exceeded its wall-clock timeout and was killed. It subclasses
+    CalledProcessError so existing handlers still catch it, but reports the timeout honestly
+    rather than as a phantom termination signal."""
+
+    def __str__(self) -> str:
+        return f"Command '{self.cmd}' timed out and was terminated."
 
 
 def symlink(source, link_name):
@@ -645,8 +655,11 @@ def blocking_get(url: str, method=None) -> bytes:
     return p
 
 
-def run_interruptable_subprocess(args, timeout_secs: int = 10) -> subprocess.CompletedProcess:
-    """Wrap subprocess call so it can be interrupted gracefully."""
+def run_interruptable_subprocess(
+    args, timeout_secs: Optional[float] = 10
+) -> subprocess.CompletedProcess:
+    """Wrap subprocess call so it can be interrupted gracefully. If timeout_secs is None there
+    is no wall-clock limit, and the call runs until the process finishes or is interrupted."""
     creation_flags = 0
     if hasattr(subprocess, "CREATE_NO_WINDOW"):
         # Added in Python 3.7 -- only used on Windows
@@ -672,21 +685,97 @@ def run_interruptable_subprocess(args, timeout_secs: int = 10) -> subprocess.Com
             stdout, stderr = p.communicate(timeout=1)
             return_code = p.returncode
         except subprocess.TimeoutExpired as timeout_exception:
-            if (
-                hasattr(QtCore, "QThread")
-                and QtCore.QThread.currentThread().isInterruptionRequested()
-            ):
+            if _interruption_requested():
                 p.kill()
                 raise ProcessInterrupted() from timeout_exception
-            if time.time() - start_time >= timeout_secs:  # The real timeout
+            if timeout_secs is not None and time.time() - start_time >= timeout_secs:
                 p.kill()
                 stdout, stderr = p.communicate()
-                return_code = -1
-    if return_code is None or return_code != 0:
-        raise subprocess.CalledProcessError(
-            return_code if return_code is not None else -1, args, stdout, stderr
-        )
+                raise SubprocessTimeout(-1, args, stdout, stderr) from timeout_exception
+    if return_code != 0:
+        raise subprocess.CalledProcessError(return_code, args, stdout, stderr)
     return subprocess.CompletedProcess(args, return_code, stdout, stderr)
+
+
+def _interruption_requested() -> bool:
+    """Return True if the current QThread has been asked to stop. Isolated so tests can drive
+    the interruption logic without a running QThread."""
+    return hasattr(QtCore, "QThread") and QtCore.QThread.currentThread().isInterruptionRequested()
+
+
+def run_monitored_subprocess(
+    args, line_callback: Optional[Callable[[str], None]] = None
+) -> subprocess.CompletedProcess:
+    """Run a subprocess with no wall-clock timeout, streaming its combined output line by line
+    to an optional callback as it arrives. Remains responsive to interruption a few times per
+    second. Raises ProcessInterrupted if interrupted, or CalledProcessError on a non-zero exit.
+
+    This is intended for long, unbounded operations such as installing large Python packages,
+    where the caller wants live progress and the user cancels via interruption rather than a
+    timeout."""
+    creation_flags = 0
+    if hasattr(subprocess, "CREATE_NO_WINDOW"):
+        creation_flags = subprocess.CREATE_NO_WINDOW
+    try:
+        process = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            creationflags=creation_flags,
+            text=True,
+            encoding="utf-8",
+            bufsize=1,
+        )
+    except OSError as e:
+        raise subprocess.CalledProcessError(-1, args, "", e.strerror)
+
+    lines: "queue.Queue[Optional[str]]" = queue.Queue()
+    reader = threading.Thread(target=_enqueue_lines, args=(process.stdout, lines), daemon=True)
+    reader.start()
+
+    collected: List[str] = []
+    finished_reading = False
+    while not finished_reading:
+        try:
+            line = lines.get(timeout=0.2)
+        except queue.Empty:
+            if _interruption_requested():
+                _terminate(process, reader)
+                raise ProcessInterrupted()
+            continue
+        if line is None:
+            finished_reading = True
+            continue
+        collected.append(line)
+        if line_callback is not None:
+            line_callback(line.rstrip())
+        if _interruption_requested():
+            _terminate(process, reader)
+            raise ProcessInterrupted()
+
+    process.wait()
+    reader.join()
+    output = "".join(collected)
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(process.returncode, args, output, "")
+    return subprocess.CompletedProcess(args, process.returncode, output, "")
+
+
+def _enqueue_lines(stream, lines: "queue.Queue[Optional[str]]") -> None:
+    """Read a text stream line by line onto a queue, appending a None sentinel at end of file."""
+    try:
+        for line in iter(stream.readline, ""):
+            lines.put(line)
+    finally:
+        lines.put(None)
+
+
+def _terminate(process: subprocess.Popen, reader: threading.Thread) -> None:
+    """Kill a process and wait for its reader thread to drain, so no output thread is left
+    running after an interruption."""
+    process.kill()
+    process.wait()
+    reader.join()
 
 
 def process_date_string_to_python_datetime(date_string: str) -> datetime:
