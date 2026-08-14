@@ -868,7 +868,7 @@ class GetAddonScoreWorker(QtCore.QThread):
                     ).format(self.url)
                 )
         else:
-            fci.Console.PrintWarning("Running score generation in TEST mode...\n")
+            fci.Console.PrintWarning("Running score generation in TEST mode…\n")
             json_result = {}
             for addon in self.addons:
                 if addon.macro:
