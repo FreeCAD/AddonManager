@@ -46,6 +46,7 @@ from addonmanager_utilities import (
     get_zip_url,
     git_host_of,
     identify_git_host,
+    points_at_a_repository,
     pep503_normalize,
     process_date_string_to_python_datetime,
     recognized_git_location,
@@ -153,6 +154,33 @@ class TestUtilities(unittest.TestCase):
         for url, expected_result in expected_urls.items():
             repo = Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
             self.assertEqual(expected_result, get_readme_html_url(repo))
+
+    def test_points_at_a_repository(self):
+        repository = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        archive = Addon(
+            "Test Repo",
+            "https://github.com/FreeCAD/FreeCAD/archive/refs/heads/main.zip",
+            "Addon.Status.NOT_INSTALLED",
+            "main",
+        )
+
+        self.assertTrue(points_at_a_repository(repository))
+        self.assertFalse(points_at_a_repository(archive))
+
+    def test_get_readme_url_of_an_archive(self):
+        """An Addon that is only distributed as a zip file has no repository to read a README
+        from, so no location is constructed for it."""
+        repo = Addon(
+            "Test Repo",
+            "https://github.com/FreeCAD/FreeCAD/archive/refs/heads/main.zip",
+            "Addon.Status.NOT_INSTALLED",
+            "main",
+        )
+
+        self.assertEqual("", get_readme_url(repo))
+        self.assertEqual("", get_readme_html_url(repo))
 
     def test_get_zip_url(self):
         expected_urls = {
