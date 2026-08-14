@@ -106,6 +106,7 @@ class TestAddonCatalogEntry(TestCase):
 
         self.assertEqual("https://github.com/FreeCAD/FreeCAD", addon.url)
         self.assertEqual("", addon.zip_url)
+        self.assertFalse(addon.prefer_git)
 
     def test_instantiate_addon_with_sparse_cache(self):
         """A sparsely-cached Addon must be downloaded from the catalog's zip, because only a
@@ -127,6 +128,7 @@ class TestAddonCatalogEntry(TestCase):
         self.assertEqual(
             "https://github.com/FreeCAD/FreeCAD-library/archive/master.zip", addon.get_zip_url()
         )
+        self.assertTrue(addon.prefer_git)
 
     def test_instantiate_addon_with_sparse_cache_and_no_zip(self):
         """A sparsely-cached Addon with no zip URL cannot be downloaded at all."""

@@ -150,6 +150,10 @@ class AddonCatalogEntry:
         if self.sparse_cache or not self.repository:
             # If the cache is sparse, we need a "real" location to get the thing from when installing
             addon.zip_url = self.zip_url or ""
+        # If it's too big to cache, it's probably too big to want to update by re-downloading the
+        # whole thing. So if the user's machine has git on it, and we know its git repo, then tell
+        # the Addon Manager to try to use git when installing/updating.
+        addon.prefer_git = bool(self.sparse_cache and self.repository)
 
         if self.metadata:
             try:

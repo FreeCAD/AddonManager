@@ -138,8 +138,7 @@ class AddonInstaller(QtCore.QObject):
         super().__init__()
         self.addon_to_install = addon
 
-        forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
-        if addon and self.addon_to_install.name in forced_repos:
+        if addon and utils.should_use_git(addon):
             self.git_manager = initialize_git()
         else:
             self.git_manager = None
@@ -238,9 +237,8 @@ class AddonInstaller(QtCore.QObject):
         if not is_remote:
             return InstallationMethod.COPY
 
-        # Use git only if the user specifically requests it, and we have git
-        forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
-        if self.git_manager and self.addon_to_install.name in forced_repos:
+        # Use git only for the Addons that call for it, and only if we have git
+        if self.git_manager and utils.should_use_git(self.addon_to_install):
             return InstallationMethod.GIT
 
         # Normal case: we aren't locked into any particular method, so use zip downloads from the
@@ -266,6 +264,8 @@ class AddonInstaller(QtCore.QObject):
         install_path = os.path.join(self.installation_path, self.addon_to_install.name)
         if not os.path.isdir(install_path):
             return False
+        if not os.path.isdir(os.path.join(install_path, ".git")):
+            return False  # Installed some other way, most likely from a zip: re-clone it
         if addon.metadata is None or addon.installed_metadata is None:
             return True  # We can't check if the branch name changed, but the install path exists
         old_branch = get_branch_from_metadata(self.addon_to_install.installed_metadata)
