@@ -243,19 +243,15 @@ class MockGitManager:
                 self.should_fail = False
             raise GitFailed("Unit test forced failure")
 
-    def clone(self, _remote, _local_path, _args: List[str] = None):
+    def clone(self, _remote, _local_path, _args: List[str] = None, line_callback=None):
         self.called_methods.append("clone")
-        self._check_for_failure()
-
-    def async_clone(self, _remote, _local_path, _progress_monitor, _args: List[str] = None):
-        self.called_methods.append("async_clone")
         self._check_for_failure()
 
     def checkout(self, _local_path, _spec, _args: List[str] = None):
         self.called_methods.append("checkout")
         self._check_for_failure()
 
-    def update(self, _local_path):
+    def update(self, _local_path, line_callback=None):
         self.called_methods.append("update")
         self._check_for_failure()
 
@@ -266,10 +262,6 @@ class MockGitManager:
 
     def reset(self, _local_path, _args: List[str] = None):
         self.called_methods.append("reset")
-        self._check_for_failure()
-
-    def async_fetch_and_update(self, _local_path, _progress_monitor, _args=None):
-        self.called_methods.append("async_fetch_and_update")
         self._check_for_failure()
 
     def update_available(self, _local_path) -> bool:
