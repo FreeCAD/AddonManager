@@ -21,6 +21,7 @@
 
 import functools
 import unittest
+from unittest.mock import MagicMock, patch
 
 try:
     from PySide import QtCore, QtWidgets
@@ -38,7 +39,7 @@ from AddonManagerTest.gui.gui_mocks import (
     FakeWorker,
     MockThread,
 )
-from AddonManagerTest.app.mocks import MockAddon
+from AddonManagerTest.app.mocks import MockAddon, MockMacro
 
 from addonmanager_uninstaller_gui import AddonUninstallerGUI
 
@@ -131,6 +132,43 @@ class TestUninstallerGUI(unittest.TestCase):
         )
         self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
         self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
+
+    def test_toolbar_button_removed_for_macro(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", MagicMock()):
+            with patch("addonmanager_uninstaller_gui.ToolbarAdapter") as toolbar_adapter:
+                uninstaller_gui._remove_toolbar_button()
+        toolbar_adapter.return_value.remove_custom_toolbar_button.assert_called_once_with(
+            macro_addon.macro.filename
+        )
+
+    def test_toolbar_button_not_removed_for_non_macro(self):
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", MagicMock()):
+            with patch("addonmanager_uninstaller_gui.ToolbarAdapter") as toolbar_adapter:
+                self.uninstaller_gui._remove_toolbar_button()
+        toolbar_adapter.assert_not_called()
+
+    def test_toolbar_button_not_removed_without_gui(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", None):
+            with patch("addonmanager_uninstaller_gui.ToolbarAdapter") as toolbar_adapter:
+                uninstaller_gui._remove_toolbar_button()
+        toolbar_adapter.assert_not_called()
+
+    def test_toolbar_button_removal_failure_is_not_fatal(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", MagicMock()):
+            with patch(
+                "addonmanager_uninstaller_gui.ToolbarAdapter",
+                side_effect=RuntimeError("Unit test failure"),
+            ):
+                uninstaller_gui._remove_toolbar_button()  # Should not raise
 
     def test_finalize(self):
         self.uninstaller_gui.finished.connect(functools.partial(self.catch_signal, "finished"))
