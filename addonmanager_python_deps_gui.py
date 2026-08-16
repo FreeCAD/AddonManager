@@ -25,7 +25,7 @@ from pathlib import Path
 import addonmanager_freecad_interface as fci
 from addonmanager_python_deps import PythonPackageListModel
 
-from PySideWrapper import QtWidgets
+from PySideWrapper import QtCore, QtWidgets
 
 
 translate = fci.translate
@@ -53,8 +53,11 @@ class PythonPackageManagerGui:
 
         self.dlg.buttonInstallPkgs.clicked.connect(self._install_button_clicked)
         self.dlg.buttonUpdateAll.clicked.connect(self._update_button_clicked)
+        self.dlg.buttonCancel.clicked.connect(self._cancel_button_clicked)
+        self.dlg.rejected.connect(self._dialog_rejected)
         self.model.modelReset.connect(self._model_was_reset)
         self.model.update_complete.connect(self._update_complete)
+        self.model.progress_message.connect(self._show_progress_message)
 
     def show(self):
         self._working(True)
@@ -63,12 +66,36 @@ class PythonPackageManagerGui:
         self.dlg.exec()
 
     def _working(self, working: bool) -> None:
+        """Show or hide the progress display, and enable the buttons that make sense while pip is
+        running, or while it is not."""
         self.dlg.buttonInstallPkgs.setEnabled(not working)
         self.dlg.buttonUpdateAll.setEnabled(not working and self.model.updates_are_available())
+        self.dlg.buttonCancel.setEnabled(working)
         if working:
             self.dlg.updateInProgressLabel.show()
+            self.dlg.progressDetailsLabel.show()
         else:
             self.dlg.updateInProgressLabel.hide()
+            self.dlg.progressDetailsLabel.hide()
+            self.dlg.progressDetailsLabel.setText("")
+
+    def _show_progress_message(self, message: str) -> None:
+        """Display the most recent line of pip output, shortened to fit the available width."""
+        label = self.dlg.progressDetailsLabel
+        elided = label.fontMetrics().elidedText(
+            message, QtCore.Qt.TextElideMode.ElideRight, label.width()
+        )
+        label.setText(elided)
+
+    def _cancel_button_clicked(self):
+        """Ask the running pip call to stop, without waiting for it to do so."""
+        self.dlg.buttonCancel.setEnabled(False)
+        self._show_progress_message(translate("AddonsInstaller", "Stopping pip…"))
+        self.model.cancel_update()
+
+    def _dialog_rejected(self):
+        """Stop any running pip call before this dialog and its model are destroyed."""
+        self.model.cancel_update(wait_for_completion=True)
 
     def _install_button_clicked(self):
         title = translate("AddonsInstaller", "Install")

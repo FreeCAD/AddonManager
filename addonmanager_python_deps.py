@@ -28,12 +28,13 @@ import os
 import re
 import shutil
 import subprocess
-from typing import Dict, Iterable, List, TypedDict, Optional, Set
+from typing import Callable, Dict, Iterable, List, TypedDict, Optional, Set
 from enum import Enum
 from addonmanager_metadata import Version
 from addonmanager_utilities import (
+    ProcessInterrupted,
     create_pip_call,
-    run_interruptable_subprocess,
+    run_monitored_subprocess,
     get_pip_target_directory,
     pep503_normalize,
     translate,
@@ -48,31 +49,38 @@ from PySideWrapper import QtCore
 translate = fci.translate
 
 
+BACKUP_SUFFIX = ".old"
+CANCELLATION_TIMEOUT_MS = 10000
+
+
 class PipFailed(Exception):
-    """Exception thrown when pip times out or otherwise fails to return valid results"""
+    """Exception thrown when pip fails to return valid results"""
 
 
-def call_pip(args: List[str]) -> List[str]:
+class PipInterrupted(PipFailed):
+    """Exception thrown when a pip call is stopped by an interruption request."""
+
+
+def call_pip(args: List[str], line_callback: Optional[Callable[[str], None]] = None) -> List[str]:
     """Tries to locate the appropriate Python executable and run pip with version checking
-    disabled. Fails if Python can't be found or if pip is not installed."""
+    disabled. Fails if Python can't be found or if pip is not installed. Each line of output is
+    passed to line_callback as it is produced, if a callback is provided."""
 
     try:
         call_args = create_pip_call(args)
-        fci.Console.PrintLog(f"Running pip with the following command:\n")
+        fci.Console.PrintLog("Running pip with the following command:\n")
         fci.Console.PrintLog(" ".join(call_args) + "\n")
     except RuntimeError as exception:
         raise PipFailed() from exception
 
     try:
-        proc = run_interruptable_subprocess(call_args, timeout_secs=None)
+        proc = run_monitored_subprocess(call_args, line_callback=line_callback)
+    except ProcessInterrupted as exception:
+        raise PipInterrupted("The pip call was cancelled") from exception
     except subprocess.CalledProcessError as exception:
         raise PipFailed(f"pip call failed:\n{exception}") from exception
 
-    if proc.returncode != 0:
-        raise PipFailed(proc.stderr)
-
-    data = proc.stdout
-    return data.split("\n")
+    return proc.stdout.split("\n")
 
 
 @dataclasses.dataclass
@@ -83,10 +91,14 @@ class PackageInfo:
     dependencies: List[str]
 
 
+LOG_LINE_PREFIXES = ("WARNING:", "ERROR:", "DEPRECATION:", "NOTICE:")
+
+
 def parse_pip_list_output(all_packages, constrained_versions: Dict[str, str]) -> List[PackageInfo]:
     """Parse 'pip list --path' output into package information, marking an update as available
     whenever the vetted (constrained) version differs from the installed one. The pip output
-    should be an array of lines of text.
+    should be an array of lines of text. Anything before the underlined header, and any log line
+    that pip mixed into its output, is ignored.
 
     All Packages output looks like this:
         Package    Version
@@ -96,10 +108,12 @@ def parse_pip_list_output(all_packages, constrained_versions: Dict[str, str]) ->
     """
 
     packages: Dict[str, PackageInfo] = {}
-    skip_counter = 0
+    header_seen = False
     for line in all_packages:
-        if skip_counter < 2:
-            skip_counter += 1
+        if line.startswith(LOG_LINE_PREFIXES):
+            continue
+        if not header_seen:
+            header_seen = line.startswith("---")
             continue
         entries = line.split()
         if len(entries) > 1:
@@ -133,6 +147,7 @@ class AsynchronousPipWorker(QtCore.QObject):
     """A worker class that runs pip to install/update/list packages."""
 
     finished = QtCore.Signal()
+    progress_message = QtCore.Signal(str)  # A line of pip output, or a status message
 
     def __init__(
         self,
@@ -143,18 +158,27 @@ class AsynchronousPipWorker(QtCore.QObject):
         super().__init__(parent)
         self.is_running = False
         self.error = ""
+        self.cancelled = False
         self.vendor_path = get_pip_target_directory()
         self.package_list = package_list or []
         self.command = command
 
     def run(self):
-        """Runs pip: when complete, either self.package_list is populated, or self.error is set."""
+        """Runs pip: when complete, either self.package_list is populated, or self.error is set.
+        The finished signal is emitted no matter how the run ends, so that callers can always
+        rely on it to restore whatever state they set up before starting the run."""
         self.is_running = True
         self.error = ""
+        self.cancelled = False
 
-        if self.command in (PipCommand.Upgrade, PipCommand.Install):
-            self._install_or_update()
-        self._list()
+        try:
+            if self.command in (PipCommand.Upgrade, PipCommand.Install):
+                self._install_or_update()
+            if not self.cancelled:
+                self._list()
+        except Exception as e:
+            self.error = f"Unexpected failure while running pip: {e}"
+            fci.Console.PrintError(f"{self.error}\n")
 
         self.is_running = False
         self.finished.emit()
@@ -167,23 +191,37 @@ class AsynchronousPipWorker(QtCore.QObject):
         action = "install" if self.command == PipCommand.Install else "upgrade"
         log_message = f"Running pip to {action} the following packages in {self.vendor_path}: {update_string}\n"
         upgrade = ["--upgrade"] if self.command == PipCommand.Upgrade else []
-        command = ["install", *upgrade, "--target", self.vendor_path]
+        command = ["install", "--progress-bar", "off", *upgrade, "--target", self.vendor_path]
         command.extend(self.package_list)
 
         fci.Console.PrintLog(f"{log_message}\n")
+        self.progress_message.emit(translate("AddonsInstaller", "Starting pip"))
         try:
-            upgrade_stdout = call_pip(command)
+            upgrade_stdout = call_pip(command, line_callback=self._report_progress)
             for line in upgrade_stdout:
                 fci.Console.PrintLog(f"{line}\n")
+        except PipInterrupted as e:
+            self.cancelled = True
+            self.error = str(e)
+            fci.Console.PrintMessage(f"{self.error}\n")
         except PipFailed as e:
             self.error = str(e)
             fci.Console.PrintError(f"{self.error}\n")
+
+    def _report_progress(self, line: str) -> None:
+        """Forward a non-empty line of pip output to anyone displaying progress."""
+        stripped_line = line.strip()
+        if stripped_line:
+            self.progress_message.emit(stripped_line)
 
     def _list(self) -> None:
         try:
             all_packages_stdout = call_pip(["list", "--path", self.vendor_path])
             constrained_versions = get_constraints().constrained_versions()
             self.package_list = parse_pip_list_output(all_packages_stdout, constrained_versions)
+        except PipInterrupted as e:
+            self.cancelled = True
+            self.error = str(e)
         except PipFailed as e:
             self.error = str(e)
 
@@ -194,6 +232,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
     for the Qt view."""
 
     update_complete = QtCore.Signal()
+    progress_message = QtCore.Signal(str)
 
     def __init__(self, addons):
         super().__init__()
@@ -205,6 +244,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
         self.update_worker = None
         self.reset_worker_thread = None
         self.update_worker_thread = None
+        self.backup_path = None
 
     def can_use_thread(self) -> bool:
         threaded = (
@@ -219,6 +259,7 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
         self.beginResetModel()
         self.package_list.clear()
         self.reset_worker = AsynchronousPipWorker(PipCommand.List)
+        self.reset_worker.progress_message.connect(self.progress_message)
         if self.can_use_thread():
             self.reset_worker_thread = QtCore.QThread()
             self.reset_worker.moveToThread(self.reset_worker_thread)
@@ -319,12 +360,11 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
 
     def _install_or_update_packages(self, packages: list[str], command: PipCommand) -> None:
         """Installs/Upgrade packages. Uses an asynchronous thread when possible."""
+        if not using_system_pip_installation_location() and not self._set_aside_package_directory():
+            self.update_complete.emit()
+            return
         self.update_worker = AsynchronousPipWorker(command, packages)
-        if not using_system_pip_installation_location():
-            # pip doesn't properly update when using the target directory, so we have to delete
-            # it and reinstall
-            os.rename(self.vendor_path, self.vendor_path + ".old")
-            os.mkdir(self.vendor_path)
+        self.update_worker.progress_message.connect(self.progress_message)
         if self.can_use_thread():
             self.update_worker_thread = QtCore.QThread()
             self.update_worker.moveToThread(self.update_worker_thread)
@@ -337,25 +377,158 @@ class PythonPackageListModel(QtCore.QAbstractTableModel):
             self.update_call_finished()
 
     def update_call_finished(self):
+        """Put the package directory into its final state, then report that the run is over."""
+        self.finalize_package_directory()
         self.update_complete.emit()
-        if not using_system_pip_installation_location():
-            if self.update_worker.error:
-                try:
-                    os.rename(self.vendor_path + ".old", self.vendor_path)
-                except Exception as err:
-                    fci.Console.PrintError(f"Backup restore failed: {self.vendor_path}.old.\n")
-                    fci.Console.PrintError(f"{err}\n")
+
+    def cancel_update(self, wait_for_completion: bool = False) -> None:
+        """Ask any running pip call to stop. When wait_for_completion is set, the call blocks
+        until the worker has stopped and the package directory has been dealt with, which is
+        required when the caller is about to destroy this model."""
+        for thread in (self.update_worker_thread, self.reset_worker_thread):
+            if thread is not None and thread.isRunning():
+                thread.requestInterruption()
+        if not wait_for_completion:
+            return
+        for worker, thread in (
+            (self.update_worker, self.update_worker_thread),
+            (self.reset_worker, self.reset_worker_thread),
+        ):
+            if thread is None or not thread.isRunning():
+                continue
+            worker.blockSignals(True)
+            thread.quit()
+            if not thread.wait(CANCELLATION_TIMEOUT_MS):
+                fci.Console.PrintWarning(
+                    translate("AddonsInstaller", "A pip call did not stop when asked to") + "\n"
+                )
+        self.finalize_package_directory()
+
+    def finalize_package_directory(self) -> None:
+        """Restore the backup of the package directory if the run failed or was cancelled, and
+        discard it if the run succeeded. Does nothing if no backup was made."""
+        if self.backup_path is None:
+            return
+        if self.update_worker is not None and self.update_worker.is_running:
+            fci.Console.PrintError(
+                translate(
+                    "AddonsInstaller",
+                    "pip is still running, so the Python packages were left in {}",
+                ).format(self.backup_path)
+                + "\n"
+            )
+            return
+        if self.update_worker is not None and self.update_worker.error:
+            self._restore_package_directory_backup()
+        else:
+            self._discard_package_directory_backup()
+            self._cleanup_old_package_versions()
+
+    def _set_aside_package_directory(self) -> bool:
+        """Move the existing package directory aside so that it can be restored if pip does not
+        succeed, because pip cannot reliably upgrade in place when installing to a target
+        directory. Returns True if the installation may proceed."""
+        backup_path = self.vendor_path + BACKUP_SUFFIX
+        self.backup_path = None
+        if os.path.exists(backup_path):
+            self._resolve_leftover_backup(backup_path)
+        if not os.path.exists(self.vendor_path):
+            try:
+                os.makedirs(self.vendor_path)
+            except OSError as err:
+                fci.Console.PrintError(
+                    translate(
+                        "AddonsInstaller", "Failed to create the Python package directory {}"
+                    ).format(self.vendor_path)
+                    + f"\n{err}\n"
+                )
+                return False
+            return True
+        try:
+            os.rename(self.vendor_path, backup_path)
+        except OSError as err:
+            fci.Console.PrintError(
+                translate(
+                    "AddonsInstaller",
+                    "Failed to back up the Python package directory {}, so no packages were"
+                    " installed or updated",
+                ).format(self.vendor_path)
+                + f"\n{err}\n"
+            )
+            return False
+        try:
+            os.mkdir(self.vendor_path)
+        except OSError as err:
+            fci.Console.PrintError(f"{err}\n")
+            self.backup_path = backup_path
+            self._restore_package_directory_backup()
+            return False
+        self.backup_path = backup_path
+        return True
+
+    def _resolve_leftover_backup(self, backup_path: str) -> None:
+        """Deal with a backup left behind by a run that never completed: it is put back when the
+        package directory is missing or empty, and discarded otherwise."""
+        try:
+            if not os.path.exists(self.vendor_path):
+                os.rename(backup_path, self.vendor_path)
+            elif not os.listdir(self.vendor_path):
+                os.rmdir(self.vendor_path)
+                os.rename(backup_path, self.vendor_path)
             else:
-                shutil.rmtree(self.vendor_path + ".old")
-                # Clean up old package versions that may remain after update
-                self._cleanup_old_package_versions()
+                shutil.rmtree(backup_path)
+                return
+            fci.Console.PrintWarning(
+                translate(
+                    "AddonsInstaller",
+                    "Recovered the Python packages left in {} by an interrupted update",
+                ).format(backup_path)
+                + "\n"
+            )
+        except OSError as err:
+            fci.Console.PrintError(f"{err}\n")
+
+    def _restore_package_directory_backup(self) -> None:
+        """Put the backed-up package directory back after a failed or cancelled run."""
+        backup_path = self.backup_path
+        self.backup_path = None
+        try:
+            if os.path.exists(self.vendor_path):
+                shutil.rmtree(self.vendor_path)
+            os.rename(backup_path, self.vendor_path)
+            return
+        except OSError as err:
+            fci.Console.PrintError(f"{err}\n")
+        try:
+            shutil.copytree(backup_path, self.vendor_path, dirs_exist_ok=True)
+        except OSError as err:
+            fci.Console.PrintError(
+                translate(
+                    "AddonsInstaller",
+                    "Failed to restore the Python packages: they remain in {}",
+                ).format(backup_path)
+                + f"\n{err}\n"
+            )
+
+    def _discard_package_directory_backup(self) -> None:
+        """Remove the backup of the package directory after a successful run."""
+        backup_path = self.backup_path
+        self.backup_path = None
+        try:
+            shutil.rmtree(backup_path)
+        except OSError as err:
+            fci.Console.PrintWarning(
+                translate("AddonsInstaller", "Failed to remove the backup directory {}").format(
+                    backup_path
+                )
+                + f"\n{err}\n"
+            )
 
     def _cleanup_old_package_versions(self):
         """Remove old package version metadata directories after an update.
 
-        When pip updates packages with --target, it doesn't always remove old
-        version metadata (.dist-info directories). This can cause version detection
-        to find the old version instead of the new one, especially in Flatpak
+        When pip updates packages with --target, it doesn't always remove old version metadata (.dist-info directories).
+        This can cause version detection to find the old version instead of the new one, especially in Flatpak
         installations where multiple versions accumulate.
         """
         if not os.path.exists(self.vendor_path):
