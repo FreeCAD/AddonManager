@@ -281,7 +281,7 @@ class MacroUninstaller(QtCore.QObject):
                 manifest_data = f.read()
                 manifest = json.loads(manifest_data)
                 manifest.append(manifest_file)  # Remove the manifest itself as well
-                return manifest
+                return manifest + self._get_toolbar_icon_files()
         files_to_remove = [self.addon_to_remove.macro.filename]
         if self.addon_to_remove.macro.icon:
             files_to_remove.append(self.addon_to_remove.macro.icon)
@@ -289,7 +289,21 @@ class MacroUninstaller(QtCore.QObject):
             files_to_remove.append(self.addon_to_remove.macro.name.replace(" ", "_") + "_icon.xpm")
         for f in self.addon_to_remove.macro.other_files:
             files_to_remove.append(f)
-        return files_to_remove
+        return files_to_remove + self._get_toolbar_icon_files()
+
+    def _get_toolbar_icon_files(self) -> List[str]:
+        """Get the names of the icon files that the toolbar button installer may have created for
+        this macro. Those files are created after the installation manifest is written, so they are
+        not listed in it."""
+        macro = self.addon_to_remove.macro
+        icon_files = []
+        if macro.icon:
+            _, ext = os.path.splitext(macro.icon)
+            extension = ext[1:].lower() if ext else "png"
+            icon_files.append(f"{macro.name}_icon.{extension}")
+        if macro.xpm:
+            icon_files.append(f"{macro.name}_icon.xpm")
+        return icon_files
 
     @staticmethod
     def _cleanup_directories(directories):

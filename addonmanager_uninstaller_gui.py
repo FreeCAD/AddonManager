@@ -33,6 +33,7 @@ except ImportError:
     except ImportError:
         from PySide2 import QtCore, QtWidgets  # Fall back to Qt5
 
+from addonmanager_toolbar_adapter import ToolbarAdapter
 from addonmanager_uninstaller import AddonUninstaller, MacroUninstaller
 import addonmanager_utilities as utils
 
@@ -117,6 +118,7 @@ class AddonUninstallerGUI(QtCore.QObject):
         self.dialog_timer.stop()
         if self.progress_dialog:
             self.progress_dialog.hide()
+        self._remove_toolbar_button()
         MessageDialog.show_modal(
             MessageDialog.DialogType.INFO,
             "AddonManager_UninstallCompleteDialog",
@@ -125,6 +127,27 @@ class AddonUninstallerGUI(QtCore.QObject):
             QtWidgets.QMessageBox.Ok,
         )
         self._finalize()
+
+    def _remove_toolbar_button(self):
+        """Remove the custom toolbar button that the Addon Manager created for a macro, if there
+        is one. Does nothing for addons that are not macros, and does nothing when the FreeCAD GUI
+        is not running."""
+        if fci.FreeCADGui is None:
+            return
+        macro = getattr(self.addon_to_remove, "macro", None)
+        if macro is None or not getattr(macro, "filename", ""):
+            return
+        # pylint: disable=broad-exception-caught
+        try:
+            ToolbarAdapter().remove_custom_toolbar_button(macro.filename)
+        except Exception as e:
+            fci.Console.PrintWarning(
+                translate(
+                    "AddonsInstaller",
+                    "Failed to remove the toolbar button for macro {}",
+                ).format(self.addon_to_remove.display_name)
+                + f": {e}\n"
+            )
 
     def _failed(self, addon, message):
         """Callback for failed or partially failed removal"""
