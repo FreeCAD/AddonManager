@@ -21,6 +21,10 @@
 
 """GUI functions for uninstalling an Addon or Macro."""
 
+import os
+import platform
+import subprocess
+
 import addonmanager_freecad_interface as fci
 from Widgets.addonmanager_utility_dialogs import MessageDialog
 
@@ -38,6 +42,66 @@ from addonmanager_uninstaller import AddonUninstaller, MacroUninstaller
 import addonmanager_utilities as utils
 
 translate = fci.translate
+
+
+def open_file_in_text_editor(path: str) -> None:
+    """Open the given file in a text editor chosen by the operating system. Deliberately avoids
+    QDesktopServices.openUrl, because on some platforms the default action for a Python file is
+    to execute it rather than to display it."""
+    system = platform.system()
+    if system == "Windows":
+        try:
+            os.startfile(path, "edit")
+        except OSError:
+            subprocess.Popen(["notepad.exe", path])
+    elif system == "Darwin":
+        subprocess.Popen(["open", "-t", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
+
+
+class UninstallScriptDialog(QtWidgets.QDialog):
+    """Asks the user whether the addon's uninstall script should be run. Offers to open the
+    script in a text editor so it can be reviewed before deciding. The default action is to not
+    run the script. After the dialog closes, run_requested is True only if the user explicitly
+    chose to run the script."""
+
+    def __init__(self, addon_display_name: str, script_path: str, parent=None):
+        super().__init__(parent)
+        self.script_path = script_path
+        self.run_requested = False
+        self.setObjectName("AddonManager_RunUninstallScriptDialog")
+        self.setWindowTitle(translate("AddonsInstaller", "Run Uninstall Script?"))
+        layout = QtWidgets.QVBoxLayout(self)
+        message = translate(
+            "AddonsInstaller",
+            "{} includes an uninstall script, intended to let the addon clean up after itself "
+            "when it is removed (for example, by removing its saved preferences). The script is "
+            "provided by the addon itself, not by the Addon Manager, and can run arbitrary code: "
+            "you may review it before deciding whether to run it.",
+        ).format(addon_display_name)
+        label = QtWidgets.QLabel(message)
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        self.button_box = QtWidgets.QDialogButtonBox()
+        self.open_button = self.button_box.addButton(QtWidgets.QDialogButtonBox.Open)
+        self.open_button.setText(translate("AddonsInstaller", "Open Script in Editor…"))
+        self.run_button = self.button_box.addButton(QtWidgets.QDialogButtonBox.Yes)
+        self.run_button.setText(translate("AddonsInstaller", "Run Script"))
+        self.skip_button = self.button_box.addButton(QtWidgets.QDialogButtonBox.No)
+        self.skip_button.setText(translate("AddonsInstaller", "Do Not Run"))
+        self.skip_button.setDefault(True)
+        self.open_button.clicked.connect(self._open_script_in_editor)
+        self.run_button.clicked.connect(self._run_clicked)
+        self.skip_button.clicked.connect(self.reject)
+        layout.addWidget(self.button_box)
+
+    def _run_clicked(self):
+        self.run_requested = True
+        self.accept()
+
+    def _open_script_in_editor(self):
+        open_file_in_text_editor(self.script_path)
 
 
 class AddonUninstallerGUI(QtCore.QObject):
@@ -75,6 +139,7 @@ class AddonUninstallerGUI(QtCore.QObject):
             self._finalize()
             return
 
+        self._handle_uninstall_script()
         self.dialog_timer.start()
         self._run_uninstaller()
 
@@ -91,6 +156,25 @@ class AddonUninstallerGUI(QtCore.QObject):
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel,
         )
         return confirm == QtWidgets.QMessageBox.Yes
+
+    def _handle_uninstall_script(self):
+        """If the addon provides an uninstall script, ask the user whether to run it. When the
+        user approves, the script is run here, on the main GUI thread, so that scripts that show
+        dialogs of their own work as expected. In either case the core uninstaller is told not to
+        run the script itself."""
+        if not isinstance(self.uninstaller, AddonUninstaller):
+            return
+        self.uninstaller.should_run_uninstall_script = False
+        addon_path = os.path.join(self.uninstaller.installation_path, self.addon_to_remove.name)
+        script_path = os.path.join(addon_path, "uninstall.py")
+        if not os.path.isfile(script_path):
+            return
+        dialog = UninstallScriptDialog(
+            self.addon_to_remove.display_name, script_path, parent=utils.get_main_am_window()
+        )
+        dialog.exec()
+        if dialog.run_requested:
+            AddonUninstaller.run_uninstall_script(addon_path)
 
     def _show_progress_dialog(self):
         self.progress_dialog = QtWidgets.QMessageBox(

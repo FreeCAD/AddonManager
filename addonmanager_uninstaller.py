@@ -83,6 +83,10 @@ class AddonUninstaller(QtCore.QObject):
         uninstaller = AddonInstaller(addon_to_remove)
         uninstaller.run()
 
+    If the addon provides an "uninstall.py" script it is executed as part of run() by
+    default. Set should_run_uninstall_script to False before calling run() to skip the
+    script (the GUI wrapper does this, asking the user for permission first and running
+    the script itself only when the user approves).
     """
 
     # Signals: success and failure Emitted when the installation process is complete.
@@ -100,6 +104,7 @@ class AddonUninstaller(QtCore.QObject):
         self.addon_to_remove = addon
         self.installation_path = fci.DataPaths().mod_dir
         self.macro_installation_path = fci.DataPaths().macro_dir
+        self.should_run_uninstall_script = True
 
     def run(self) -> bool:
         """Remove an addon. Returns True if the addon was removed cleanly, or False
@@ -115,7 +120,8 @@ class AddonUninstaller(QtCore.QObject):
                 path_to_remove, self.installation_path
             ):
                 try:
-                    self.run_uninstall_script(path_to_remove)
+                    if self.should_run_uninstall_script:
+                        self.run_uninstall_script(path_to_remove)
                     self.remove_extra_files(path_to_remove)
                     success = utils.rmdir(path_to_remove)
                     if (
@@ -148,7 +154,8 @@ class AddonUninstaller(QtCore.QObject):
             # pylint: disable=broad-exception-caught
             try:
                 with open(uninstall_script, encoding="utf-8") as f:
-                    exec(f.read())
+                    # This use of exec() is behind an explicit user opt-in dialog (added nosec B102)
+                    exec(f.read())  # nosec B102
             except Exception:
                 fci.Console.PrintError(
                     translate(

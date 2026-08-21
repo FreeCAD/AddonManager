@@ -163,6 +163,20 @@ class TestAddonUninstaller(unittest.TestCase):
             _ = self.test_object.run()
             self.assertTrue(interceptor.called, "Failed to call uninstall script")
 
+    @patch("addonmanager_uninstaller.InstallationManifest")
+    def test_uninstall_skips_script_when_disabled(self, mock_install_manifest):
+        """Tests that run() does not call the uninstall.py script when it has been disabled"""
+
+        calls = []
+        with tempfile.TemporaryDirectory() as temp_dir:
+            toplevel_path = self.setup_dummy_installation(temp_dir)
+            self.test_object.run_uninstall_script = lambda *args: calls.append(args)
+            self.test_object.should_run_uninstall_script = False
+            _ = self.test_object.run()
+            self.assertFalse(calls, "Called uninstall script even though it was disabled")
+            self.assertFalse(os.path.exists(toplevel_path), "Failed to remove the addon")
+            self.assertIn("success", self.signals_caught)
+
     def test_remove_extra_files_no_digest(self):
         """Tests that a lack of digest file is not an error, and nothing gets removed"""
         with tempfile.TemporaryDirectory() as temp_dir:
