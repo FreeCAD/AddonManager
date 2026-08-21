@@ -22,6 +22,7 @@
 """Classes and utility functions to generate a remotely hosted cache of all addon catalog entries.
 Intended to be run by a server-side systemd timer to generate a file that is then loaded by the
 Addon Manager in each FreeCAD installation."""
+
 import datetime
 import shutil
 import sys
@@ -37,7 +38,13 @@ import os
 import re
 import requests
 import subprocess
-from xml.etree.ElementTree import ParseError as XmlParseError
+from typing import List
+
+# Audited: only the exception class is imported, for catching errors raised by defusedxml,
+# which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
+from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
+
+from defusedxml import DefusedXmlException
 import zipfile
 
 import AddonCatalog
@@ -317,7 +324,7 @@ class CacheWriter:
             metadata = addonmanager_metadata.MetadataReader.from_bytes(
                 cache_entry.package_xml.encode("utf-8")
             )
-        except XmlParseError:
+        except (XmlParseError, DefusedXmlException):
             print(f"ERROR: Failed to parse XML from {path_to_package_xml}")
             return None
         except RuntimeError:

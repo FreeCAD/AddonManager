@@ -29,7 +29,12 @@ from urllib.parse import urlparse, urlunparse
 from typing import Dict, Set, List, Optional
 from threading import Lock
 from enum import IntEnum, auto
-from xml.etree.ElementTree import ParseError as XmlParseError
+
+# Audited: only the exception class is imported, for catching errors raised by defusedxml,
+# which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
+from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
+
+from defusedxml import DefusedXmlException
 
 try:
     import importlib.metadata as importlib_metadata
@@ -341,7 +346,7 @@ class Addon:
         if os.path.exists(file):
             try:
                 metadata = MetadataReader.from_file(file)
-            except XmlParseError:
+            except (XmlParseError, DefusedXmlException):
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in the cache for"
                 )
@@ -360,7 +365,7 @@ class Addon:
         if os.path.isfile(installed_metadata_path):
             try:
                 self.installed_metadata = MetadataReader.from_file(installed_metadata_path)
-            except XmlParseError:
+            except (XmlParseError, DefusedXmlException):
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in installation of"
                 )

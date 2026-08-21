@@ -47,6 +47,25 @@ class TestAddon(unittest.TestCase):
         self.assertEqual(addon.name, "FreeCAD")
         self.assertEqual(addon.display_name, "Test Workbench")
 
+    def test_load_metadata_file_ignores_xml_with_entity_declaration(self):
+        addon = Addon(
+            "FreeCAD",
+            "https://github.com/FreeCAD/FreeCAD",
+            Addon.Status.NOT_INSTALLED,
+            "master",
+        )
+        xml_with_entity = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<!DOCTYPE package [<!ENTITY payload "expanded">]>\n'
+            '<package format="1"><name>&payload;</name></package>\n'
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "package.xml")
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(xml_with_entity)
+            addon.load_metadata_file(file_path)
+        self.assertIsNone(addon.metadata)
+
     def test_git_url_cleanup(self):
         base_url = "https://github.com/FreeCAD/FreeCAD"
         test_urls = [f"  {base_url}  ", f"{base_url}.git", f"  {base_url}.git  "]

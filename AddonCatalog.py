@@ -25,7 +25,12 @@ sources and compatible versions. Added in FreeCAD 1.1 to replace .gitmodules."""
 import base64
 import datetime
 import os
-from xml.etree.ElementTree import ParseError as XmlParseError
+
+# Audited: only the exception class is imported, for catching errors raised by defusedxml,
+# which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
+from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
+
+from defusedxml import DefusedXmlException
 from dataclasses import dataclass
 import json
 from hashlib import sha256
@@ -158,7 +163,7 @@ class AddonCatalogEntry:
         if self.metadata:
             try:
                 self._load_addon_metadata(addon, self.metadata)
-            except XmlParseError:
+            except (XmlParseError, DefusedXmlException):
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was installed "
                     f"for {addon.display_name}\n"
@@ -172,7 +177,7 @@ class AddonCatalogEntry:
             try:
                 package_file = os.path.join(fci.DataPaths().mod_dir, addon_id, "package.xml")
                 addon.installed_metadata = MetadataReader.from_file(package_file)
-            except (FileNotFoundError, XmlParseError, RuntimeError):
+            except (FileNotFoundError, XmlParseError, DefusedXmlException, RuntimeError):
                 pass  # If there was an error, just ignore it, no metadata is not fatal
 
             most_recent_mtime = AddonCatalogEntry.most_recent_mtime(addon_id)

@@ -29,7 +29,12 @@ import json
 import os
 from types import SimpleNamespace
 from typing import List, Optional, Tuple
-from xml.etree.ElementTree import ParseError as XmlParseError
+
+# Audited: only the exception class is imported, for catching errors raised by defusedxml,
+# which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
+from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
+
+from defusedxml import DefusedXmlException
 import zipfile
 
 from PySideWrapper import QtCore
@@ -257,7 +262,7 @@ class CreateAddonListWorker(QtCore.QThread):
             return False
         try:
             MetadataReader.from_bytes(data)
-        except (XmlParseError, RuntimeError):
+        except (XmlParseError, DefusedXmlException, RuntimeError):
             return False
         return True
 
@@ -282,7 +287,7 @@ class CreateAddonListWorker(QtCore.QThread):
         if package_xml:
             try:
                 parsed_metadata = MetadataReader.from_bytes(package_xml)
-            except (XmlParseError, RuntimeError) as e:
+            except (XmlParseError, DefusedXmlException, RuntimeError) as e:
                 parsed_metadata = None
                 fci.Console.PrintWarning(
                     translate(
