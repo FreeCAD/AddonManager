@@ -55,7 +55,6 @@ from addonmanager_utilities import (
     run_interruptable_subprocess,
     run_monitored_subprocess,
     ProcessInterrupted,
-    SubprocessTimeout,
 )
 
 
