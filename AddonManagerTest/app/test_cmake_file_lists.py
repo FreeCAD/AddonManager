@@ -73,16 +73,16 @@ DIRECTORIES_TO_CHECK = {
 def files_listed_in_cmake(cmake_path):
     """Return the set of file names referenced inside any SET() block.
 
-    Tokens are file names when they contain a dot or are the literal LICENSE;
+    Words are file names when they contain a dot or are the literal LICENSE;
     the SET variable names (for example AddonManager_SRCS) have neither and are
     skipped."""
     with open(cmake_path, "r", encoding="utf-8") as cmake_file:
         contents = cmake_file.read()
     listed = set()
     for block in re.findall(r"SET\s*\((.*?)\)", contents, re.DOTALL | re.IGNORECASE):
-        for token in block.split():
-            if "." in token or token == "LICENSE":
-                listed.add(token)
+        for word in block.split():
+            if "." in word or word == "LICENSE":
+                listed.add(word)
     return listed
 
 
