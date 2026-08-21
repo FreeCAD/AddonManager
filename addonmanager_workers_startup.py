@@ -934,7 +934,7 @@ class CheckForMissingDependenciesWorker(QtCore.QThread):
                         f"{addon.display_name} is missing workbenches {', '.join(deps.wbs)}\n"
                     )
                 if deps.external_addons:
-                    details += f"{addon.display_name} is missing addons {', '.join(deps.external_addons)}\n"
+                    details += f"{addon.display_name} is missing addons {', '.join([x.display_name for x in deps.external_addons])}\n"
                 if deps.python_requires:
                     details += f"{addon.display_name} is missing python packages {', '.join(deps.python_requires)}\n"
                 self.missing_dependencies.join(deps)
