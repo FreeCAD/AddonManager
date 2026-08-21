@@ -672,12 +672,14 @@ def blocking_get(url: str, method=None) -> bytes:
             if hasattr(p, "data"):
                 p = p.data()
     elif requests and method is None or method == "requests":
-        response = requests.get(url, timeout=10.0)
+        # Audited: this code does not accept non-HTTPS URL schemes (added nosec B310)
+        response = requests.get(url, timeout=10.0)  # nosec B310
         if response.status_code == 200:
             p = response.content
     else:
         ctx = ssl.create_default_context()
-        with urllib.request.urlopen(url, context=ctx) as f:
+        # Audited: this code does not accept non-HTTPS URL schemes (added nosec B310)
+        with urllib.request.urlopen(url, context=ctx) as f:  # nosec B310
             p = f.read()
     return p
 

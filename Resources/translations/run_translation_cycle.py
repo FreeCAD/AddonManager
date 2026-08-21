@@ -87,8 +87,9 @@ class CrowdinUpdater:
         parsed_url = urlparse(url)
         if parsed_url.scheme != "https":
             raise Exception("API requests must be made over HTTPS")
-        request = Request(url, headers=headers, method=method, data=data)
-        request_result = urlopen(request)
+        # Audited: this code does not accept non-HTTPS URL schemes (added nosec B310)
+        request = Request(url, headers=headers, method=method, data=data)  # nosec B310
+        request_result = urlopen(request)  # nosec B310
         if request_result.getcode() >= 300:
             print(f"Failed to make API request {url}: return code {request_result.getcode()}")
             raise Exception("Failed to make API request")
@@ -143,7 +144,8 @@ class CrowdinUpdater:
         if parsed_url.scheme != "https":
             raise Exception("API requests must be made over HTTPS")
 
-        urlretrieve(response["url"], filename)
+        # Audited: this code does not accept non-HTTPS URL schemes (added nosec B310)
+        urlretrieve(response["url"], filename)  # nosec B310
         print("download of " + filename + " complete")
 
     def build(self):
