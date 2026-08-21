@@ -26,7 +26,7 @@ import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+import unittest.mock
 
 # pylint: disable=protected-access,import-outside-toplevel
 

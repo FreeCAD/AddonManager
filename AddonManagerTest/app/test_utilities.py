@@ -57,7 +57,6 @@ from addonmanager_utilities import (
     run_monitored_subprocess,
     should_use_git,
     ProcessInterrupted,
-    SubprocessTimeout,
 )
 
 
