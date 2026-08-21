@@ -33,7 +33,10 @@ import platform
 import queue
 import shutil
 import stat
-import subprocess
+
+# Audited: the subprocess wrappers below run argument-list commands with no shell; executables
+# are resolved locally and caller data appears only as arguments (added nosec B404)
+import subprocess  # nosec B404
 import sys
 import threading
 import time
@@ -694,7 +697,10 @@ def run_interruptable_subprocess(
         # Added in Python 3.7 -- only used on Windows
         creation_flags = subprocess.CREATE_NO_WINDOW
     try:
-        p = subprocess.Popen(
+        # Audited: args is an argument list run with no shell; callers pass locally-resolved
+        # executables (git, pip) with untrusted data only ever appearing as arguments
+        # (added nosec B603)
+        p = subprocess.Popen(  # nosec B603
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -746,7 +752,8 @@ def run_monitored_subprocess(
     if hasattr(subprocess, "CREATE_NO_WINDOW"):
         creation_flags = subprocess.CREATE_NO_WINDOW
     try:
-        process = subprocess.Popen(
+        # Audited: args is an argument list run with no shell, as above (added nosec B603)
+        process = subprocess.Popen(  # nosec B603
             args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -823,7 +830,8 @@ def _kill_process_tree(process: subprocess.Popen) -> None:
     git clone: they go on downloading, and they keep its output pipe open."""
     if sys.platform == "win32":
         try:
-            subprocess.run(
+            # Audited: fixed system command with a numeric PID argument (added nosec B603, B607)
+            subprocess.run(  # nosec B603 B607
                 ["taskkill", "/F", "/T", "/PID", str(process.pid)],
                 capture_output=True,
                 check=False,

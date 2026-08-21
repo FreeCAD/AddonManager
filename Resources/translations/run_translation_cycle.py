@@ -29,7 +29,10 @@ import json
 import os
 import shutil
 import stat
-import subprocess
+
+# Audited: fixed lrelease/lupdate commands operating on local repository files, no shell
+# (added nosec B404)
+import subprocess  # nosec B404
 import sys
 import tempfile
 import time
@@ -195,7 +198,7 @@ def process_single_translation_file(source_path: str, target_path: str):
 
     print("Generating qm file for", basename, "...")
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603 B607
             [
                 "lrelease",
                 new_path,
@@ -358,7 +361,7 @@ if __name__ == "__main__":
         "-ts",
         os.path.join(TS_FILE_PATH, CROWDIN_FILE_NAME),
     ]
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603
         args,
         timeout=30,
         check=True,

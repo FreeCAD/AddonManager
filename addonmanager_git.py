@@ -26,7 +26,9 @@
 import os
 import platform
 import shutil
-import subprocess
+
+# Audited: subprocess calls use fixed argument lists and no shell (added nosec B404)
+import subprocess  # nosec B404
 from typing import Callable, List, Dict, Optional
 import time
 
@@ -466,8 +468,11 @@ class GitManager:
         on the Mac actually requires us to check for that installation."""
         try:
             # Get the path to git from xcrun
+            # Audited: fixed arguments, no shell, no untrusted input (added nosec B603, B607)
             git_path = (
-                subprocess.check_output(["xcrun", "--find", "git"], stderr=subprocess.DEVNULL)
+                subprocess.check_output(  # nosec B603 B607
+                    ["xcrun", "--find", "git"], stderr=subprocess.DEVNULL
+                )
                 .decode()
                 .strip()
             )
@@ -475,7 +480,8 @@ class GitManager:
                 return False
 
             # Check if running git triggers version output
-            result = subprocess.run(
+            # Audited: runs the git that xcrun reported, fixed arguments, no shell (added nosec B603)
+            result = subprocess.run(  # nosec B603
                 [git_path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
             )
             return result.returncode == 0

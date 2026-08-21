@@ -23,7 +23,9 @@
 
 import os
 import platform
-import subprocess
+
+# Audited: subprocess calls use fixed argument lists and no shell (added nosec B404)
+import subprocess  # nosec B404
 
 import addonmanager_freecad_interface as fci
 from Widgets.addonmanager_utility_dialogs import MessageDialog
@@ -48,16 +50,18 @@ def open_file_in_text_editor(path: str) -> None:
     """Open the given file in a text editor chosen by the operating system. Deliberately avoids
     QDesktopServices.openUrl, because on some platforms the default action for a Python file is
     to execute it rather than to display it."""
+    # Audited: fixed editor commands with the file path passed as an argument, never to a shell
+    # (added nosec B606, B603, B607)
     system = platform.system()
     if system == "Windows":
         try:
-            os.startfile(path, "edit")
+            os.startfile(path, "edit")  # nosec B606
         except OSError:
-            subprocess.Popen(["notepad.exe", path])
+            subprocess.Popen(["notepad.exe", path])  # nosec B603 B607
     elif system == "Darwin":
-        subprocess.Popen(["open", "-t", path])
+        subprocess.Popen(["open", "-t", path])  # nosec B603 B607
     else:
-        subprocess.Popen(["xdg-open", path])
+        subprocess.Popen(["xdg-open", path])  # nosec B603 B607
 
 
 class UninstallScriptDialog(QtWidgets.QDialog):

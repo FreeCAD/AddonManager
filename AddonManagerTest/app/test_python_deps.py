@@ -20,7 +20,9 @@
 ################################################################################
 
 import os
-import subprocess
+
+# Audited: used only for its types in test mocks; nothing is executed (added nosec B404)
+import subprocess  # nosec B404
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch

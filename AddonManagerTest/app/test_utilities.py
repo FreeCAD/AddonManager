@@ -24,7 +24,10 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import os
-import subprocess
+
+# Audited: subprocess is used only for its types; its execution entry points are mocked
+# (added nosec B404)
+import subprocess  # nosec B404
 import sys
 
 from AddonManagerTest.app.mocks import MockAddon as Addon

@@ -22,7 +22,10 @@
 """Class to manage installation of sets of Python dependencies."""
 
 import os
-import subprocess
+
+# Audited: subprocess is used only for its types; commands run through the audited wrappers
+# in addonmanager_utilities (added nosec B404)
+import subprocess  # nosec B404
 from typing import List
 
 import addonmanager_freecad_interface as fci

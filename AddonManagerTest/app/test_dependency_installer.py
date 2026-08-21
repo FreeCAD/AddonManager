@@ -21,7 +21,9 @@
 
 import functools
 import os
-import subprocess
+
+# Audited: used only for its types in test mocks; nothing is executed (added nosec B404)
+import subprocess  # nosec B404
 import tempfile
 from time import sleep
 import unittest

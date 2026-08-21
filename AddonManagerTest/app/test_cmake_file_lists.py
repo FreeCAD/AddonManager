@@ -28,7 +28,9 @@ files and its CMakeLists.txt disagree, in either direction."""
 
 import os
 import re
-import subprocess
+
+# Audited: only runs a fixed git command against this repository (added nosec B404)
+import subprocess  # nosec B404
 import unittest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -91,7 +93,8 @@ def tracked_files_in(relative_directory):
     artifacts (cache archives, the CatalogCache and FreeCAD-macros trees, build
     output) from masquerading as un-registered source files."""
     prefix = "" if relative_directory == "." else relative_directory.replace(os.sep, "/") + "/"
-    output = subprocess.run(
+    # Audited: fixed git command, no shell, local path prefix (added nosec B603, B607)
+    output = subprocess.run(  # nosec B603 B607
         ["git", "ls-files", "-z", f"{prefix}*"],
         cwd=REPO_ROOT,
         capture_output=True,

@@ -27,7 +27,10 @@ import dataclasses
 import os
 import re
 import shutil
-import subprocess
+
+# Audited: subprocess is used only for its CalledProcessError exception type; commands run
+# through the audited wrappers in addonmanager_utilities (added nosec B404)
+import subprocess  # nosec B404
 from typing import Callable, Dict, Iterable, List, TypedDict, Optional, Set
 from enum import Enum
 from addonmanager_metadata import Version

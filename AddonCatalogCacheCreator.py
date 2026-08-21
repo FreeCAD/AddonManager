@@ -37,7 +37,11 @@ import json
 import os
 import re
 import requests
-import subprocess
+
+# Audited: all subprocess calls in this module are fixed git argument lists run with no shell;
+# the variable arguments (url, branch, name) come from the addon index this tool exists to
+# process (added nosec B404, and B603/B607 at the call sites)
+import subprocess  # nosec B404
 from typing import List
 
 # Audited: only the exception class is imported, for catching errors raised by defusedxml,
@@ -261,7 +265,7 @@ class CacheWriter:
         results = []
         for cmd in (hash_cmd, tag_cmd):
             try:
-                result = subprocess.run(
+                result = subprocess.run(  # nosec B603
                     cmd,
                     capture_output=True,
                     text=True,
@@ -508,7 +512,7 @@ class CacheWriter:
                 name,
             ]
             try:
-                completed_process = subprocess.run(command, timeout=CLONE_TIMEOUT)
+                completed_process = subprocess.run(command, timeout=CLONE_TIMEOUT)  # nosec B603
             except subprocess.TimeoutExpired:
                 self.clone_errors[name] = f"Timed out after {CLONE_TIMEOUT} seconds."
                 raise RuntimeError(f"Clone of {url} timed out.")
@@ -549,18 +553,22 @@ class CacheWriter:
             os.makedirs(clone_path)
             os.chdir(clone_path)
             try:
-                subprocess.run(["git", "init", "--quiet"], check=True)
-                subprocess.run(["git", "remote", "add", "origin", url], check=True)
-                subprocess.run(["git", "config", "core.sparsecheckout", "true"], check=True)
+                subprocess.run(["git", "init", "--quiet"], check=True)  # nosec B603 B607
+                subprocess.run(
+                    ["git", "remote", "add", "origin", url], check=True
+                )  # nosec B603 B607
+                subprocess.run(  # nosec B603 B607
+                    ["git", "config", "core.sparsecheckout", "true"], check=True
+                )
                 with open(".git/info/sparse-checkout", "w") as f:
                     f.write("\n".join(files))
                     f.write("\n")  # So we are safe appending later
-                subprocess.run(
+                subprocess.run(  # nosec B603 B607
                     ["git", "fetch", "--depth=1", "origin", branch],
                     check=True,
                     timeout=CLONE_TIMEOUT,
                 )
-                subprocess.run(["git", "checkout", branch], check=True)
+                subprocess.run(["git", "checkout", branch], check=True)  # nosec B603 B607
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 self.clone_errors[name] = str(e)
                 print(f"ERROR: {e}")
@@ -570,13 +578,17 @@ class CacheWriter:
             cwd = os.getcwd()
             os.chdir(os.path.join(cwd, name))
             try:
-                subprocess.run(
+                subprocess.run(  # nosec B603 B607
                     ["git", "fetch", "--force", "--depth=1", "origin", branch],
                     check=True,
                     timeout=CLONE_TIMEOUT,
                 )
-                subprocess.run(["git", "reset", "--hard", "FETCH_HEAD", "--quiet"], check=True)
-                subprocess.run(["git", "clean", "-x", "-f", "-d", "--quiet"], check=True)
+                subprocess.run(  # nosec B603 B607
+                    ["git", "reset", "--hard", "FETCH_HEAD", "--quiet"], check=True
+                )
+                subprocess.run(  # nosec B603 B607
+                    ["git", "clean", "-x", "-f", "-d", "--quiet"], check=True
+                )
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 self.clone_errors[name] = str(e)
                 print(f"ERROR: {e}")
@@ -592,7 +604,7 @@ class CacheWriter:
             f.write("\n".join(files))
             f.write("\n")  # So we are safe appending later
         try:
-            subprocess.run(["git", "read-tree", "-m", "-u", "HEAD"], check=True)
+            subprocess.run(["git", "read-tree", "-m", "-u", "HEAD"], check=True)  # nosec B603 B607
         except subprocess.CalledProcessError as e:
             self.clone_errors[name] = str(e)
             print(f"ERROR: {e}")
@@ -627,7 +639,9 @@ class CacheWriter:
         if any of the git calls fails."""
 
         try:
-            completed_process = subprocess.run(["git", "fetch", "--force"], timeout=CLONE_TIMEOUT)
+            completed_process = subprocess.run(  # nosec B603 B607
+                ["git", "fetch", "--force"], timeout=CLONE_TIMEOUT
+            )
         except subprocess.TimeoutExpired:
             raise RuntimeError(f"git fetch for {name} timed out after {CLONE_TIMEOUT} seconds")
         if completed_process.returncode != 0:
@@ -636,11 +650,15 @@ class CacheWriter:
         git_ref_type = CacheWriter.determine_git_ref_type(name, url, branch)
         reset_target = f"origin/{branch}" if git_ref_type == GitRefType.BRANCH else branch
 
-        completed_process = subprocess.run(["git", "reset", "--hard", reset_target, "--quiet"])
+        completed_process = subprocess.run(  # nosec B603 B607
+            ["git", "reset", "--hard", reset_target, "--quiet"]
+        )
         if completed_process.returncode != 0:
             raise RuntimeError(f"git reset failed for {name} ref {reset_target}")
 
-        completed_process = subprocess.run(["git", "clean", "-x", "-f", "-d", "--quiet"])
+        completed_process = subprocess.run(  # nosec B603 B607
+            ["git", "clean", "-x", "-f", "-d", "--quiet"]
+        )
         if completed_process.returncode != 0:
             raise RuntimeError(f"git clean failed for {name}")
 
@@ -649,16 +667,16 @@ class CacheWriter:
         """Determine if the given branch, tag, or hash is a tag, branch, or hash. Returns the type
         if determinable, otherwise raises a RuntimeError."""
         command = ["git", "show-ref", "--verify", f"refs/remotes/origin/{branch}"]
-        completed_process = subprocess.run(command, capture_output=True)
+        completed_process = subprocess.run(command, capture_output=True)  # nosec B603
         if completed_process.returncode == 0:
             return GitRefType.BRANCH
         command = ["git", "show-ref", "--tags"]
-        completed_process = subprocess.run(command, capture_output=True)
+        completed_process = subprocess.run(command, capture_output=True)  # nosec B603
         completed_process_output = completed_process.stdout.decode("utf-8")
         if branch in completed_process_output:
             return GitRefType.TAG
         command = ["git", "rev-parse", branch]
-        completed_process = subprocess.run(command)
+        completed_process = subprocess.run(command)  # nosec B603
         if completed_process.returncode == 0:
             return GitRefType.HASH
         raise RuntimeError(
@@ -670,7 +688,7 @@ class CacheWriter:
     def determine_last_commit_time() -> datetime.datetime:
         """Executed on the current working directory. Returns the time of the last commit."""
         command = ["git", "log", "-1", "--format=%cd", "--date=iso-strict"]
-        completed_process = subprocess.run(command, capture_output=True)
+        completed_process = subprocess.run(command, capture_output=True)  # nosec B603
         completed_process_output = completed_process.stdout.decode("utf-8").strip()
         try:
             dt = datetime.datetime.fromisoformat(completed_process_output)
