@@ -92,7 +92,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
     class MockInstaller(QtCore.QObject):
         progress_update = QtCore.Signal(int, int)
-        progress_message = QtCore.Signal(str, int)
+        progress_message = QtCore.Signal(str)
         success = QtCore.Signal(object)
         failure = QtCore.Signal(object, str)
         finished = QtCore.Signal()
@@ -164,7 +164,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
         """Installing with git is slower than downloading a zip, so the dialog explains why it is
         worth the wait."""
         gui = AddonInstallerGUI(Addon("Test Addon"))
-        gui.installer.will_use_git = lambda: True
+        gui.installer.will_use_git = lambda *args: True
         gui.create_installing_dialog()
         self.addCleanup(gui.installing_dialog.close)
 
@@ -173,7 +173,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
     def test_dialog_does_not_mention_git_for_a_zip_install(self):
         gui = AddonInstallerGUI(Addon("Test Addon"))
-        gui.installer.will_use_git = lambda: False
+        gui.installer.will_use_git = lambda *args: False
         gui.create_installing_dialog()
         self.addCleanup(gui.installing_dialog.close)
 
@@ -183,7 +183,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
         """Cloning a large Addon fails for reasons a second attempt gets past, so the failure is
         not the end of the conversation."""
         gui = AddonInstallerGUI(Addon("Test Addon"))
-        gui.installer.will_use_git = lambda: True
+        gui.installer.will_use_git = lambda *args: True
 
         gui.installation_method = InstallationMethod.ANY
 
@@ -192,14 +192,14 @@ class TestAddonInstallerGUI(unittest.TestCase):
     def test_a_failed_zip_installation_is_only_reported(self):
         """The zip download is the fallback, so there is nothing left to fall back to."""
         gui = AddonInstallerGUI(Addon("Test Addon"))
-        gui.installer.will_use_git = lambda: True
+        gui.installer.will_use_git = lambda *args: True
         gui.installation_method = InstallationMethod.ZIP
 
         self.assertFalse(gui._can_try_another_way())
 
     def test_a_failed_installation_that_did_not_use_git_is_only_reported(self):
         gui = AddonInstallerGUI(Addon("Test Addon"))
-        gui.installer.will_use_git = lambda: False
+        gui.installer.will_use_git = lambda *args: False
 
         self.assertFalse(gui._can_try_another_way())
 
@@ -266,6 +266,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
         gui = self._installer_gui_with_dialog()
 
         gui._progress_update(150_000_000, 2_100_000_000)
+        gui._apply_pending_detail()
 
         # Qt formats the sizes themselves, in the units and the notation of the user's locale
         locale = QtCore.QLocale()
@@ -276,36 +277,123 @@ class TestAddonInstallerGUI(unittest.TestCase):
         self.assertEqual(150_000_000, gui.installing_dialog.progressBar.value())
 
     def test_progress_update_of_an_unknown_download_size(self):
-        """When the server does not say how large the download is, the amount received so far is
-        still shown."""
+        """When the server does not say how large the download is, a bar cannot show honest
+        progress: it is hidden, and the amount received so far is shown with an explanation of
+        why there is no total."""
         gui = self._installer_gui_with_dialog()
 
         gui._progress_update(150_000_000, 0)
+        gui._apply_pending_detail()
 
         received = QtCore.QLocale().formattedDataSize(150_000_000)
         self.assertIn(received, gui.installing_dialog.label.text())
-        self.assertNotIn(" of ", gui.installing_dialog.label.text())
+        self.assertIn("unknown total", gui.installing_dialog.label.text())
+        self.assertTrue(gui.installing_dialog.progressBar.isHidden())
+
+    def test_progress_update_of_a_known_download_size_keeps_the_bar(self):
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_update(150_000_000, 2_100_000_000)
+
+        self.assertFalse(gui.installing_dialog.progressBar.isHidden())
 
     def test_progress_message_shows_what_git_is_doing(self):
-        """A git clone reports its progress as text, which is shown as git worded it, with its
-        percentage driving the bar."""
+        """A git clone reports its progress as text, which is shown as git worded it."""
         gui = self._installer_gui_with_dialog()
 
-        gui._progress_message("Receiving objects:  42% (5218/12345)", 42)
+        gui._progress_message("Receiving objects:  42% (5218/12345)")
+        gui._apply_pending_detail()
 
         self.assertIn("Receiving objects", gui.installing_dialog.label.text())
-        self.assertEqual(100, gui.installing_dialog.progressBar.maximum())
-        self.assertEqual(42, gui.installing_dialog.progressBar.value())
 
-    def test_progress_message_without_a_percentage(self):
-        """A git report with no percentage in it leaves the bar alone rather than resetting it."""
+    def test_progress_reports_are_coalesced(self):
+        """Reports can arrive faster than a label can be re-laid-out, so an arrival only records
+        what to show and a timer applies the newest recorded report a few times per second."""
         gui = self._installer_gui_with_dialog()
-        gui._progress_message("Receiving objects:  42% (5218/12345)", 42)
+        label_before = gui.installing_dialog.label.text()
 
-        gui._progress_message("Resolving deltas", -1)
+        gui._progress_message("Receiving objects:  41% (5100/12345)")
+        gui._progress_message("Receiving objects:  42% (5218/12345)")
 
-        self.assertIn("Resolving deltas", gui.installing_dialog.label.text())
-        self.assertEqual(42, gui.installing_dialog.progressBar.value())
+        self.assertEqual(label_before, gui.installing_dialog.label.text())
+        self.assertTrue(gui.detail_update_timer.isActive())
+        gui._apply_pending_detail()
+        self.assertIn("42%", gui.installing_dialog.label.text())
+
+    def test_no_progress_bar_when_git_reports_progress(self):
+        """Git works in stages, each counting its own percentage up to 100: a bar following those
+        numbers would fill and reset several times, so no bar is shown at all."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda *args: True
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertTrue(gui.installing_dialog.progressBar.isHidden())
+
+    def test_progress_bar_is_kept_for_a_zip_download(self):
+        """A zip download reports how many bytes have arrived, which a bar can show honestly."""
+        gui = self._installer_gui_with_dialog()
+
+        self.assertFalse(gui.installing_dialog.progressBar.isHidden())
+
+    def test_detail_line_does_not_change_the_dialog_size(self):
+        """The dialog is laid out with room for the detail line from the start: growing the label
+        after the dialog is shown does not reliably make the dialog taller."""
+        gui = self._installer_gui_with_dialog()
+        height_before = gui.installing_dialog.sizeHint().height()
+
+        gui._progress_message("Receiving objects:  42% (5218/12345), 120.50 MiB | 5.20 MiB/s")
+        gui._apply_pending_detail()
+
+        self.assertEqual(height_before, gui.installing_dialog.sizeHint().height())
+
+    def test_install_stores_the_method_on_the_installer(self):
+        """The worker thread starts run() through a signal, which cannot carry the method
+        argument, so install() stores the method on the installer and connects run directly:
+        wrapping the connection in a partial or lambda to pass the argument makes PySide run the
+        whole installation on the GUI thread, freezing the interface."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        with patch.object(QtCore.QThread, "start"):
+            gui.install(InstallationMethod.ZIP)
+        self.addCleanup(gui.installing_dialog.close)
+        self.addCleanup(gui.shutdown)
+
+        self.assertEqual(InstallationMethod.ZIP, gui.installer.install_method)
+
+    def test_suggests_git_for_a_large_addon_when_git_is_missing(self):
+        """Without git, a large Addon is downloaded in full both now and for every update, so the
+        dialog mentions that installing git would improve matters."""
+        addon = Addon("Test Addon")
+        addon.prefer_git = True
+        gui = AddonInstallerGUI(addon)
+        gui.installer.git_manager = None
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        note = gui.installing_dialog.findChild(QtWidgets.QLabel, "gitSuggestionLabel")
+        self.assertIsNotNone(note, "No git suggestion was added to the dialog")
+        self.assertIn("git", note.text())
+
+    def test_no_git_suggestion_when_git_is_available(self):
+        addon = Addon("Test Addon")
+        addon.prefer_git = True
+        gui = AddonInstallerGUI(addon)
+        gui.installer.git_manager = MagicMock()
+        gui.installer.will_use_git = lambda *args: True
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertIsNone(gui.installing_dialog.findChild(QtWidgets.QLabel, "gitSuggestionLabel"))
+
+    def test_no_git_suggestion_for_an_ordinary_addon(self):
+        """An Addon that is not flagged as large downloads quickly as a zip: there is nothing to
+        suggest git for."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.git_manager = None
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertIsNone(gui.installing_dialog.findChild(QtWidgets.QLabel, "gitSuggestionLabel"))
 
     @patch("addonmanager_installer_gui.AddonDependencyInstallerGUI")
     @patch("addonmanager_installer_gui.MissingDependencies")

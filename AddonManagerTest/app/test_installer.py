@@ -283,14 +283,24 @@ class TestAddonInstaller(unittest.TestCase):
 
         self.assertFalse(installer.will_use_git())
 
+    def test_stored_install_method_answers_for_a_signal_started_run(self):
+        """A run started through a Qt signal cannot be passed the installation method, so it is
+        stored on the installer beforehand, and questions about the run use the stored value."""
+        self.real_addon.prefer_git = True
+        installer = AddonInstaller(self.real_addon, [])
+        installer.git_manager = MockGitManager()
+        self.assertTrue(installer.will_use_git())
+
+        installer.install_method = InstallationMethod.ZIP
+
+        self.assertFalse(installer.will_use_git())
+
     def test_report_git_progress(self):
-        """Each line of git's progress report is passed on as git worded it, with the percentage
-        it contains, so that a long clone can drive a progress bar."""
+        """Each line of git's progress report is passed on as git worded it. Git works in stages,
+        each counting its own percentage up to 100, so no single progress figure is extracted."""
         installer = AddonInstaller(self.real_addon, [])
         reported = []
-        installer.progress_message.connect(
-            lambda message, percent: reported.append((message, percent))
-        )
+        installer.progress_message.connect(reported.append)
 
         installer._report_git_progress("Receiving objects:  42% (5218/12345), 120.50 MiB\n")
         installer._report_git_progress("Cloning into 'FreeCAD-library'...\n")
@@ -298,11 +308,26 @@ class TestAddonInstaller(unittest.TestCase):
 
         self.assertEqual(
             [
-                ("Receiving objects:  42% (5218/12345), 120.50 MiB", 42),
-                ("Cloning into 'FreeCAD-library'...", -1),
+                "Receiving objects:  42% (5218/12345), 120.50 MiB",
+                "Cloning into 'FreeCAD-library'...",
             ],
             reported,
         )
+
+    def test_unknown_zip_download_size_is_normalized(self):
+        """Qt reports an unknown download size as -1, but the progress_update signal documents
+        zero as the unknown-size marker, so that is what listeners receive."""
+        installer = AddonInstaller(self.real_addon, [])
+        installer.zip_download_index = 7
+        reported = []
+        installer.progress_update.connect(
+            lambda bytes_read, size: reported.append((bytes_read, size))
+        )
+
+        installer._update_zip_status(7, 150_000_000, -1)
+        installer._update_zip_status(8, 1, 100)  # A different download's report, not ours
+
+        self.assertEqual([(150_000_000, 0)], reported)
 
     def test_determine_install_method_for_a_large_addon(self):
         """An Addon that is too large to cache in full is installed with git, when git is
