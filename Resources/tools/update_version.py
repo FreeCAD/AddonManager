@@ -13,7 +13,10 @@ import argparse
 import datetime
 import pathlib
 import re
-import subprocess
+
+# Audited: runs fixed git commands in this repository with no shell; the only caller-supplied
+# value is a branch name passed as a single argument (added nosec B404)
+import subprocess  # nosec B404
 import sys
 import webbrowser
 
@@ -22,7 +25,8 @@ PACKAGE_XML = REPOSITORY_ROOT / "package.xml"
 
 
 def run_git(*arguments: str) -> None:
-    subprocess.run(["git", *arguments], cwd=REPOSITORY_ROOT, check=True)
+    # Audited: fixed git executable name, argument list, no shell (added nosec B603, B607)
+    subprocess.run(["git", *arguments], cwd=REPOSITORY_ROOT, check=True)  # nosec B603 B607
 
 
 def run_gh(*arguments: str) -> str:
