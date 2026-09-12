@@ -566,7 +566,7 @@ class TestCacheWriterGitUpdate(TestCase):
     @patch("AddonCatalogCacheCreator.time.sleep")
     @patch("AddonCatalogCacheCreator.subprocess.run")
     @patch("AddonCatalogCacheCreator.CacheWriter.fetch_and_reset")
-    def test_clone_or_update_retries_update_before_reclone(
+    def test_clone_or_update_retries_transient_update_failure(
         self, mock_fetch_and_reset, mock_run, mock_sleep
     ):
         """A single transient update failure is retried and self-heals: no deletion, no reclone."""
@@ -584,42 +584,11 @@ class TestCacheWriterGitUpdate(TestCase):
     @patch("AddonCatalogCacheCreator.time.sleep")
     @patch("AddonCatalogCacheCreator.subprocess.run")
     @patch("AddonCatalogCacheCreator.CacheWriter.fetch_and_reset")
-    def test_clone_or_update_reclones_after_exhausting_update_retries(
+    def test_clone_or_update_leaves_original_directory_untouched_after_exhausting_update_retries(
         self, mock_fetch_and_reset, mock_run, mock_sleep
     ):
-        """If every update attempt fails, a fresh clone into a temp dir replaces the original."""
+        """If every update attempt fails, the existing good copy is left exactly as-is."""
         mock_fetch_and_reset.side_effect = RuntimeError("persistent failure")
-
-        def fake_clone(command, timeout=None):  # pylint: disable=unused-argument
-            self.fake_fs().create_dir(os.path.join(command[-1], ".git"))
-            return MagicMock(returncode=0)
-
-        mock_run.side_effect = fake_clone
-        clone_path = os.path.join(os.getcwd(), "TestMod")
-        self.fake_fs().create_file(
-            os.path.join(clone_path, ".git", "HEAD"), contents="ref: refs/heads/main\n"
-        )
-        writer = accc.CacheWriter()
-        writer.clone_or_update("TestMod", "https://some.url", "main")
-        self.assertEqual(accc.MAX_ATTEMPTS, mock_fetch_and_reset.call_count)
-        commands = self.issued_commands(mock_run)
-        self.assertTrue(
-            any("clone" in cmd and cmd[-1] == "TestMod.reclone-tmp" for cmd in commands)
-        )
-        self.assertTrue(os.path.isdir(os.path.join("TestMod", ".git")))
-        self.assertFalse(os.path.exists("TestMod.reclone-tmp"))
-        self.assertFalse(os.path.exists("TestMod.reclone-old"))
-        self.assertNotIn("TestMod", writer.clone_errors)
-
-    @patch("AddonCatalogCacheCreator.time.sleep")
-    @patch("AddonCatalogCacheCreator.subprocess.run")
-    @patch("AddonCatalogCacheCreator.CacheWriter.fetch_and_reset")
-    def test_clone_or_update_reclone_failure_leaves_original_directory_untouched(
-        self, mock_fetch_and_reset, mock_run, mock_sleep
-    ):
-        """If the fallback re-clone also fails, the existing good copy is left exactly as-is."""
-        mock_fetch_and_reset.side_effect = RuntimeError("persistent failure")
-        mock_run.return_value.returncode = 1  # The fallback re-clone fails every attempt too.
         clone_path = os.path.join(os.getcwd(), "TestMod")
         self.fake_fs().create_file(
             os.path.join(clone_path, ".git", "HEAD"), contents="ref: refs/heads/main\n"
@@ -632,11 +601,11 @@ class TestCacheWriterGitUpdate(TestCase):
         with self.assertRaises(RuntimeError):
             writer.clone_or_update("TestMod", "https://some.url", "main")
         self.assertEqual(accc.MAX_ATTEMPTS, mock_fetch_and_reset.call_count)
+        self.assertEqual(0, mock_run.call_count)
         self.assertTrue(os.path.isdir(clone_path))
         with open(os.path.join(clone_path, "package.xml"), encoding="utf-8") as f:
             self.assertEqual("<package>marker</package>", f.read())
         self.assertIn("TestMod", writer.clone_errors)
-        self.assertFalse(os.path.exists("TestMod.reclone-tmp"))
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
     def test_sparse_clone_update_uses_fetch_and_reset(self, mock_run):
