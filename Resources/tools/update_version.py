@@ -14,11 +14,12 @@ import re
 import subprocess
 import sys
 
-PACKAGE_XML = pathlib.Path(__file__).parent / "package.xml"
+REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parents[2]
+PACKAGE_XML = REPOSITORY_ROOT / "package.xml"
 
 
 def run_git(*arguments: str) -> None:
-    subprocess.run(["git", *arguments], cwd=PACKAGE_XML.parent, check=True)
+    subprocess.run(["git", *arguments], cwd=REPOSITORY_ROOT, check=True)
 
 
 def update_package_xml(version: str, date: str) -> None:
