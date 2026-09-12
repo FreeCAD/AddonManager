@@ -555,7 +555,7 @@ Redémarrer pour utiliser la nouvelle version.</translation>
       <translation>Impossible de lire les données à partir de addons.freecad.org. Il se peut que le serveur soit en panne ou que vous ne soyez pas connecté à internet.</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="+281"/>
+      <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
       <translation>Le processus {} met du temps à s'arrêter…</translation>
     </message>
@@ -1300,11 +1300,11 @@ mise à jour, de fait les versions disponibles et installées peuvent sembler id
     </message>
     <message>
       <source>Hide addons with non-FSF free/libre license</source>
-      <translation>Masquer les extensions dont la licence n'est pas libre/libre selon la FSF.</translation>
+      <translation>Masquer les extensions dont la licence n'est pas gratuite/libre selon la FSF</translation>
     </message>
     <message>
       <source>Hide addons with non-OSI-approved license</source>
-      <translation>Masquer les extensions dont la licence n'est pas libre/libre selon l'OSI.</translation>
+      <translation>Masquer les extensions dont la licence n'est pas approuvée par l'OSI</translation>
     </message>
     <message>
       <source>Custom repositories</source>
@@ -1324,7 +1324,7 @@ mise à jour, de fait les versions disponibles et installées peuvent sembler id
     </message>
     <message>
       <source>Proxy addon manager traffic</source>
-      <translation>Trafic du gestionnaire des extensions via un proxy</translation>
+      <translation>Gestionnaire des extensions et proxy</translation>
     </message>
     <message>
       <source>Use the system&apos;s proxy settings</source>

@@ -570,7 +570,7 @@ Please restart to use the new version.</source>
 Магчыма, сервер не працуе, альбо адсутнічае злучэнне з інтэрнэтам.</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="+281"/>
+      <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
       <translation>Працоўнаму працэсу {} патрабуецца шмат часу, каб спыніцца…</translation>
     </message>

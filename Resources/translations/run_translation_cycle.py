@@ -28,6 +28,7 @@ import collections
 import datetime
 import json
 import os
+import re
 import shutil
 import stat
 
@@ -45,6 +46,8 @@ CROWDIN_API_URL = "https://api.crowdin.com/api/v2"
 CROWDIN_API_PROJECT_ID = "freecad-addons"
 CROWDIN_PROJECT_NAME = "AddonManager"
 CROWDIN_FILE_NAME = "AddonManager.ts"
+CMAKE_FILE_NAME = "CMakeLists.txt"
+CMAKE_TRANSLATIONS_VARIABLE = "AddonManagerResourceFilesTranslations"
 TS_FILE_PATH = os.curdir
 BASE_FILENAME = "AddonManager"
 MIN_TRANSLATION_THRESHOLD = 0.5
@@ -269,8 +272,21 @@ def rename_locale_to_two_letter_code():
             os.rename(os.path.join(base_path, ts_file), os.path.join(base_path, new_name))
 
 
+def remove_translations_for_language(language_file: str):
+    """removes the local ts and qm files for a language that no longer meets the translation
+    threshold, so that it is dropped from the distribution"""
+    target_path = os.path.abspath(TS_FILE_PATH)
+    stem = os.path.splitext(language_file)[0]
+    for extension in (".ts", ".qm"):
+        path = os.path.join(target_path, stem + extension)
+        if os.path.exists(path):
+            print(f"Removing {stem + extension} because it is no longer translated enough")
+            os.remove(path)
+
+
 def apply_all_available_translations():
-    """treats all languages"""
+    """treats all languages: applies those that meet the translation threshold and removes any
+    local files for those that do not"""
     base_path = os.path.join(temp_folder, CROWDIN_PROJECT_NAME)
     for language_file in os.listdir(base_path):
         percentage = get_language_percentage(os.path.join(base_path, language_file))
@@ -282,37 +298,57 @@ def apply_all_available_translations():
                     language_file, round(100 * percentage, 0)
                 )
             )
+            remove_translations_for_language(language_file)
+    update_cmake_translation_list()
+
+
+def update_cmake_translation_list():
+    """rewrites the list of qm files in CMakeLists.txt so that it matches the files on disk"""
+    target_path = os.path.abspath(TS_FILE_PATH)
+    cmake_path = os.path.join(target_path, CMAKE_FILE_NAME)
+    qm_files = sorted(f for f in os.listdir(target_path) if f.endswith(".qm"))
+    with open(cmake_path, "r", encoding="utf-8") as f:
+        contents = f.read()
+    pattern = re.compile(rf"SET\(\s*{CMAKE_TRANSLATIONS_VARIABLE}\b[^)]*\)")
+    if not pattern.search(contents):
+        raise RuntimeError(f"Could not find {CMAKE_TRANSLATIONS_VARIABLE} in {cmake_path}")
+    listing = "".join(f"    {qm_file}\n" for qm_file in qm_files)
+    replacement = f"SET({CMAKE_TRANSLATIONS_VARIABLE}\n{listing})"
+    contents = pattern.sub(lambda _: replacement, contents, count=1)
+    with open(cmake_path, "w", encoding="utf-8") as f:
+        f.write(contents)
+
+
+def find_newest_finished_build(crowdin_updater: CrowdinUpdater):
+    """returns the (id, finish time) of the most recently finished build, or (None, None)"""
+    newest_id = None
+    newest_date = None
+    for build in crowdin_updater.build_status():
+        if build["status"] != "finished":
+            continue
+        build_date = datetime.datetime.fromisoformat(build["finishedAt"])
+        if newest_date is None or build_date > newest_date:
+            newest_id = build["id"]
+            newest_date = build_date
+    return newest_id, newest_date
 
 
 def run_and_download_build(crowdin_updater: CrowdinUpdater):
-    """runs a build (if needed) and downloads the latest translations"""
-
-    # First, determine when the last build was created
-    build_status = crowdin_updater.build_status()
-    last_build_id = None
-    last_build_date = None
-    for build in build_status:
-        if build["status"] == "finished":
-            build_id = build["id"]
-            build_date = datetime.datetime.fromisoformat(build["finishedAt"])
-            if last_build_id is None or last_build_date is None or build_date > last_build_date:
-                last_build_id = build_id
-                last_build_date = build_date
-
-    # If the last build was not in the last hour, build a new one
-    if last_build_date is None or datetime.datetime.now(
-        tz=datetime.timezone.utc
-    ) - last_build_date > datetime.timedelta(hours=1):
+    """runs a build (if there is no recent one) and downloads the latest translations"""
+    build_id, build_date = find_newest_finished_build(crowdin_updater)
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    if build_date is None or now - build_date > datetime.timedelta(hours=1):
         print("Last build was not in the last hour: running a new build", end="")
         crowdin_updater.build()
         crowdin_updater.wait_for_build_completion()
-
         print("Build complete, waiting ten seconds for translations to be ready...")
         time.sleep(10)
+        build_id, _ = find_newest_finished_build(crowdin_updater)
+        if build_id is None:
+            raise RuntimeError("No finished build is available to download")
 
-    # Download the latest translations
-    print(f"Downloading latest translations (build ID {last_build_id})...")
-    crowdin_updater.download(last_build_id)
+    print(f"Downloading latest translations (build ID {build_id})...")
+    crowdin_updater.download(build_id)
 
 
 if __name__ == "__main__":
@@ -331,7 +367,7 @@ if __name__ == "__main__":
 
     # The other side of the cycle: gather the new strings and send to CrowdIn:
     files_to_translate = []
-    skip_dirs = ["__pycache__", "CatalogCache", "AddonManagerTest"]
+    skip_dirs = ["__pycache__", "CatalogCache", "FreeCAD-macros", "AddonManagerTest"]
     found = False
     toplevel_path = os.path.abspath(TS_FILE_PATH)
     while not found:
