@@ -206,7 +206,7 @@ class UpdateAllGUI(QtCore.QObject):
         self.dialog.setObjectName("AddonManager_UpdateAllDialog")
         self.dialog.table_view.setModel(self.model)
         self.dialog.update_button.clicked.connect(self.update_button_clicked)
-        self.dialog.button_box.rejected.connect(self.finished.emit)
+        self.dialog.rejected.connect(self.finished.emit)
 
         self.dialog.table_view.horizontalHeader().setStretchLastSection(False)
         self.dialog.table_view.horizontalHeader().setSectionResizeMode(
@@ -229,7 +229,7 @@ class UpdateAllGUI(QtCore.QObject):
     def _setup_progress_dialog(self):
         self.progress_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
         self.progress_dialog.setObjectName("AddonManager_UpdateAllProgressDialog")
-        self.progress_dialog.buttonBox.rejected.connect(self.cancel)
+        self.progress_dialog.rejected.connect(self.cancel)
 
     def run(self):
         """Runs the update selection modal dialog."""
