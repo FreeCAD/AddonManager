@@ -19,12 +19,12 @@
 <context>
     <name>AddonInstaller</name>
     <message>
-        <location filename="../../addonmanager_uninstaller_gui.py" line="+126"/>
+        <location filename="../../addonmanager_uninstaller_gui.py" line="+214"/>
         <source>Finished removing {}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+35"/>
         <source>Failed to remove some files</source>
         <translation type="unfinished"></translation>
     </message>
@@ -32,7 +32,7 @@
 <context>
     <name>AddonsFolder</name>
     <message>
-        <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="+96"/>
+        <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="+94"/>
         <source>Open Addons Folder</source>
         <translation type="unfinished"></translation>
     </message>
@@ -40,8 +40,9 @@
 <context>
     <name>AddonsInstaller</name>
     <message>
-        <location filename="../../Addon.py" line="+395"/>
-        <source>{}: Unrecognized internal workbench &apos;{}&apos;</source>
+        <location filename="../../Addon.py" line="+433"/>
+        <source>{}: Unrecognized internal workbench &apos;{}&apos;
+</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -55,27 +56,18 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_connection_checker.py" line="+68"/>
-        <source>Checking connection</source>
+        <location filename="../../addonmanager_dependency_installer.py" line="+133"/>
+        <location line="+33"/>
+        <source>Installing Python package {}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Checking for connection to addons.freecad.org...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+26"/>
-        <source>Connection failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../addonmanager_dependency_installer.py" line="+146"/>
+        <location line="-13"/>
         <source>Installation of Python package {} failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+30"/>
         <source>Installation of optional package failed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -90,7 +82,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_git.py" line="+153"/>
+        <location filename="../../addonmanager_git.py" line="+172"/>
         <source>Basic Git update failed with the following message:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -100,17 +92,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+105"/>
+        <location line="+102"/>
         <source>Failed to clone {} into {} using Git</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+141"/>
+        <location line="+157"/>
         <source>Git branch rename failed with the following message:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_installer_gui.py" line="+530"/>
+        <location filename="../../addonmanager_installer_gui.py" line="+771"/>
         <source>This addon requires Python packages that are not installed, and cannot be installed automatically. To use this addon you must install the following Python packages manually:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -120,7 +112,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+64"/>
+        <location line="+117"/>
         <source>Missing Requirement</source>
         <translation type="unfinished"></translation>
     </message>
@@ -130,12 +122,99 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-441"/>
+        <location line="-696"/>
+        <source>Updating Addon</source>
+        <comment>Window title</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Updating &apos;{}&apos; with git, so only the changes are downloaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Updating &apos;{}&apos;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Installing Addon</source>
+        <comment>Window title</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Installing &apos;{}&apos; with git (for more efficient updating)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>Installing &apos;{}&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+407"/>
+        <location line="+31"/>
+        <source>{} of {}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>{} of an unknown total download size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>Note: this large addon must be downloaded in full, both now and for each future update. If git is installed, the Addon Manager uses it to download only what changed instead.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+34"/>
+        <source>Cancelling the update of &apos;{}&apos;…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Cancelling the installation of &apos;{}&apos;…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Removing the part of &apos;{}&apos; that was already downloaded…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Removing the partial download of {} at {}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>Installing {} with git did not finish.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Trying again often gets past whatever interrupted it. This Addon can also be downloaded as a zip file instead, but a download that large is itself easily interrupted, and every later update downloads the whole Addon again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Try again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Download a zip instead</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>Cleaning up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+375"/>
         <source>These addons require Python packages that are not installed, and cannot be installed automatically. To use them you must install the following Python packages manually:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -145,7 +224,27 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+31"/>
+        <source>This addon requires Python packages that are not on FreeCAD&apos;s list of reviewed packages:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>These addons require Python packages that are not on FreeCAD&apos;s list of reviewed packages:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>They will be downloaded from the Python Package Index (PyPI) and installed into your user directory. FreeCAD has not reviewed them. Only continue if you trust the repository that asked for them:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Unreviewed Python Packages</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+25"/>
         <source>These addons require &apos;{}&apos;, which is not available in your copy of FreeCAD.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -166,7 +265,7 @@
     </message>
     <message>
         <location line="+46"/>
-        <source>Incompatible Python version</source>
+        <source>Incompatible Python Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -175,80 +274,75 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+69"/>
         <source>Installing Dependencies</source>
         <comment>Window title</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+3"/>
         <source>Installing dependencies…</source>
         <comment>Window text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+24"/>
+        <source>Cannot Execute Python</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>Dependencies could not be installed. Continue with installation anyway?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+15"/>
+        <source>Cannot Execute pip</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Continue with addon installation anyway?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+16"/>
+        <source>Package Installation Failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+8"/>
         <source>Continue with installation anyway?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-117"/>
+        <location line="-130"/>
         <source>Optional dependency on {} ignored because it is not in the allow-list</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+55"/>
-        <source>Cannot execute Python</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location line="+77"/>
         <source>Failed to automatically locate your Python executable, or the path is set incorrectly. Please check the Addon Manager preferences setting for the path to Python.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+19"/>
-        <source>Cannot execute pip</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location line="+25"/>
         <source>Failed to execute pip, which may be missing from your Python installation. Please ensure your system has pip installed and try again. The failed command was:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+22"/>
-        <source>Package installation failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+4"/>
+        <location line="+24"/>
         <source>See Report View for detailed failure log.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-637"/>
+        <location line="-812"/>
         <source>Cancelling</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Cancelling installation of &apos;{}&apos;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+27"/>
-        <location filename="../../addonmanager_package_details_controller.py" line="+234"/>
+        <location line="+52"/>
+        <location filename="../../addonmanager_package_details_controller.py" line="+232"/>
         <source>Success</source>
         <translation type="unfinished"></translation>
     </message>
@@ -258,7 +352,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+13"/>
+        <location line="+21"/>
+        <location line="+61"/>
         <source>Installation Failed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -289,7 +384,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+184"/>
+        <location line="+175"/>
         <source>Failed to install macro {}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -300,17 +395,17 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_macro.py" line="+164"/>
+        <location filename="../../addonmanager_macro.py" line="+163"/>
         <source>Unable to open macro wiki page at {}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+13"/>
-        <source>Unable to fetch the code of this macro.</source>
+        <source>Unable to fetch the code of macro &apos;{}&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+18"/>
         <source>Unable to retrieve a description from the wiki for macro {}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -339,38 +434,98 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_python_deps.py" line="+304"/>
+        <location filename="../../addonmanager_python_deps.py" line="+201"/>
+        <source>Starting pip</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+120"/>
         <source>Package</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Installed Version</source>
+        <location line="+6"/>
+        <source>Used by</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Available Version</source>
+        <location line="+79"/>
+        <source>A pip call did not stop when asked to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Dependencies</source>
+        <location line="+14"/>
+        <source>pip is still running, so the Python packages were left in {}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_readme_controller.py" line="+212"/>
-        <source>Loading page for {} from {}...</source>
+        <location line="+25"/>
+        <source>Failed to create the Python package directory {}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-124"/>
+        <location line="+13"/>
+        <source>Failed to back up the Python package directory {}, so no packages were installed or updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+30"/>
+        <source>Recovered the Python packages left in {} by an interrupted update</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+24"/>
+        <source>Failed to restore the Python packages: they remain in {}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Failed to remove the backup directory {}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../addonmanager_readme_controller.py" line="+86"/>
         <source>Failed to download data from {} -- received response code {}.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_uninstaller_gui.py" line="-52"/>
-        <source>Confirm remove</source>
+        <location line="+110"/>
+        <source>No README information is available for this addon.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Loading page for {} from {}…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../addonmanager_uninstaller_gui.py" line="-171"/>
+        <source>Run Uninstall Script?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>{} includes an uninstall script, intended to let the addon clean up after itself when it is removed (for example, by removing its saved preferences). The script is provided by the addon itself, not by the Addon Manager, and can run arbitrary code: you may review it before deciding whether to run it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Open Script in Editor…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Run Script</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Do Not Run</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>Confirm Remove</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -379,7 +534,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+29"/>
         <source>Removing Addon</source>
         <translation type="unfinished"></translation>
     </message>
@@ -389,27 +544,32 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+25"/>
-        <source>Uninstall complete</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+14"/>
-        <source>Uninstall failed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../addonmanager_uninstaller.py" line="+111"/>
-        <source>An unknown error occurred</source>
+        <location line="+26"/>
+        <source>Uninstall Complete</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+23"/>
+        <source>Failed to remove the toolbar button for macro {}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Uninstall Failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../addonmanager_uninstaller.py" line="+115"/>
+        <source>An unknown error occurred</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+24"/>
         <source>Could not find addon {} to remove it</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+27"/>
         <source>Execution of addon&apos;s uninstall.py script failed. Proceeding with uninstall…</source>
         <translation type="unfinished"></translation>
     </message>
@@ -429,7 +589,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_update_all_gui.py" line="+74"/>
+        <location filename="../../addonmanager_update_all_gui.py" line="+73"/>
         <source>Installing</source>
         <translation type="unfinished"></translation>
     </message>
@@ -444,20 +604,20 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+332"/>
+        <location line="+330"/>
         <source>Name</source>
         <comment>Column header</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Installed Version</source>
+        <source>Installed version</source>
         <comment>Column header</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Available Version</source>
+        <source>Available version</source>
         <comment>Column header</comment>
         <translation type="unfinished"></translation>
     </message>
@@ -474,12 +634,22 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_workers_startup.py" line="+116"/>
+        <location filename="../../addonmanager_workers_startup.py" line="+120"/>
         <source>WARNING: Duplicate addon {} ignored</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+119"/>
+        <location line="+53"/>
+        <source>Could not determine the default branch of the custom repository {}, so &apos;{}&apos; is being used. If that is the wrong branch, set the correct one in the Addon Manager preferences.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+123"/>
+        <source>Could not parse the package.xml file of custom addon {}: {}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+174"/>
         <source>WARNING: Custom addon &apos;{}&apos; is overriding the one in the official addon catalog
 </source>
         <translation type="unfinished"></translation>
@@ -510,7 +680,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+67"/>
+        <location line="+61"/>
         <source>Failed to get addon statistics from {} -- only sorting alphabetically will be accurate
 </source>
         <translation type="unfinished"></translation>
@@ -546,12 +716,12 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../addonmanager_workers_utility.py" line="+82"/>
+        <location filename="../../addonmanager_workers_utility.py" line="+80"/>
         <source>Unable to read data from addons.freecad.org. The server may be down, or you may not be connected to the internet.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../AddonManager.py" line="+282"/>
+        <location filename="../../AddonManager.py" line="+279"/>
         <source>Worker process {} is taking a long time to stop…</source>
         <translation type="unfinished"></translation>
     </message>
@@ -594,6 +764,7 @@ Please restart to use the new version.</source>
     <message>
         <location line="+44"/>
         <location line="+35"/>
+        <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+173"/>
         <source>Checking for updates…</source>
         <translation type="unfinished"></translation>
     </message>
@@ -615,17 +786,17 @@ Please restart to use the new version.</source>
     <message>
         <location line="+74"/>
         <location line="+27"/>
-        <location line="+126"/>
+        <location line="+127"/>
         <source>Cannot launch a new installer until the previous one has finished</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-66"/>
+        <location line="-67"/>
         <source>Some installed addons are missing dependencies. Would you like to install them now?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+52"/>
         <source>Temporary installation of macro failed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -652,7 +823,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../AddonManagerOptions.py" line="+95"/>
+        <location filename="../../AddonManagerOptions.py" line="+93"/>
         <source>Proxy test timed out: no connection made.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -710,7 +881,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+259"/>
+        <location line="+258"/>
         <source>Repository URL</source>
         <comment>Preferences header for custom repositories</comment>
         <translation type="unfinished"></translation>
@@ -722,7 +893,12 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../NetworkManager.py" line="+403"/>
+        <location line="+47"/>
+        <source>Leave blank to use the repository&apos;s default branch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../NetworkManager.py" line="+423"/>
         <source>Addon Manager: Unexpected {} response from server</source>
         <translation type="unfinished"></translation>
     </message>
@@ -732,7 +908,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../package_list.py" line="+193"/>
+        <location filename="../../package_list.py" line="+192"/>
         <source>Click for details about package {}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -789,8 +965,8 @@ Please restart to use the new version.</source>
     <message>
         <location line="+20"/>
         <location line="+61"/>
-        <location filename="../../Widgets/addonmanager_widget_filter_selector.py" line="+124"/>
-        <location filename="../../Widgets/addonmanager_widget_package_details_view.py" line="+255"/>
+        <location filename="../../Widgets/addonmanager_widget_filter_selector.py" line="+122"/>
+        <location filename="../../Widgets/addonmanager_widget_package_details_view.py" line="+253"/>
         <source>Installed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -822,32 +998,40 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="-51"/>
+        <location filename="../../addonmanager_python_deps.py" line="-201"/>
+        <location filename="../../package_list.py" line="-51"/>
         <source>Installed version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location filename="../../package_list.py" line="+9"/>
         <source>Unknown version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location filename="../../addonmanager_python_deps.py" line="+2"/>
+        <location filename="../../package_list.py" line="+10"/>
         <source>Available version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+169"/>
+        <location filename="../../addonmanager_python_deps_gui.py" line="+92"/>
+        <source>Stopping pip…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="-6"/>
         <source>Install</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+6"/>
-        <source>Checking for Updates…</source>
+        <location line="+1"/>
+        <source>Packages:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+8"/>
         <source>Revert to Built-In</source>
         <translation type="unfinished"></translation>
     </message>
@@ -888,7 +1072,7 @@ Please restart to use the new version.</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Return to Package List</source>
+        <source>Returns to the package list</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1063,7 +1247,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../Widgets/addonmanager_widget_search.py" line="+68"/>
+        <location filename="../../Widgets/addonmanager_widget_search.py" line="+66"/>
         <source>Filter is valid</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1078,7 +1262,7 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../Widgets/addonmanager_widget_view_control_bar.py" line="+144"/>
+        <location filename="../../Widgets/addonmanager_widget_view_control_bar.py" line="+142"/>
         <source>Alphabetical</source>
         <comment>Sort order</comment>
         <translation type="unfinished"></translation>
@@ -1108,49 +1292,70 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../Widgets/addonmanager_widget_view_selector.py" line="+142"/>
-        <source>Composite view</source>
+        <location filename="../../addonmanager_connection_checker.py" line="+66"/>
+        <source>Checking Connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Expanded view</source>
+        <source>Checking the connection to addons.freecad.org…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Connection Failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../addonmanager_python_deps_commands.py" line="+40"/>
+        <source>Python Package Manager</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Opens the Python Package Manager</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../Widgets/addonmanager_widget_view_selector.py" line="+140"/>
+        <source>Shows the composite view</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Compact view</source>
+        <source>Shows the expanded view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Shows the compact view</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>CompactView</name>
     <message>
-        <location filename="../../compact_view.py" line="+87"/>
+        <location filename="../../compact_view.py" line="+90"/>
         <source>Icon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+3"/>
-        <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../../compact_view.py" line="+1"/>
+        <location line="+4"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+3"/>
+        <location line="+3"/>
         <source>Description</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../compact_view.py" line="+3"/>
+        <location line="+3"/>
         <source>Update available</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location line="-7"/>
         <source>&lt;b&gt;Package name&lt;/b&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1166,12 +1371,6 @@ Please restart to use the new version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>This installation/update has the following required and optional dependencies.
-
-Do you want the Addon Manager to install them automatically? Choose &quot;Ignore&quot; to install/update without installing the dependencies.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>FreeCAD Addons</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1181,6 +1380,12 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
         <source>Optional Python Modules</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The following dependencies are required or optional for this installation or update.
+
+Choose &quot;Ignore&quot; to continue without installing dependencies.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1234,17 +1439,12 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
 <context>
     <name>ExpandedView</name>
     <message>
-        <location filename="../../expanded_view.py" line="+136"/>
+        <location filename="../../expanded_view.py" line="+139"/>
         <source>Icon</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>&lt;h1&gt;Package Name&lt;/h1&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+3"/>
+        <location line="+6"/>
         <source>Version</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1269,6 +1469,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location line="-13"/>
         <source>&lt;h1&gt;Package name&lt;/h1&gt;</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1308,27 +1509,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use a proxy server for access to addon data</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Proxy addon manager traffic</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use the system&apos;s proxy settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>System</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Use custom proxy settings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1348,15 +1529,35 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Test these proxy settings</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Test Connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Connection Test</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Uses a proxy server to access addon data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Proxy Addon Manager traffic</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Uses the system proxy settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Uses custom proxy settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tests these proxy settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Specifies the URL for addon score data</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1398,10 +1599,6 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Update in progress…</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that &apos;Used by&apos; only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1409,11 +1606,23 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
         <source>Update All</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Add Package</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stop the running pip installation or update</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../../AddonManager.py" line="-657"/>
+        <location filename="../../AddonManager.py" line="-658"/>
         <source>Addon Manager</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1434,7 +1643,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
 <context>
     <name>Workbench</name>
     <message>
-        <location filename="../../addonmanager_toolbar_adapter.py" line="+45"/>
+        <location filename="../../addonmanager_toolbar_adapter.py" line="+47"/>
         <source>Auto-Created Macro Toolbar</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1504,11 +1713,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Select a toolbar to add this macro to</source>
+        <source>Ask every time</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Ask every time</source>
+        <source>Adds this macro to the selected toolbar</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
