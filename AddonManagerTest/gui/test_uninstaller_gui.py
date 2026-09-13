@@ -20,7 +20,10 @@
 ################################################################################
 
 import functools
+import os
+import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
 try:
     from PySide import QtCore, QtWidgets
@@ -38,9 +41,9 @@ from AddonManagerTest.gui.gui_mocks import (
     FakeWorker,
     MockThread,
 )
-from AddonManagerTest.app.mocks import MockAddon
+from AddonManagerTest.app.mocks import MockAddon, MockMacro
 
-from addonmanager_uninstaller_gui import AddonUninstallerGUI
+from addonmanager_uninstaller_gui import AddonUninstallerGUI, UninstallScriptDialog
 
 translate = fci.translate
 
@@ -132,8 +135,147 @@ class TestUninstallerGUI(unittest.TestCase):
         self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
         self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
 
+    def test_toolbar_button_removed_for_macro(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", MagicMock()):
+            with patch("addonmanager_uninstaller_gui.ToolbarAdapter") as toolbar_adapter:
+                uninstaller_gui._remove_toolbar_button()
+        toolbar_adapter.return_value.remove_custom_toolbar_button.assert_called_once_with(
+            macro_addon.macro.filename
+        )
+
+    def test_toolbar_button_not_removed_for_non_macro(self):
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", MagicMock()):
+            with patch("addonmanager_uninstaller_gui.ToolbarAdapter") as toolbar_adapter:
+                self.uninstaller_gui._remove_toolbar_button()
+        toolbar_adapter.assert_not_called()
+
+    def test_toolbar_button_not_removed_without_gui(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", None):
+            with patch("addonmanager_uninstaller_gui.ToolbarAdapter") as toolbar_adapter:
+                uninstaller_gui._remove_toolbar_button()
+        toolbar_adapter.assert_not_called()
+
+    def test_toolbar_button_removal_failure_is_not_fatal(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.fci.FreeCADGui", MagicMock()):
+            with patch(
+                "addonmanager_uninstaller_gui.ToolbarAdapter",
+                side_effect=RuntimeError("Unit test failure"),
+            ):
+                uninstaller_gui._remove_toolbar_button()  # Should not raise
+
     def test_finalize(self):
         self.uninstaller_gui.finished.connect(functools.partial(self.catch_signal, "finished"))
         self.uninstaller_gui.worker_thread = MockThread()
         self.uninstaller_gui._finalize()
         self.assertIn("finished", self.signals_caught)
+
+    def setup_installation_with_script(self, temp_dir) -> str:
+        """Create a fake installed addon whose uninstall.py writes a marker file when run.
+        Returns the path of the marker file."""
+        addon_path = os.path.join(temp_dir, self.addon_to_remove.name)
+        os.makedirs(addon_path)
+        marker_file = os.path.join(temp_dir, "RAN_UNINSTALL_SCRIPT.txt")
+        double_escaped = marker_file.replace("\\", "\\\\")
+        with open(os.path.join(addon_path, "uninstall.py"), "w", encoding="utf-8") as f:
+            f.write(
+                f"""# Mock uninstall script
+with open('{double_escaped}', "w", encoding="utf-8") as f:
+    f.write("File created by uninstall.py from unit tests")
+"""
+            )
+        self.uninstaller_gui.uninstaller.installation_path = temp_dir
+        return marker_file
+
+    def test_uninstall_script_no_prompt_without_script(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.makedirs(os.path.join(temp_dir, self.addon_to_remove.name))
+            self.uninstaller_gui.uninstaller.installation_path = temp_dir
+            with patch("addonmanager_uninstaller_gui.UninstallScriptDialog") as mock_dialog:
+                self.uninstaller_gui._handle_uninstall_script()
+            mock_dialog.assert_not_called()
+            self.assertFalse(self.uninstaller_gui.uninstaller.should_run_uninstall_script)
+
+    def test_uninstall_script_no_prompt_for_macro(self):
+        macro_addon = MockAddon()
+        macro_addon.macro = MockMacro()
+        uninstaller_gui = AddonUninstallerGUI(macro_addon)
+        with patch("addonmanager_uninstaller_gui.UninstallScriptDialog") as mock_dialog:
+            uninstaller_gui._handle_uninstall_script()
+        mock_dialog.assert_not_called()
+
+    def test_uninstall_script_prompt_declined(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            marker_file = self.setup_installation_with_script(temp_dir)
+            dialog_watcher = DialogWatcher(
+                "AddonManager_RunUninstallScriptDialog", QtWidgets.QDialogButtonBox.No
+            )
+            self.uninstaller_gui._handle_uninstall_script()
+            self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
+            self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
+            self.assertFalse(
+                os.path.exists(marker_file), "Ran the uninstall script without permission"
+            )
+            self.assertFalse(self.uninstaller_gui.uninstaller.should_run_uninstall_script)
+
+    def test_uninstall_script_prompt_accepted(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            marker_file = self.setup_installation_with_script(temp_dir)
+            dialog_watcher = DialogWatcher(
+                "AddonManager_RunUninstallScriptDialog", QtWidgets.QDialogButtonBox.Yes
+            )
+            self.uninstaller_gui._handle_uninstall_script()
+            self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
+            self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
+            self.assertTrue(
+                os.path.exists(marker_file), "Failed to run the approved uninstall script"
+            )
+            self.assertFalse(self.uninstaller_gui.uninstaller.should_run_uninstall_script)
+
+
+class TestUninstallScriptDialog(unittest.TestCase):
+
+    MODULE = "test_uninstaller_gui"  # file name without extension
+
+    def setUp(self):
+        self.dialog = UninstallScriptDialog("Mock Addon", os.path.join("path", "uninstall.py"))
+
+    def tearDown(self):
+        self.dialog.close()
+        del self.dialog  # Immediately destroy the widget so no top-level window leaks
+
+    def test_run_button_requests_run(self):
+        dialog_watcher = DialogWatcher(
+            "AddonManager_RunUninstallScriptDialog", QtWidgets.QDialogButtonBox.Yes
+        )
+        self.dialog.exec()
+        self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
+        self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
+        self.assertTrue(self.dialog.run_requested)
+
+    def test_do_not_run_button_does_not_request_run(self):
+        dialog_watcher = DialogWatcher(
+            "AddonManager_RunUninstallScriptDialog", QtWidgets.QDialogButtonBox.No
+        )
+        self.dialog.exec()
+        self.assertTrue(dialog_watcher.dialog_found, "Failed to find the expected dialog box")
+        self.assertTrue(dialog_watcher.button_found, "Failed to find the expected button")
+        self.assertFalse(self.dialog.run_requested)
+
+    def test_open_button_opens_editor_without_closing_dialog(self):
+        with patch("addonmanager_uninstaller_gui.open_file_in_text_editor") as mock_open:
+            self.dialog.show()
+            self.dialog.open_button.click()
+            self.assertTrue(self.dialog.isVisible(), "Open button should not close the dialog")
+            self.dialog.skip_button.click()
+            self.assertFalse(self.dialog.isVisible())
+        mock_open.assert_called_once_with(self.dialog.script_path)
+        self.assertFalse(self.dialog.run_requested)

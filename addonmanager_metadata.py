@@ -379,15 +379,17 @@ class MetadataReader:
 
     @staticmethod
     def _parse_content(namespace: str, metadata: Metadata, root: ET.Element):
-        """Given a content node, loop over its children, and if they are a recognized
-        element type, recurse into each one to parse it."""
-        known_content_types = ["workbench", "macro", "preferencepack", "bundle", "other"]
+        """Given a content node, loop over its children and recurse into each one to parse it.
+        Every child element is treated as a content type, including types that this version of
+        the Addon Manager does not know about, so that new types added to the package metadata
+        standard are still available to callers."""
         for child in root:
+            if not isinstance(child.tag, str) or not child.tag.startswith(namespace):
+                continue
             content_type = child.tag[len(namespace) :]
-            if content_type in known_content_types:
-                if content_type not in metadata.content:
-                    metadata.content[content_type] = []
-                metadata.content[content_type].append(MetadataReader._create_node(namespace, child))
+            metadata.content.setdefault(content_type, []).append(
+                MetadataReader._create_node(namespace, child)
+            )
 
     @staticmethod
     def _create_node(namespace, child) -> Metadata:

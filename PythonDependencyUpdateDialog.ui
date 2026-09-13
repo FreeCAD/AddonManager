@@ -64,6 +64,22 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="progressDetailsLabel">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string notr="true"/>
+     </property>
+     <property name="wordWrap">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that 'Used by' only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</string>
@@ -86,6 +102,16 @@
       <widget class="QPushButton" name="buttonInstallPkgs">
        <property name="text">
         <string>Add Package</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="buttonCancel">
+       <property name="text">
+        <string>Stop</string>
+       </property>
+       <property name="toolTip">
+        <string>Stop the running pip installation or update</string>
        </property>
       </widget>
      </item>

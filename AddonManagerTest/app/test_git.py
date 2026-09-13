@@ -28,7 +28,8 @@ import tempfile
 import time
 from zipfile import ZipFile
 
-from addonmanager_git import GitManager, NoGitFound, GitFailed
+from addonmanager_git import GitManager, NoGitFound, GitFailed, GitCancelled
+import addonmanager_utilities as utils
 
 try:
     git_manager = GitManager()
@@ -76,6 +77,43 @@ class TestGit(unittest.TestCase):
         checkout_dir = self._clone_test_repo()
         self.assertTrue(os.path.exists(checkout_dir))
         self.assertTrue(os.path.exists(os.path.join(checkout_dir, ".git")))
+        self.assertEqual(os.getcwd(), self.cwd, "We should be left in the same CWD we started")
+
+    def test_clone_reports_its_progress(self):
+        """Cloning a large repository takes a long time, so git is asked to report its progress
+        and each line of that report is handed over as it arrives."""
+        checkout_dir = os.path.join(self.test_dir, "test_repo")
+        reported_lines = []
+
+        # --no-local stops git from taking the shortcut it takes for a local clone, so that it
+        # reports its progress the way it does when cloning an Addon from a remote host
+        self.git.clone(
+            self.test_repo_remote, checkout_dir, ["--no-local"], line_callback=reported_lines.append
+        )
+
+        self.assertTrue(os.path.exists(os.path.join(checkout_dir, ".git")))
+        self.assertTrue(reported_lines, "Git did not report any progress at all")
+        self.assertTrue(
+            any("Receiving objects" in line for line in reported_lines),
+            f"Git did not report the progress of its download: {reported_lines}",
+        )
+
+    def test_cancelled_update_leaves_the_checkout_alone(self):
+        """A failed update backs the checkout up and re-clones it, but a cancelled one must not:
+        the user asked for the work to stop, not for their installed copy to be replaced."""
+        checkout_dir = self._clone_test_repo()
+
+        def cancel_the_update(_line):
+            raise utils.ProcessInterrupted()
+
+        with self.assertRaises(GitCancelled):
+            self.git.update(checkout_dir, line_callback=cancel_the_update)
+
+        self.assertTrue(os.path.exists(os.path.join(checkout_dir, ".git")))
+        self.assertFalse(
+            os.path.exists(os.path.join(checkout_dir, "ADDON_DISABLED")),
+            "A cancelled update disabled the addon and re-cloned it",
+        )
         self.assertEqual(os.getcwd(), self.cwd, "We should be left in the same CWD we started")
 
     def test_checkout(self):

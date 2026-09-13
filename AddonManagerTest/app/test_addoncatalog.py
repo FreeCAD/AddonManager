@@ -90,6 +90,68 @@ class TestAddonCatalogEntry(TestCase):
             )
             self.assertFalse(ac.is_compatible())
 
+    def test_instantiate_addon_with_repository(self):
+        """An Addon that is cached by the Addon Manager keeps its repository as its URL, and has no
+        zip URL of its own: the cached copy is downloaded instead."""
+        ac = self.AddonCatalogEntry(
+            {
+                "repository": "https://github.com/FreeCAD/FreeCAD",
+                "git_ref": "main",
+                "zip_url": "https://github.com/FreeCAD/FreeCAD/archive/main.zip",
+                "relative_cache_path": "AddonManager/AnAddon.zip",
+            }
+        )
+
+        addon = ac.instantiate_addon("AnAddon")
+
+        self.assertEqual("https://github.com/FreeCAD/FreeCAD", addon.url)
+        self.assertEqual("", addon.zip_url)
+        self.assertFalse(addon.prefer_git)
+
+    def test_instantiate_addon_with_sparse_cache(self):
+        """A sparsely-cached Addon must be downloaded from the catalog's zip, because only a
+        fraction of it is in the cache, but its URL is still the repository it came from, so that
+        file locations such as its README can be constructed from it."""
+        ac = self.AddonCatalogEntry(
+            {
+                "repository": "https://github.com/FreeCAD/FreeCAD-library",
+                "git_ref": "master",
+                "zip_url": "https://github.com/FreeCAD/FreeCAD-library/archive/master.zip",
+                "sparse_cache": True,
+                "relative_cache_path": "AddonManager/parts_library.zip",
+            }
+        )
+
+        addon = ac.instantiate_addon("parts_library")
+
+        self.assertEqual("https://github.com/FreeCAD/FreeCAD-library", addon.url)
+        self.assertEqual(
+            "https://github.com/FreeCAD/FreeCAD-library/archive/master.zip", addon.get_zip_url()
+        )
+        self.assertTrue(addon.prefer_git)
+
+    def test_instantiate_addon_with_sparse_cache_and_no_zip(self):
+        """A sparsely-cached Addon with no zip URL cannot be downloaded at all."""
+        ac = self.AddonCatalogEntry(
+            {
+                "repository": "https://github.com/FreeCAD/FreeCAD-library",
+                "git_ref": "master",
+                "sparse_cache": True,
+            }
+        )
+
+        with self.assertRaises(RuntimeError):
+            ac.instantiate_addon("parts_library")
+
+    def test_instantiate_addon_with_zip_only(self):
+        """An Addon with no repository is downloaded from the catalog's zip."""
+        ac = self.AddonCatalogEntry({"zip_url": "https://example.com/an_addon.zip"})
+
+        addon = ac.instantiate_addon("AnAddon")
+
+        self.assertEqual("https://example.com/an_addon.zip", addon.url)
+        self.assertEqual("https://example.com/an_addon.zip", addon.get_zip_url())
+
 
 class TestAddonCatalog(TestCase):
     """Tests for the AddonCatalog class."""

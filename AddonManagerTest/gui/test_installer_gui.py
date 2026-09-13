@@ -30,7 +30,7 @@ from unittest.mock import MagicMock, Mock, patch
 from PySideWrapper import QtWidgets, QtCore
 
 from Addon import Addon, MissingDependencies
-from addonmanager_installer import AddonInstaller
+from addonmanager_installer import AddonInstaller, InstallationMethod
 from addonmanager_installer_gui import (
     AddonInstallerGUI,
     AddonDependencyInstallerGUI,
@@ -92,6 +92,7 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
     class MockInstaller(QtCore.QObject):
         progress_update = QtCore.Signal(int, int)
+        progress_message = QtCore.Signal(str, int)
         success = QtCore.Signal(object)
         failure = QtCore.Signal(object, str)
         finished = QtCore.Signal()
@@ -120,6 +121,191 @@ class TestAddonInstallerGUI(unittest.TestCase):
 
         def moveToThread(self, thread):
             self.moved_to_thread = True
+
+    def _installer_gui_with_dialog(self) -> AddonInstallerGUI:
+        """An AddonInstallerGUI with its progress dialog set up, as install() leaves it, but
+        without the installation itself running."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+        return gui
+
+    def test_dialog_titles_say_which_operation_is_happening(self):
+        """The dialog says whether it is installing or updating, matching the button the user
+        pressed, rather than the generic title the shared .ui file carries."""
+        being_installed = Addon("Test Addon")
+        being_installed.set_status(Addon.Status.NOT_INSTALLED)
+        installing = AddonInstallerGUI(being_installed)
+        installing.create_installing_dialog()
+        self.addCleanup(installing.installing_dialog.close)
+
+        being_updated = Addon("Test Addon")
+        being_updated.set_status(Addon.Status.UPDATE_AVAILABLE)
+        updating = AddonInstallerGUI(being_updated)
+        updating.create_installing_dialog()
+        self.addCleanup(updating.installing_dialog.close)
+
+        self.assertIn("Installing", installing.installing_dialog.windowTitle())
+        self.assertIn("Installing", installing.installing_dialog.label.text())
+        self.assertIn("Updating", updating.installing_dialog.windowTitle())
+        self.assertIn("Updating", updating.installing_dialog.label.text())
+
+    def test_cancelling_dialog_says_which_operation_is_being_stopped(self):
+        being_updated = Addon("Test Addon")
+        being_updated.set_status(Addon.Status.UPDATE_AVAILABLE)
+        gui = AddonInstallerGUI(being_updated)
+
+        gui.create_cancelling_dialog()
+        self.addCleanup(gui.cancelling_dialog.close)
+
+        self.assertIn("update", gui.cancelling_dialog.label.text())
+
+    def test_dialog_says_when_git_is_being_used(self):
+        """Installing with git is slower than downloading a zip, so the dialog explains why it is
+        worth the wait."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: True
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertIn("git", gui.installing_dialog.label.text())
+        self.assertIn("Test Addon", gui.installing_dialog.label.text())
+
+    def test_dialog_does_not_mention_git_for_a_zip_install(self):
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: False
+        gui.create_installing_dialog()
+        self.addCleanup(gui.installing_dialog.close)
+
+        self.assertNotIn("git", gui.installing_dialog.label.text())
+
+    def test_a_failed_git_installation_can_be_tried_another_way(self):
+        """Cloning a large Addon fails for reasons a second attempt gets past, so the failure is
+        not the end of the conversation."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: True
+
+        gui.installation_method = InstallationMethod.ANY
+
+        self.assertTrue(gui._can_try_another_way())
+
+    def test_a_failed_zip_installation_is_only_reported(self):
+        """The zip download is the fallback, so there is nothing left to fall back to."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: True
+        gui.installation_method = InstallationMethod.ZIP
+
+        self.assertFalse(gui._can_try_another_way())
+
+    def test_a_failed_installation_that_did_not_use_git_is_only_reported(self):
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.installer.will_use_git = lambda: False
+
+        self.assertFalse(gui._can_try_another_way())
+
+    def test_trying_again_starts_a_new_installer(self):
+        """The installer that failed belongs to a thread that has ended, so the second attempt
+        gets one of its own, running by whichever method was chosen."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        failed_installer = gui.installer
+        attempts = []
+        gui.install = lambda method=InstallationMethod.ANY: attempts.append(method)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            gui.installer.installation_path = temp_dir  # Nothing left behind to clean up
+
+            gui._try_again(InstallationMethod.ZIP)
+
+        self.assertEqual([InstallationMethod.ZIP], attempts)
+        self.assertIsNot(failed_installer, gui.installer)
+
+    def test_trying_again_removes_what_the_failed_attempt_left(self):
+        """A half-finished checkout is not something the next attempt can build on."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.install = lambda method=InstallationMethod.ANY: None
+        with tempfile.TemporaryDirectory() as temp_dir:
+            gui.installer.installation_path = temp_dir
+            leftovers = os.path.join(temp_dir, "Test Addon")
+            os.makedirs(os.path.join(leftovers, ".git"))
+
+            gui._try_again(InstallationMethod.ANY)
+
+            self.assertFalse(os.path.exists(leftovers))
+
+    def test_cancelling_dialog_shows_that_work_is_going_on(self):
+        """Stopping a large installation takes time, so the dialog animates and offers no button:
+        a fixed sentence next to an OK button reads as a hang."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.create_cancelling_dialog()
+        self.addCleanup(gui.cancelling_dialog.close)
+
+        self.assertIn("Test Addon", gui.cancelling_dialog.label.text())
+        self.assertEqual(0, gui.cancelling_dialog.progressBar.minimum())
+        self.assertEqual(0, gui.cancelling_dialog.progressBar.maximum())
+        self.assertTrue(gui.cancelling_dialog.buttonBox.isHidden())
+
+    def test_removing_a_partial_installation_keeps_the_interface_alive(self):
+        """The deletion happens off the GUI thread, so the dialog can say what it is doing and go
+        on repainting while it happens."""
+        gui = AddonInstallerGUI(Addon("Test Addon"))
+        gui.create_cancelling_dialog()
+        self.addCleanup(gui.cancelling_dialog.close)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            partial_download = os.path.join(temp_dir, "partial")
+            os.makedirs(os.path.join(partial_download, "subdirectory"))
+            with open(os.path.join(partial_download, "subdirectory", "file"), "w") as f:
+                f.write("downloaded so far")
+
+            gui._remove_partial_installation(partial_download, gui.cancelling_dialog)
+
+            self.assertFalse(os.path.exists(partial_download))
+        self.assertIn("Removing", gui.cancelling_dialog.label.text())
+
+    def test_progress_update_shows_how_much_has_been_downloaded(self):
+        """A download of an Addon that is gigabytes in size says so, rather than only moving a
+        bar that gives no sense of how long the wait will be."""
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_update(150_000_000, 2_100_000_000)
+
+        # Qt formats the sizes themselves, in the units and the notation of the user's locale
+        locale = QtCore.QLocale()
+        received = locale.formattedDataSize(150_000_000)
+        total = locale.formattedDataSize(2_100_000_000)
+        self.assertIn(f"{received} of {total}", gui.installing_dialog.label.text())
+        self.assertEqual(2_100_000_000, gui.installing_dialog.progressBar.maximum())
+        self.assertEqual(150_000_000, gui.installing_dialog.progressBar.value())
+
+    def test_progress_update_of_an_unknown_download_size(self):
+        """When the server does not say how large the download is, the amount received so far is
+        still shown."""
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_update(150_000_000, 0)
+
+        received = QtCore.QLocale().formattedDataSize(150_000_000)
+        self.assertIn(received, gui.installing_dialog.label.text())
+        self.assertNotIn(" of ", gui.installing_dialog.label.text())
+
+    def test_progress_message_shows_what_git_is_doing(self):
+        """A git clone reports its progress as text, which is shown as git worded it, with its
+        percentage driving the bar."""
+        gui = self._installer_gui_with_dialog()
+
+        gui._progress_message("Receiving objects:  42% (5218/12345)", 42)
+
+        self.assertIn("Receiving objects", gui.installing_dialog.label.text())
+        self.assertEqual(100, gui.installing_dialog.progressBar.maximum())
+        self.assertEqual(42, gui.installing_dialog.progressBar.value())
+
+    def test_progress_message_without_a_percentage(self):
+        """A git report with no percentage in it leaves the bar alone rather than resetting it."""
+        gui = self._installer_gui_with_dialog()
+        gui._progress_message("Receiving objects:  42% (5218/12345)", 42)
+
+        gui._progress_message("Resolving deltas", -1)
+
+        self.assertIn("Resolving deltas", gui.installing_dialog.label.text())
+        self.assertEqual(42, gui.installing_dialog.progressBar.value())
 
     @patch("addonmanager_installer_gui.AddonDependencyInstallerGUI")
     @patch("addonmanager_installer_gui.MissingDependencies")

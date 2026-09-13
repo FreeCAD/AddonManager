@@ -49,7 +49,6 @@ import addonmanager_freecad_interface as fci
 from composite_view import CompositeView
 from Widgets.addonmanager_widget_global_buttons import WidgetGlobalButtonBar
 from Widgets.addonmanager_widget_progress_bar import Progress
-from Widgets.addonmanager_utility_dialogs import MessageDialog
 from package_list import PackageListItemModel
 from Addon import Addon, cycle_to_sub_addon, MissingDependencies
 from addonmanager_python_deps_gui import (
@@ -648,7 +647,7 @@ class CommandAddonManager(QtCore.QObject):
                 proceed = False
                 all_deps = set()
                 all_deps.update(deps.wbs)
-                all_deps.update(deps.external_addons)
+                all_deps.update([addon.name for addon in deps.external_addons])
                 all_deps.update(deps.python_requires)
                 for dep in all_deps:
                     if dep not in ignored_deps:
@@ -673,7 +672,7 @@ class CommandAddonManager(QtCore.QObject):
         old_deps = set(old_deps_string.split(";") if old_deps_string else [])
         deps = self.check_missing_dependencies_worker.missing_dependencies
         new_deps = old_deps.union(deps.wbs)
-        new_deps = new_deps.union(deps.external_addons)
+        new_deps = new_deps.union([addon.name for addon in deps.external_addons])
         new_deps = new_deps.union(deps.python_requires)
         new_deps_string = ";".join(new_deps)
         fci.Preferences().set("ignored_missing_deps", new_deps_string)

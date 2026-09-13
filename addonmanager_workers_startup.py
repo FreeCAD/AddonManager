@@ -29,7 +29,12 @@ import json
 import os
 from types import SimpleNamespace
 from typing import List, Optional, Tuple
-from xml.etree.ElementTree import ParseError as XmlParseError
+
+# Audited: only the exception class is imported, for catching errors raised by defusedxml,
+# which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
+from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
+
+from defusedxml import DefusedXmlException
 import zipfile
 
 from PySideWrapper import QtCore
@@ -257,7 +262,7 @@ class CreateAddonListWorker(QtCore.QThread):
             return False
         try:
             MetadataReader.from_bytes(data)
-        except (XmlParseError, RuntimeError):
+        except (XmlParseError, DefusedXmlException, RuntimeError):
             return False
         return True
 
@@ -282,7 +287,7 @@ class CreateAddonListWorker(QtCore.QThread):
         if package_xml:
             try:
                 parsed_metadata = MetadataReader.from_bytes(package_xml)
-            except (XmlParseError, RuntimeError) as e:
+            except (XmlParseError, DefusedXmlException, RuntimeError) as e:
                 parsed_metadata = None
                 fci.Console.PrintWarning(
                     translate(
@@ -868,7 +873,7 @@ class GetAddonScoreWorker(QtCore.QThread):
                     ).format(self.url)
                 )
         else:
-            fci.Console.PrintWarning("Running score generation in TEST mode...\n")
+            fci.Console.PrintWarning("Running score generation in TEST mode…\n")
             json_result = {}
             for addon in self.addons:
                 if addon.macro:
@@ -929,7 +934,7 @@ class CheckForMissingDependenciesWorker(QtCore.QThread):
                         f"{addon.display_name} is missing workbenches {', '.join(deps.wbs)}\n"
                     )
                 if deps.external_addons:
-                    details += f"{addon.display_name} is missing addons {', '.join(deps.external_addons)}\n"
+                    details += f"{addon.display_name} is missing addons {', '.join([x.display_name for x in deps.external_addons])}\n"
                 if deps.python_requires:
                     details += f"{addon.display_name} is missing python packages {', '.join(deps.python_requires)}\n"
                 self.missing_dependencies.join(deps)

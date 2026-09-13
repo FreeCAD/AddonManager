@@ -29,7 +29,12 @@ from urllib.parse import urlparse, urlunparse
 from typing import Dict, Set, List, Optional
 from threading import Lock
 from enum import IntEnum, auto
-from xml.etree.ElementTree import ParseError as XmlParseError
+
+# Audited: only the exception class is imported, for catching errors raised by defusedxml,
+# which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
+from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
+
+from defusedxml import DefusedXmlException
 
 try:
     import importlib.metadata as importlib_metadata
@@ -77,6 +82,12 @@ INTERNAL_WORKBENCHES = {
     "tux": "Tux",
     "web": "Web",
 }
+
+#  The package metadata content types that have a dedicated category in the Addon Manager's
+#  filter list. Every other content type, whether it is the standard "other" type or a type
+#  introduced after this version of the Addon Manager was released, is shown in the "Other"
+#  category.
+CATEGORIZED_CONTENT_TYPES = frozenset(["workbench", "macro", "preferencepack", "bundle"])
 
 
 class Addon:
@@ -179,6 +190,16 @@ class Addon:
         self.display_name = self.name
         self.url = url.strip()
         self.relative_cache_path = ""
+
+        # A remote location for a zip of this Addon's contents. This is used for Addons that are
+        # not cached in their entirety (typically due to their size). The canonical example here is
+        # the Parts Library.
+        self.zip_url = ""
+
+        # True for Addons that are large enough that downloading all of them for every update is
+        # expensive, so git is used for them whenever it is available. Set by the Addon Index.
+        self.prefer_git = False
+
         self.branch = branch.strip()
         self.branch_display_name = branch.strip()
         self.repo_type = Addon.Kind.WORKBENCH
@@ -325,11 +346,11 @@ class Addon:
         if os.path.exists(file):
             try:
                 metadata = MetadataReader.from_file(file)
-            except XmlParseError:
+            except (XmlParseError, DefusedXmlException):
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in the cache for"
                 )
-                fci.Console.PrintWarning(f" {self.name}... ignoring the bad data.\n")
+                fci.Console.PrintWarning(f" {self.name}… ignoring the bad data.\n")
                 return
             self.set_metadata(metadata)
             self._clean_url()
@@ -344,11 +365,11 @@ class Addon:
         if os.path.isfile(installed_metadata_path):
             try:
                 self.installed_metadata = MetadataReader.from_file(installed_metadata_path)
-            except XmlParseError:
+            except (XmlParseError, DefusedXmlException):
                 fci.Console.PrintWarning(
                     "An invalid or corrupted package.xml file was found in installation of"
                 )
-                fci.Console.PrintWarning(f" {self.name}... ignoring the bad data.\n")
+                fci.Console.PrintWarning(f" {self.name}… ignoring the bad data.\n")
                 return
 
     def set_metadata(self, metadata: Metadata) -> None:
@@ -484,17 +505,21 @@ class Addon:
             return True
         return self.contains_packaged_content("macro")
 
+    def packaged_content_types(self) -> Set[str]:
+        """The content types declared by this package's metadata. Empty for anything that is
+        not a package."""
+        if self.repo_type != Addon.Kind.PACKAGE:
+            return set()
+        if self.metadata is None:
+            fci.Console.PrintLog(
+                f"Addon Manager internal error: lost metadata for package {self.name}\n"
+            )
+            return set()
+        return set(self.metadata.content)
+
     def contains_packaged_content(self, content_type: str):
         """Determine if the package contains content_type"""
-        if self.repo_type == Addon.Kind.PACKAGE:
-            if self.metadata is None:
-                fci.Console.PrintLog(
-                    f"Addon Manager internal error: lost metadata for package {self.name}\n"
-                )
-                return False
-            content = self.metadata.content
-            return content_type in content
-        return False
+        return content_type in self.packaged_content_types()
 
     def contains_preference_pack(self) -> bool:
         """Determine if this package contains a preference pack"""
@@ -505,8 +530,9 @@ class Addon:
         return self.contains_packaged_content("bundle")
 
     def contains_other(self) -> bool:
-        """Determine if this package contains an "other" content item"""
-        return self.contains_packaged_content("other")
+        """Determine if this package contains an "other" content item, or any content type that
+        this version of the Addon Manager does not have a category for."""
+        return bool(self.packaged_content_types() - CATEGORIZED_CONTENT_TYPES)
 
     def walk_dependency_tree(self, all_repos: Dict[str, "Addon"], deps: Dependencies):
         """Compute the total dependency tree for this repo (recursive)
@@ -688,7 +714,9 @@ class Addon:
         return ""
 
     def get_zip_url(self) -> str:
-        if self.url.endswith(".zip"):
+        if self.zip_url:
+            zip_url = self.zip_url
+        elif self.url.endswith(".zip"):
             zip_url = self.url
         else:
             # The ZIP url is based on the location of the main cache file:
@@ -835,7 +863,7 @@ class MissingDependencies:
         # can do the check by PyPI package name:
         if importlib_metadata is None:
             fci.Console.PrintMessage(
-                f"Cannot check for installation of `{package_name}`... marking it for "
+                f"Cannot check for installation of `{package_name}`… marking it for "
                 "reinstallation to be safe\n"
             )
             return False

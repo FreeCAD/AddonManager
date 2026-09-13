@@ -26,6 +26,7 @@ import json
 from datetime import datetime, timezone
 from enum import IntEnum, auto
 import os
+import re
 import shutil
 from typing import List, Optional
 import tempfile
@@ -41,7 +42,7 @@ import addonmanager_utilities as utils
 from addonmanager_python_constraints import get_constraints
 from addonmanager_installation_manifest import InstallationManifest
 from addonmanager_metadata import get_branch_from_metadata
-from addonmanager_git import initialize_git, GitFailed
+from addonmanager_git import initialize_git, GitFailed, GitCancelled
 from addonmanager_icon_utilities import get_icon_for_addon
 
 if fci.FreeCADGui:
@@ -116,6 +117,13 @@ class AddonInstaller(QtCore.QObject):
     # number of bytes expected might be set to 0 to indicate an unknown download size.
     progress_update = QtCore.Signal(int, int)
 
+    # Signal: progress_message
+    # In GUI mode this signal is emitted during an installation whose progress is reported as text
+    # rather than as a byte count, which is how git reports what it is doing. The string is a
+    # human-readable description of the work in progress, and the integer is how far through that
+    # work we are, as a percentage, or -1 when the report did not include one.
+    progress_message = QtCore.Signal(str, int)
+
     # Signals: success and failure
     # Emitted when the installation process is complete. The object emitted is the object that the
     # installation was requested for (usually of class Addon, but any class that provides a name,
@@ -138,8 +146,7 @@ class AddonInstaller(QtCore.QObject):
         super().__init__()
         self.addon_to_install = addon
 
-        forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
-        if addon and self.addon_to_install.name in forced_repos:
+        if addon and utils.should_use_git(addon):
             self.git_manager = initialize_git()
         else:
             self.git_manager = None
@@ -193,6 +200,13 @@ class AddonInstaller(QtCore.QObject):
         self.finished.emit()
         return success
 
+    def will_use_git(self, install_method: InstallationMethod = InstallationMethod.ANY) -> bool:
+        """Whether running this installer will use git, so that callers can say so before the
+        installation starts."""
+
+        addon_url = self.addon_to_install.url.replace(os.path.sep, "/")
+        return self._determine_install_method(addon_url, install_method) == InstallationMethod.GIT
+
     def _determine_install_method(
         self, addon_url: str, install_method: InstallationMethod
     ) -> Optional[InstallationMethod]:
@@ -238,9 +252,8 @@ class AddonInstaller(QtCore.QObject):
         if not is_remote:
             return InstallationMethod.COPY
 
-        # Use git only if the user specifically requests it, and we have git
-        forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
-        if self.git_manager and self.addon_to_install.name in forced_repos:
+        # Use git only for the Addons that call for it, and only if we have git
+        if self.git_manager and utils.should_use_git(self.addon_to_install):
             return InstallationMethod.GIT
 
         # Normal case: we aren't locked into any particular method, so use zip downloads from the
@@ -266,6 +279,8 @@ class AddonInstaller(QtCore.QObject):
         install_path = os.path.join(self.installation_path, self.addon_to_install.name)
         if not os.path.isdir(install_path):
             return False
+        if not os.path.isdir(os.path.join(install_path, ".git")):
+            return False  # Installed some other way, most likely from a zip: re-clone it
         if addon.metadata is None or addon.installed_metadata is None:
             return True  # We can't check if the branch name changed, but the install path exists
         old_branch = get_branch_from_metadata(self.addon_to_install.installed_metadata)
@@ -281,17 +296,34 @@ class AddonInstaller(QtCore.QObject):
         install_path = str(os.path.join(self.installation_path, self.addon_to_install.name))
         try:
             if self._can_use_update():
-                self.git_manager.update(install_path)
+                self.git_manager.update(install_path, line_callback=self._report_git_progress)
             else:
                 if os.path.isdir(install_path):
                     utils.rmdir(install_path)
-                self.git_manager.clone(self.addon_to_install.url, install_path)
+                self.git_manager.clone(
+                    self.addon_to_install.url,
+                    install_path,
+                    line_callback=self._report_git_progress,
+                )
             self.git_manager.checkout(install_path, self.addon_to_install.branch)
+        except GitCancelled as e:
+            # Cancelling is not a failure, so report it like a normal interrupted process
+            raise utils.ProcessInterrupted() from e
         except GitFailed as e:
             self.failure.emit(self.addon_to_install, str(e))
             return False
         self._finalize_successful_installation()
         return True
+
+    def _report_git_progress(self, line: str) -> None:
+        """Pass a line of git's progress report on to whatever is displaying it. This is basically
+        all we can do to not appear stalled out when using git to install, there's no way of giving
+        a "real" progress bar. The percentage is sort of a lie here, but it's all we've got."""
+        line = line.strip()
+        if not line:
+            return
+        percentage = re.search(r"(\d{1,3})%", line)
+        self.progress_message.emit(line, int(percentage.group(1)) if percentage else -1)
 
     def _install_by_zip(self) -> bool:
         """Installs the specified url by downloading the file (if it is remote) and unzipping it
@@ -324,7 +356,9 @@ class AddonInstaller(QtCore.QObject):
         self.zip_download_index = NetworkManager.AM_NETWORK_MANAGER.submit_monitored_get(zip_url)
         while self.zip_download_index is not None:
             if QtCore.QThread.currentThread().isInterruptionRequested():
-                break
+                NetworkManager.AM_NETWORK_MANAGER.abort(self.zip_download_index)
+                self.zip_download_index = None
+                raise utils.ProcessInterrupted()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
 
     def _update_zip_status(self, index: int, bytes_read: int, data_size: int):

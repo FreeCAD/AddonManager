@@ -83,6 +83,10 @@ class AddonUninstaller(QtCore.QObject):
         uninstaller = AddonInstaller(addon_to_remove)
         uninstaller.run()
 
+    If the addon provides an "uninstall.py" script it is executed as part of run() by
+    default. Set should_run_uninstall_script to False before calling run() to skip the
+    script (the GUI wrapper does this, asking the user for permission first and running
+    the script itself only when the user approves).
     """
 
     # Signals: success and failure Emitted when the installation process is complete.
@@ -100,6 +104,7 @@ class AddonUninstaller(QtCore.QObject):
         self.addon_to_remove = addon
         self.installation_path = fci.DataPaths().mod_dir
         self.macro_installation_path = fci.DataPaths().macro_dir
+        self.should_run_uninstall_script = True
 
     def run(self) -> bool:
         """Remove an addon. Returns True if the addon was removed cleanly, or False
@@ -115,7 +120,8 @@ class AddonUninstaller(QtCore.QObject):
                 path_to_remove, self.installation_path
             ):
                 try:
-                    self.run_uninstall_script(path_to_remove)
+                    if self.should_run_uninstall_script:
+                        self.run_uninstall_script(path_to_remove)
                     self.remove_extra_files(path_to_remove)
                     success = utils.rmdir(path_to_remove)
                     if (
@@ -148,7 +154,8 @@ class AddonUninstaller(QtCore.QObject):
             # pylint: disable=broad-exception-caught
             try:
                 with open(uninstall_script, encoding="utf-8") as f:
-                    exec(f.read())
+                    # This use of exec() is behind an explicit user opt-in dialog (added nosec B102)
+                    exec(f.read())  # nosec B102
             except Exception:
                 fci.Console.PrintError(
                     translate(
@@ -281,7 +288,7 @@ class MacroUninstaller(QtCore.QObject):
                 manifest_data = f.read()
                 manifest = json.loads(manifest_data)
                 manifest.append(manifest_file)  # Remove the manifest itself as well
-                return manifest
+                return manifest + self._get_toolbar_icon_files()
         files_to_remove = [self.addon_to_remove.macro.filename]
         if self.addon_to_remove.macro.icon:
             files_to_remove.append(self.addon_to_remove.macro.icon)
@@ -289,7 +296,21 @@ class MacroUninstaller(QtCore.QObject):
             files_to_remove.append(self.addon_to_remove.macro.name.replace(" ", "_") + "_icon.xpm")
         for f in self.addon_to_remove.macro.other_files:
             files_to_remove.append(f)
-        return files_to_remove
+        return files_to_remove + self._get_toolbar_icon_files()
+
+    def _get_toolbar_icon_files(self) -> List[str]:
+        """Get the names of the icon files that the toolbar button installer may have created for
+        this macro. Those files are created after the installation manifest is written, so they are
+        not listed in it."""
+        macro = self.addon_to_remove.macro
+        icon_files = []
+        if macro.icon:
+            _, ext = os.path.splitext(macro.icon)
+            extension = ext[1:].lower() if ext else "png"
+            icon_files.append(f"{macro.name}_icon.{extension}")
+        if macro.xpm:
+            icon_files.append(f"{macro.name}_icon.xpm")
+        return icon_files
 
     @staticmethod
     def _cleanup_directories(directories):

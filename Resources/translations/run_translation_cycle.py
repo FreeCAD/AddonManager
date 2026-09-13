@@ -29,7 +29,10 @@ import json
 import os
 import shutil
 import stat
-import subprocess
+
+# Audited: fixed lrelease/lupdate commands operating on local repository files, no shell
+# (added nosec B404)
+import subprocess  # nosec B404
 import sys
 import tempfile
 import time
@@ -87,8 +90,9 @@ class CrowdinUpdater:
         parsed_url = urlparse(url)
         if parsed_url.scheme != "https":
             raise Exception("API requests must be made over HTTPS")
-        request = Request(url, headers=headers, method=method, data=data)
-        request_result = urlopen(request)
+        # Audited: this code does not accept non-HTTPS URL schemes (added nosec B310)
+        request = Request(url, headers=headers, method=method, data=data)  # nosec B310
+        request_result = urlopen(request)  # nosec B310
         if request_result.getcode() >= 300:
             print(f"Failed to make API request {url}: return code {request_result.getcode()}")
             raise Exception("Failed to make API request")
@@ -143,7 +147,8 @@ class CrowdinUpdater:
         if parsed_url.scheme != "https":
             raise Exception("API requests must be made over HTTPS")
 
-        urlretrieve(response["url"], filename)
+        # Audited: this code does not accept non-HTTPS URL schemes (added nosec B310)
+        urlretrieve(response["url"], filename)  # nosec B310
         print("download of " + filename + " complete")
 
     def build(self):
@@ -193,7 +198,7 @@ def process_single_translation_file(source_path: str, target_path: str):
 
     print("Generating qm file for", basename, "...")
     try:
-        subprocess.run(
+        subprocess.run(  # nosec B603 B607
             [
                 "lrelease",
                 new_path,
@@ -356,7 +361,7 @@ if __name__ == "__main__":
         "-ts",
         os.path.join(TS_FILE_PATH, CROWDIN_FILE_NAME),
     ]
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603
         args,
         timeout=30,
         check=True,

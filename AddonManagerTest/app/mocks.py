@@ -26,9 +26,9 @@
 import os
 from typing import List
 
-
-class GitFailed(RuntimeError):
-    pass
+# The real exception types, so that code under test catches what this mock raises. Importing them
+# does not require git to be installed: only constructing a real GitManager does.
+from addonmanager_git import GitFailed, GitCancelled
 
 
 class MockConsole:
@@ -236,26 +236,25 @@ class MockGitManager:
         self.get_last_authors_response = {"Jane Doe": {"email": "jdoe@freecad.org", "count": 1}}
         self.should_fail = False
         self.fail_once = False  # Switch back to success after the simulated failure
+        self.should_be_interrupted = False  # Emulate the user cancelling the operation
 
     def _check_for_failure(self):
+        if self.should_be_interrupted:
+            raise GitCancelled("Unit test forced interruption")
         if self.should_fail:
             if self.fail_once:
                 self.should_fail = False
             raise GitFailed("Unit test forced failure")
 
-    def clone(self, _remote, _local_path, _args: List[str] = None):
+    def clone(self, _remote, _local_path, _args: List[str] = None, line_callback=None):
         self.called_methods.append("clone")
-        self._check_for_failure()
-
-    def async_clone(self, _remote, _local_path, _progress_monitor, _args: List[str] = None):
-        self.called_methods.append("async_clone")
         self._check_for_failure()
 
     def checkout(self, _local_path, _spec, _args: List[str] = None):
         self.called_methods.append("checkout")
         self._check_for_failure()
 
-    def update(self, _local_path):
+    def update(self, _local_path, line_callback=None):
         self.called_methods.append("update")
         self._check_for_failure()
 
@@ -266,10 +265,6 @@ class MockGitManager:
 
     def reset(self, _local_path, _args: List[str] = None):
         self.called_methods.append("reset")
-        self._check_for_failure()
-
-    def async_fetch_and_update(self, _local_path, _progress_monitor, _args=None):
-        self.called_methods.append("async_fetch_and_update")
         self._check_for_failure()
 
     def update_available(self, _local_path) -> bool:

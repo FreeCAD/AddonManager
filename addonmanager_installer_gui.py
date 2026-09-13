@@ -24,6 +24,7 @@ that do dependency resolution, error handling, etc.). See AddonInstallerGUI and 
 classes for details."""
 import os
 import sys
+from functools import partial
 from typing import List
 
 import addonmanager_freecad_interface as fci
@@ -32,7 +33,7 @@ from addonmanager_toolbar_adapter import ToolbarAdapter
 
 from PySideWrapper import QtCore, QtWidgets
 
-from addonmanager_installer import AddonInstaller, MacroInstaller
+from addonmanager_installer import AddonInstaller, InstallationMethod, MacroInstaller
 from addonmanager_dependency_installer import DependencyInstaller
 from addonmanager_metadata import Version
 from addonmanager_python_constraints import PythonConstraints
@@ -42,6 +43,19 @@ from Addon import Addon, MissingDependencies
 translate = fci.translate
 
 # pylint: disable=c-extension-no-member,too-few-public-methods,too-many-instance-attributes
+
+
+class DirectoryRemover(QtCore.QThread):
+    """Deletes a directory and everything in it, off the calling thread. Removing a partly
+    downloaded Addon can take minutes when the Addon is a large one, which is far too long to
+    stop the interface from repainting."""
+
+    def __init__(self, path: str):
+        super().__init__()
+        self.path = path
+
+    def run(self):
+        utils.rmdir(self.path)
 
 
 class AddonInstallerGUI(QtCore.QObject):
@@ -69,6 +83,9 @@ class AddonInstallerGUI(QtCore.QObject):
         self.dependency_dialog = None
         self.dependency_installation_dialog = None
         self.installing_dialog = None
+        self.cancelling_dialog = None
+        self.installation_message = ""
+        self.installation_method = InstallationMethod.ANY
         self.worker_thread = None
 
         # Set up the installer connections
@@ -114,44 +131,125 @@ class AddonInstallerGUI(QtCore.QObject):
         self.dependency_installer.proceed.connect(self.install)
         self.dependency_installer.run()
 
-    def install(self) -> None:
+    def install(self, install_method: InstallationMethod = InstallationMethod.ANY) -> None:
         """Installs or updates a workbench, macro, or package"""
+        self.installation_method = install_method
         self.worker_thread = QtCore.QThread()
         self.worker_thread.setObjectName("Addon Installer worker thread")
         self.installer.moveToThread(self.worker_thread)
         self.installer.finished.connect(self.worker_thread.quit)
         self.installer.progress_update.connect(self._progress_update)
-        self.worker_thread.started.connect(self.installer.run)
+        self.installer.progress_message.connect(self._progress_message)
+        self.worker_thread.started.connect(partial(self.installer.run, install_method))
 
-        self.installing_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
-        self.installing_dialog.setObjectName("AddonManager_InstallingDialog")
-        self.installing_dialog.label.setText(
-            translate("AddonsInstaller", "Installing '{}'").format(
-                self.addon_to_install.display_name
-            )
-        )
-
-        self.installing_dialog.rejected.connect(self._cancel_addon_installation)
+        self.create_installing_dialog()
         self.installer.finished.connect(self.installing_dialog.hide)
         self.installing_dialog.show()
         self.worker_thread.start()  # Returns immediately
 
+    def _is_an_update(self) -> bool:
+        """Whether the Addon is already installed, so that the dialogs can say that they are
+        updating it rather than installing it. This is the same question the details view asks to
+        decide which button to offer, so the dialog agrees with the button that opened it."""
+        return self.addon_to_install.status() != Addon.Status.NOT_INSTALLED
+
+    def create_installing_dialog(self) -> None:
+        """Create the dialog that reports the progress of the installation."""
+        self.installing_dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
+        self.installing_dialog.setObjectName("AddonManager_InstallingDialog")
+        name = self.addon_to_install.display_name
+        if self._is_an_update():
+            self.installing_dialog.setWindowTitle(
+                translate("AddonsInstaller", "Updating Addon", "Window title")
+            )
+            if self.installer.will_use_git():
+                self.installation_message = translate(
+                    "AddonsInstaller", "Updating '{}' with git, so only the changes are downloaded"
+                ).format(name)
+            else:
+                self.installation_message = translate("AddonsInstaller", "Updating '{}'").format(
+                    name
+                )
+        else:
+            self.installing_dialog.setWindowTitle(
+                translate("AddonsInstaller", "Installing Addon", "Window title")
+            )
+            if self.installer.will_use_git():
+                self.installation_message = translate(
+                    "AddonsInstaller", "Installing '{}' with git (for more efficient updating)"
+                ).format(name)
+            else:
+                self.installation_message = translate("AddonsInstaller", "Installing '{}'").format(
+                    name
+                )
+        self.installing_dialog.label.setText(self.installation_message)
+        # Git's progress reports are long: give the label enough room to show both the activity
+        # one names and the transfer rate it ends with
+        self.installing_dialog.label.setMinimumWidth(560)
+        self.installing_dialog.progressBar.setRange(0, 0)  # Start in indeterminate mode
+        self.installing_dialog.rejected.connect(self._cancel_addon_installation)
+
     def _progress_update(self, bytes_read: int, data_size: int) -> None:
+        """Show how much of a download has arrived. A data_size of zero means the server did not
+        say how large the download is, so only the amount received so far can be shown."""
         self.installing_dialog.progressBar.setMaximum(data_size)
         self.installing_dialog.progressBar.setValue(bytes_read)
+        locale = QtCore.QLocale()
+        if data_size > 0:
+            amount = translate("AddonsInstaller", "{} of {}").format(
+                locale.formattedDataSize(bytes_read), locale.formattedDataSize(data_size)
+            )
+        else:
+            amount = locale.formattedDataSize(bytes_read)
+        self._set_installation_detail(amount)
+
+    def _progress_message(self, message: str, percentage: int) -> None:
+        """Show what an installation that reports its progress as text, as git does, is doing."""
+        if percentage >= 0:
+            self.installing_dialog.progressBar.setMaximum(100)
+            self.installing_dialog.progressBar.setValue(percentage)
+        self._set_installation_detail(message)
+
+    def _set_installation_detail(self, detail: str) -> None:
+        """Show what the installation is doing right now, on a line of its own below the name of
+        the Addon being installed. Git's reports in particular are long, so the detail is elided
+        in the middle, keeping both the activity it names and the numbers it ends with."""
+        label = self.installing_dialog.label
+        available_width = max(label.width(), label.minimumWidth())
+        elided = label.fontMetrics().elidedText(detail, QtCore.Qt.ElideMiddle, available_width)
+        label.setText(f"{self.installation_message}\n{elided}")
+
+    def _create_busy_dialog(self, object_name: str, title: str, message: str):
+        """A dialog reporting work of unknown length that the user cannot interrupt. It animates,
+        so that a long wait does not look like a hang, and it offers no buttons, because there is
+        nothing to offer: a dialog with a button that does nothing is worse than one without."""
+        dialog = fci.loadUi(os.path.join(os.path.dirname(__file__), "progress.ui"))
+        dialog.setObjectName(object_name)
+        dialog.setWindowTitle(title)
+        dialog.label.setText(message)
+        dialog.label.setMinimumWidth(560)
+        dialog.progressBar.setRange(0, 0)  # Indeterminate: this has no known length
+        dialog.buttonBox.hide()
+        return dialog
+
+    def create_cancelling_dialog(self) -> None:
+        """Create the dialog shown while an installation is being stopped. Both stopping the work
+        and clearing up after it can take a long time for a large Addon, so this dialog says which
+        of the two is happening and animates while it does."""
+        if self._is_an_update():
+            message = translate("AddonsInstaller", "Cancelling the update of '{}'…")
+        else:
+            message = translate("AddonsInstaller", "Cancelling the installation of '{}'…")
+        self.cancelling_dialog = self._create_busy_dialog(
+            "AddonInstaller_CancellingDialog",
+            translate("AddonsInstaller", "Cancelling"),
+            message.format(self.addon_to_install.display_name),
+        )
 
     def _cancel_addon_installation(self):
-        dlg = QtWidgets.QMessageBox(
-            QtWidgets.QMessageBox.NoIcon,
-            translate("AddonsInstaller", "Cancelling"),
-            translate("AddonsInstaller", "Cancelling installation of '{}'").format(
-                self.addon_to_install.display_name
-            ),
-            QtWidgets.QMessageBox.NoButton,
-            parent=utils.get_main_am_window(),
-        )
-        dlg.setObjectName("AddonInstaller_CancellingDialog")
-        dlg.show()
+        self.create_cancelling_dialog()
+        self.cancelling_dialog.show()
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         if self.worker_thread.isRunning():
             # Interruption can take a second or more, depending on what was being done. Make sure
             # we stay responsive and update the dialog with the text above, etc.
@@ -162,9 +260,32 @@ class AddonInstallerGUI(QtCore.QObject):
                 QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         path = str(os.path.join(self.installer.installation_path, self.addon_to_install.name))
         if os.path.exists(path):
-            utils.rmdir(path)
-        dlg.hide()
+            self._remove_partial_installation(path, self.cancelling_dialog)
+        self.cancelling_dialog.hide()
         self.finished.emit()
+
+    def _removal_message(self) -> str:
+        return translate(
+            "AddonsInstaller", "Removing the part of '{}' that was already downloaded…"
+        ).format(self.addon_to_install.display_name)
+
+    def _remove_partial_installation(self, path: str, dialog) -> None:
+        """Delete what an installation left behind when it was stopped, or when it failed. For a
+        large Addon this takes long enough that it has to happen off this thread: done here it
+        would freeze the interface, leaving a dialog that cannot even repaint itself to say what
+        it is waiting for."""
+        dialog.label.setText(self._removal_message())
+        fci.Console.PrintMessage(
+            translate("AddonsInstaller", "Removing the partial download of {} at {}").format(
+                self.addon_to_install.display_name, path
+            )
+            + "\n"
+        )
+        remover = DirectoryRemover(path)
+        remover.start()
+        while remover.isRunning():
+            remover.wait(50)
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
     def _installation_succeeded(self):
         """Called if the installation was successful."""
@@ -180,8 +301,77 @@ class AddonInstallerGUI(QtCore.QObject):
         self.success.emit(self.addon_to_install)
         self.finished.emit()
 
+    def _can_try_another_way(self) -> bool:
+        """Whether there is anything to offer the user beyond reporting the failure. An
+        installation that used git can be tried again, or downloaded as a zip instead: cloning a
+        large Addon has plenty of ways to fail that a second attempt gets past."""
+        if self.installation_method == InstallationMethod.ZIP:
+            return False
+        return self.installer.will_use_git()
+
+    def _offer_another_attempt(self, message: str) -> None:
+        """Ask whether to try the installation again, or to fall back to downloading a zip."""
+        dialog = QtWidgets.QMessageBox(utils.get_main_am_window())
+        dialog.setObjectName("AddonInstaller_RetryDialog")
+        dialog.setIcon(QtWidgets.QMessageBox.Warning)
+        dialog.setWindowTitle(translate("AddonsInstaller", "Installation Failed"))
+        dialog.setText(
+            translate("AddonsInstaller", "Installing {} with git did not finish.").format(
+                self.addon_to_install.display_name
+            )
+        )
+        dialog.setInformativeText(
+            translate(
+                "AddonsInstaller",
+                "Trying again often gets past whatever interrupted it. This Addon can also be "
+                "downloaded as a zip file instead, but a download that large is itself easily "
+                "interrupted, and every later update downloads the whole Addon again.",
+            )
+        )
+        dialog.setDetailedText(message)
+        retry_button = dialog.addButton(
+            translate("AddonsInstaller", "Try again"), QtWidgets.QMessageBox.AcceptRole
+        )
+        zip_button = dialog.addButton(
+            translate("AddonsInstaller", "Download a zip instead"),
+            QtWidgets.QMessageBox.ActionRole,
+        )
+        dialog.addButton(QtWidgets.QMessageBox.Cancel)
+        dialog.setDefaultButton(retry_button)
+        dialog.exec()
+        if dialog.clickedButton() is retry_button:
+            self._try_again(self.installation_method)
+        elif dialog.clickedButton() is zip_button:
+            self._try_again(InstallationMethod.ZIP)
+        else:
+            self.finished.emit()
+
+    def _try_again(self, install_method: InstallationMethod) -> None:
+        """Run the installation again, by the given method. Whatever the failed attempt left on
+        disk is removed first, because a half-finished checkout is not something the next attempt
+        can build on. A new installer is used: the old one belongs to a thread that has ended."""
+        self._stop_thread(self.worker_thread)
+        path = str(os.path.join(self.installer.installation_path, self.addon_to_install.name))
+        if os.path.exists(path):
+            dialog = self._create_busy_dialog(
+                "AddonInstaller_CleaningUpDialog",
+                translate("AddonsInstaller", "Cleaning up"),
+                self._removal_message(),
+            )
+            dialog.show()
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+            self._remove_partial_installation(path, dialog)
+            dialog.hide()
+        self.installer = AddonInstaller(self.addon_to_install)
+        self.installer.success.connect(self._installation_succeeded)
+        self.installer.failure.connect(self._installation_failed)
+        self.install(install_method)
+
     def _installation_failed(self, addon, message):
         """Called if the installation failed."""
+        if self._can_try_another_way():
+            self._offer_another_attempt(message)
+            return
         error_dialog = QtWidgets.QMessageBox(utils.get_main_am_window())
         error_dialog.setObjectName("AddonManager_ErrorDialog")
         error_dialog.setIcon(QtWidgets.QMessageBox.Critical)

@@ -31,8 +31,9 @@ from zipfile import ZipFile
 from addonmanager_installer import InstallationMethod, AddonInstaller, MacroInstaller
 from addonmanager_git import initialize_git
 from addonmanager_metadata import MetadataReader
+from addonmanager_utilities import ProcessInterrupted
 from Addon import Addon
-from AddonManagerTest.app.mocks import MockAddon, MockMacro
+from AddonManagerTest.app.mocks import MockAddon, MockGitManager, MockMacro
 
 
 class TestAddonInstaller(unittest.TestCase):
@@ -250,6 +251,72 @@ class TestAddonInstaller(unittest.TestCase):
             self.assertTrue(os.path.exists(addon_name_dir))
             readme = os.path.join(addon_name_dir, "README.md")
             self.assertTrue(os.path.exists(readme))
+
+    def test_cancelling_a_git_installation_is_not_a_failure(self):
+        """Cancelling is something the user asked for, so it is reported as an interruption and
+        not as a failed installation: the user should not be shown an error for it."""
+        installer = AddonInstaller(self.real_addon, [])
+        installer.git_manager = MockGitManager()
+        installer.git_manager.should_be_interrupted = True
+        failures = []
+        installer.failure.connect(lambda addon, message: failures.append(message))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            installer.installation_path = temp_dir
+            with self.assertRaises(ProcessInterrupted):
+                installer._install_by_git()
+
+        self.assertEqual([], failures, "Cancelling reported an installation failure")
+
+    def test_will_use_git(self):
+        """Callers can ask what the installation is going to do before it starts."""
+        if not initialize_git():
+            self.skipTest("git is not available")
+        self.real_addon.prefer_git = True
+        installer = AddonInstaller(self.real_addon, [])
+
+        self.assertTrue(installer.will_use_git())
+
+    def test_will_use_git_for_a_normal_addon(self):
+        """An Addon that is not flagged for git is downloaded as a zip."""
+        installer = AddonInstaller(self.real_addon, [])
+
+        self.assertFalse(installer.will_use_git())
+
+    def test_report_git_progress(self):
+        """Each line of git's progress report is passed on as git worded it, with the percentage
+        it contains, so that a long clone can drive a progress bar."""
+        installer = AddonInstaller(self.real_addon, [])
+        reported = []
+        installer.progress_message.connect(
+            lambda message, percent: reported.append((message, percent))
+        )
+
+        installer._report_git_progress("Receiving objects:  42% (5218/12345), 120.50 MiB\n")
+        installer._report_git_progress("Cloning into 'FreeCAD-library'...\n")
+        installer._report_git_progress("   \n")
+
+        self.assertEqual(
+            [
+                ("Receiving objects:  42% (5218/12345), 120.50 MiB", 42),
+                ("Cloning into 'FreeCAD-library'...", -1),
+            ],
+            reported,
+        )
+
+    def test_determine_install_method_for_a_large_addon(self):
+        """An Addon that is too large to cache in full is installed with git, when git is
+        available, so that later updates only have to fetch what changed."""
+
+        if not initialize_git():
+            self.skipTest("git is not available")
+        self.real_addon.prefer_git = True
+
+        installer = AddonInstaller(self.real_addon, [])
+
+        self.assertIsNotNone(installer.git_manager)
+        method = installer._determine_install_method(self.real_addon.url, InstallationMethod.ANY)
+        self.assertEqual(InstallationMethod.GIT, method)
 
     def test_determine_install_method_local_path(self):
         """Test which install methods are accepted for a local path"""

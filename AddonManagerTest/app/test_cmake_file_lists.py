@@ -28,7 +28,9 @@ files and its CMakeLists.txt disagree, in either direction."""
 
 import os
 import re
-import subprocess
+
+# Audited: only runs a fixed git command against this repository (added nosec B404)
+import subprocess  # nosec B404
 import unittest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -71,16 +73,16 @@ DIRECTORIES_TO_CHECK = {
 def files_listed_in_cmake(cmake_path):
     """Return the set of file names referenced inside any SET() block.
 
-    Tokens are file names when they contain a dot or are the literal LICENSE;
+    Words are file names when they contain a dot or are the literal LICENSE;
     the SET variable names (for example AddonManager_SRCS) have neither and are
     skipped."""
     with open(cmake_path, "r", encoding="utf-8") as cmake_file:
         contents = cmake_file.read()
     listed = set()
     for block in re.findall(r"SET\s*\((.*?)\)", contents, re.DOTALL | re.IGNORECASE):
-        for token in block.split():
-            if "." in token or token == "LICENSE":
-                listed.add(token)
+        for word in block.split():
+            if "." in word or word == "LICENSE":
+                listed.add(word)
     return listed
 
 
@@ -91,7 +93,8 @@ def tracked_files_in(relative_directory):
     artifacts (cache archives, the CatalogCache and FreeCAD-macros trees, build
     output) from masquerading as un-registered source files."""
     prefix = "" if relative_directory == "." else relative_directory.replace(os.sep, "/") + "/"
-    output = subprocess.run(
+    # Audited: fixed git command, no shell, local path prefix (added nosec B603, B607)
+    output = subprocess.run(  # nosec B603 B607
         ["git", "ls-files", "-z", f"{prefix}*"],
         cwd=REPO_ROOT,
         capture_output=True,

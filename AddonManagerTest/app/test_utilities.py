@@ -24,7 +24,10 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
 import os
-import subprocess
+
+# Audited: subprocess is used only for its types; its execution entry points are mocked
+# (added nosec B404)
+import subprocess  # nosec B404
 import sys
 
 from AddonManagerTest.app.mocks import MockAddon as Addon
@@ -47,6 +50,7 @@ from addonmanager_utilities import (
     git_host_of,
     identify_git_host,
     pep503_normalize,
+    points_at_a_repository,
     process_date_string_to_python_datetime,
     recognized_git_location,
     reload_git_hosts,
@@ -54,8 +58,8 @@ from addonmanager_utilities import (
     resolve_constraints_location,
     run_interruptable_subprocess,
     run_monitored_subprocess,
+    should_use_git,
     ProcessInterrupted,
-    SubprocessTimeout,
 )
 
 
@@ -64,9 +68,13 @@ class _FakeStream:
 
     def __init__(self, lines):
         self._lines = list(lines)
+        self.closed = False
 
     def readline(self):
         return self._lines.pop(0) if self._lines else ""
+
+    def close(self):
+        self.closed = True
 
 
 class _FakeProcess:
@@ -76,6 +84,7 @@ class _FakeProcess:
         self.stdout = _FakeStream(lines)
         self.returncode = returncode
         self.killed = False
+        self.pid = -1  # A real Popen has one, and the tree-killing code asks for it
 
     def wait(self):
         return self.returncode
@@ -153,6 +162,61 @@ class TestUtilities(unittest.TestCase):
         for url, expected_result in expected_urls.items():
             repo = Addon("Test Repo", url, "Addon.Status.NOT_INSTALLED", "main")
             self.assertEqual(expected_result, get_readme_html_url(repo))
+
+    def test_should_use_git_for_a_normal_addon(self):
+        """An Addon that is neither large nor listed in the preference is downloaded as a zip."""
+        repo = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        with patch("addonmanager_utilities.fci.Preferences") as mock_preferences:
+            mock_preferences.return_value.get.return_value = "SomeOtherAddon"
+            self.assertFalse(should_use_git(repo))
+
+    def test_should_use_git_for_a_large_addon(self):
+        """An Addon that is too large to cache in full is updated with git."""
+        repo = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        repo.prefer_git = True
+        with patch("addonmanager_utilities.fci.Preferences") as mock_preferences:
+            mock_preferences.return_value.get.return_value = "SomeOtherAddon"
+            self.assertTrue(should_use_git(repo))
+
+    def test_should_use_git_when_the_user_asks_for_it(self):
+        """An Addon the user has listed in the preference is updated with git."""
+        repo = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        with patch("addonmanager_utilities.fci.Preferences") as mock_preferences:
+            mock_preferences.return_value.get.return_value = "SomeOtherAddon,Test Repo"
+            self.assertTrue(should_use_git(repo))
+
+    def test_points_at_a_repository(self):
+        repository = Addon(
+            "Test Repo", "https://github.com/FreeCAD/FreeCAD", "Addon.Status.NOT_INSTALLED", "main"
+        )
+        archive = Addon(
+            "Test Repo",
+            "https://github.com/FreeCAD/FreeCAD/archive/refs/heads/main.zip",
+            "Addon.Status.NOT_INSTALLED",
+            "main",
+        )
+
+        self.assertTrue(points_at_a_repository(repository))
+        self.assertFalse(points_at_a_repository(archive))
+
+    def test_get_readme_url_of_an_archive(self):
+        """An Addon that is only distributed as a zip file has no repository to read a README
+        from, so no location is constructed for it."""
+        repo = Addon(
+            "Test Repo",
+            "https://github.com/FreeCAD/FreeCAD/archive/refs/heads/main.zip",
+            "Addon.Status.NOT_INSTALLED",
+            "main",
+        )
+
+        self.assertEqual("", get_readme_url(repo))
+        self.assertEqual("", get_readme_html_url(repo))
 
     def test_get_zip_url(self):
         expected_urls = {
@@ -324,14 +388,20 @@ class TestUtilities(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             run_monitored_subprocess(["pip", "install", "x"])
 
+    # subprocess.run is patched as well as Popen: killing the process tree shells out to a system
+    # command, which a unit test must not really run against whatever holds that process ID
+    @patch("addonmanager_utilities.subprocess.run")
     @patch("subprocess.Popen")
     @patch("addonmanager_utilities._interruption_requested", return_value=True)
-    def test_run_monitored_subprocess_interruption_raises(self, _mock_interrupt, mock_popen):
+    def test_run_monitored_subprocess_interruption_raises(
+        self, _mock_interrupt, mock_popen, _mock_run
+    ):
         process = _FakeProcess(["Collecting x\n"], 0)
         mock_popen.return_value = process
         with self.assertRaises(ProcessInterrupted):
             run_monitored_subprocess(["pip", "install", "x"])
         self.assertTrue(process.killed)
+        self.assertTrue(process.stdout.closed, "The output pipe was left open")
 
     def test_process_date_string_to_python_datetime_non_numeric(self):
         with self.assertRaises(ValueError):

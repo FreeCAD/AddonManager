@@ -29,6 +29,7 @@ import NetworkManager
 from PySideWrapper import QtCore, QtWidgets
 
 import addonmanager_freecad_interface as fci
+import addonmanager_utilities as utils
 from Addon import Addon, MissingDependencies
 from addonmanager_installer_gui import AddonDependencyInstallerGUI
 from addonmanager_installer import AddonInstaller, MacroInstaller
@@ -106,9 +107,8 @@ class UpdateAllWorker(QtCore.QObject):
 
     def query_sizes(self):
         """In the background, builds a list of the download sizes for all the addons being updated"""
-        forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
         for addon in self.addons:
-            if addon.name in forced_repos:
+            if utils.should_use_git(addon):
                 self.sizes_received += 1
                 continue
             zip_url = addon.get_zip_url()
@@ -312,9 +312,8 @@ class UpdateAllGUI(QtCore.QObject):
         ]
         custom_repos_lines = fci.Preferences().get("CustomRepositories").split("\n")
         custom_repos = [line.split(" ")[0] for line in custom_repos_lines]
-        forced_repos = fci.Preferences().get("force_git_in_repos").split(",")
         for addon in addons_to_update:
-            if addon.name in custom_repos or addon.name in forced_repos:
+            if addon.name in custom_repos or utils.should_use_git(addon):
                 continue
             path_to_addon = str(os.path.join(fci.DataPaths().mod_dir, addon.name))
             path_to_git_directory = str(os.path.join(path_to_addon, ".git"))
