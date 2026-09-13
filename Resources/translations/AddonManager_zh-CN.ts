@@ -5,7 +5,7 @@
     <name>AddCustomRepositoryDialog</name>
     <message>
       <source>Custom Repository</source>
-      <translation type="unfinished"/>
+      <translation/>
     </message>
     <message>
       <source>Repository URL</source>
@@ -21,12 +21,12 @@
     <message>
       <location filename="../../addonmanager_uninstaller_gui.py" line="+126"/>
       <source>Finished removing {}</source>
-      <translation>移除 {} 已完成。</translation>
+      <translation>已完成移除 {}</translation>
     </message>
     <message>
       <location line="+14"/>
       <source>Failed to remove some files</source>
-      <translation>未能删除某些文件</translation>
+      <translation>无法删除部分文件</translation>
     </message>
   </context>
   <context>
@@ -34,15 +34,15 @@
     <message>
       <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="+96"/>
       <source>Open Addons Folder</source>
-      <translation type="unfinished"/>
+      <translation>打开插件文件夹</translation>
     </message>
   </context>
   <context>
     <name>AddonsInstaller</name>
     <message>
-      <location filename="../../Addon.py" line="+392"/>
+      <location filename="../../Addon.py" line="+395"/>
       <source>{}: Unrecognized internal workbench &apos;{}&apos;</source>
-      <translation>{}: 无法识别的内部工作台 &apos;{}&apos;</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+33"/>
@@ -62,7 +62,7 @@
     <message>
       <location line="+1"/>
       <source>Checking for connection to addons.freecad.org...</source>
-      <translation type="unfinished"/>
+      <translation>正在检查与 addons.freecad.org 的连接……</translation>
     </message>
     <message>
       <location line="+26"/>
@@ -77,42 +77,42 @@
     <message>
       <location line="+25"/>
       <source>Installation of optional package failed</source>
-      <translation>可选软件包安装失败</translation>
+      <translation>可选包安装失败</translation>
     </message>
     <message>
       <location line="+19"/>
       <source>Installing required dependency {}</source>
-      <translation>正在安装需要的依赖关系{}</translation>
+      <translation>正在安装必需的依赖 {}</translation>
     </message>
     <message>
       <location line="+10"/>
       <source>Installation of addon {} failed</source>
-      <translation type="unfinished"/>
+      <translation>插件 {} 安装失败</translation>
     </message>
     <message>
       <location filename="../../addonmanager_git.py" line="+153"/>
       <source>Basic Git update failed with the following message:</source>
-      <translation type="unfinished"/>
+      <translation>基本 Git 更新失败，消息如下：</translation>
     </message>
     <message>
       <location line="+8"/>
       <source>Backing up the original directory and re-cloning</source>
-      <translation>正在备份原始目录并重新克隆</translation>
+      <translation>备份原始目录并重新克隆</translation>
     </message>
     <message>
       <location line="+105"/>
       <source>Failed to clone {} into {} using Git</source>
-      <translation type="unfinished"/>
+      <translation>使用 Git 将 {} 克隆到 {} 失败</translation>
     </message>
     <message>
       <location line="+141"/>
       <source>Git branch rename failed with the following message:</source>
-      <translation>Git 分支重命名失败：</translation>
+      <translation>Git 分支重命名失败，消息如下：</translation>
     </message>
     <message>
       <location filename="../../addonmanager_installer_gui.py" line="+530"/>
       <source>This addon requires Python packages that are not installed, and cannot be installed automatically. To use this addon you must install the following Python packages manually:</source>
-      <translation>此附加软件依赖的Python软件包没有安装， 也不能自动安装。要使用此附加软件，您必须手动安装以下Python软件包：</translation>
+      <translation>此插件需要尚未安装且无法自动安装的 Python 包。要使用此插件，您必须手动安装以下 Python 包：</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -137,12 +137,12 @@
     <message>
       <location line="+407"/>
       <source>These addons require Python packages that are not installed, and cannot be installed automatically. To use them you must install the following Python packages manually:</source>
-      <translation type="unfinished"/>
+      <translation>这些插件需要尚未安装且无法自动安装的 Python 包。要使用它们，您必须手动安装以下 Python 包：</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Requirement Cannot be Installed</source>
-      <translation type="unfinished"/>
+      <translation>无法安装的依赖</translation>
     </message>
     <message>
       <location line="+27"/>
@@ -157,7 +157,7 @@
     <message>
       <location line="+11"/>
       <source>These addons require the following workbenches, which are not available in your copy of FreeCAD:</source>
-      <translation type="unfinished"/>
+      <translation>这些插件需要以下工作台，但您的 FreeCAD 版本中不可用：</translation>
     </message>
     <message>
       <location line="+7"/>
@@ -167,44 +167,44 @@
     <message>
       <location line="+46"/>
       <source>Incompatible Python version</source>
-      <translation>不兼容 Python 版本</translation>
+      <translation>不兼容的 Python 版本</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>This addon (or one of its dependencies) requires Python {}, and your system is running {}. Installation cancelled.</source>
-      <translation type="unfinished"/>
+      <translation>此插件（或其依赖之一）需要 Python {}，而您的系统运行的是 {}。安装已取消。</translation>
     </message>
     <message>
       <location line="+53"/>
       <source>Installing Dependencies</source>
       <comment>Window title</comment>
-      <translation type="unfinished"/>
+      <translation>正在安装依赖</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Installing dependencies…</source>
       <comment>Window text</comment>
-      <translation type="unfinished"/>
+      <translation>正在安装依赖……</translation>
     </message>
     <message>
       <location line="+29"/>
       <source>Dependencies could not be installed. Continue with installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>无法安装依赖。仍然继续安装？</translation>
     </message>
     <message>
       <location line="+25"/>
       <source>Continue with addon installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>是否仍继续安装插件？</translation>
     </message>
     <message>
       <location line="+26"/>
       <source>Continue with installation anyway?</source>
-      <translation type="unfinished"/>
+      <translation>是否仍继续安装？</translation>
     </message>
     <message>
       <location line="-117"/>
       <source>Optional dependency on {} ignored because it is not in the allow-list</source>
-      <translation>忽略对 {} 的可选依赖，因为它不在允许列表</translation>
+      <translation>因不在允许列表中，已忽略 {} 的可选依赖</translation>
     </message>
     <message>
       <location line="+55"/>
@@ -224,7 +224,7 @@
     <message>
       <location line="+6"/>
       <source>Failed to execute pip, which may be missing from your Python installation. Please ensure your system has pip installed and try again. The failed command was:</source>
-      <translation>无法执行pip命令，你可能还没有安装pip. 请确保您的系统安装了pip并再试一次. 无法执行的命令是:</translation>
+      <translation>无法执行 pip，您的 Python 安装中可能缺少 pip。请确保系统已安装 pip 并重试。失败的命令是：</translation>
     </message>
     <message>
       <location line="+22"/>
@@ -244,7 +244,7 @@
     <message>
       <location line="+1"/>
       <source>Cancelling installation of &apos;{}&apos;</source>
-      <translation>正在取消 &apos;{}&apos; 的安装</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+27"/>
@@ -255,7 +255,7 @@
     <message>
       <location line="+1"/>
       <source>{} was installed successfully</source>
-      <translation>{} 已成功安装</translation>
+      <translation>{} 安装成功</translation>
     </message>
     <message>
       <location line="+13"/>
@@ -265,7 +265,7 @@
     <message>
       <location line="+2"/>
       <source>Failed to install {}</source>
-      <translation>无法安装{}</translation>
+      <translation>安装 {} 失败</translation>
     </message>
     <message>
       <location line="+113"/>
@@ -286,19 +286,18 @@
     <message>
       <location filename="../../addonmanager_installer.py" line="+383"/>
       <source>Received {} response code from server</source>
-      <translation>从服务器收到响应代码 {}</translation>
+      <translation>收到服务器的 {} 响应代码</translation>
     </message>
     <message>
       <location line="+184"/>
       <source>Failed to install macro {}</source>
-      <translation>安装宏失败 {}</translation>
+      <translation>安装宏 {} 失败</translation>
     </message>
     <message>
       <location line="+34"/>
       <source>Failed to create installation manifest file:
 </source>
-      <translation>创建安装清单文件失败：
-</translation>
+      <translation>无法创建安装清单文件：</translation>
     </message>
     <message>
       <location filename="../../addonmanager_macro.py" line="+164"/>
@@ -321,14 +320,14 @@
       <translation>无法打开宏代码 URL {}</translation>
     </message>
     <message>
-      <location line="+137"/>
+      <location line="+136"/>
       <source>Unable to fetch macro-specified file {} from {}</source>
-      <translation type="unfinished"/>
+      <translation>无法从 {} 获取宏指定的文件 {}</translation>
     </message>
     <message>
       <location line="+8"/>
       <source>Could not locate macro-specified file {} (expected at {})</source>
-      <translation>无法定位宏指定的文件 {} (预期在 {})</translation>
+      <translation>找不到宏指定的文件 {}（预期位置：{}）</translation>
     </message>
     <message>
       <location filename="../../addonmanager_package_details_controller.py" line="+8"/>
@@ -337,37 +336,40 @@ Moved
 from: {}
 to: {}
 Please restart to use the new version.</source>
-      <translation type="unfinished"/>
+      <translation>分支更改成功。
+从：{}
+移至：{}
+请重启以使用新版本。</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+300"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
-      <translation type="unfinished"/>
+      <translation>包</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Installed Version</source>
-      <translation type="unfinished"/>
+      <translation>已安装版本</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Available Version</source>
-      <translation type="unfinished"/>
+      <translation>可用版本</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Dependencies</source>
-      <translation type="unfinished"/>
+      <translation>依赖</translation>
     </message>
     <message>
       <location filename="../../addonmanager_readme_controller.py" line="+212"/>
       <source>Loading page for {} from {}...</source>
-      <translation>从 {} 加载 {} 页面...</translation>
+      <translation>正在从 {} 加载 {} 的页面……</translation>
     </message>
     <message>
       <location line="-124"/>
       <source>Failed to download data from {} -- received response code {}.</source>
-      <translation>无法从 {} 下载数据 -- 收到的响应代码 {}。</translation>
+      <translation>从 {} 下载数据失败 -- 收到响应代码 {}。</translation>
     </message>
     <message>
       <location filename="../../addonmanager_uninstaller_gui.py" line="-52"/>
@@ -377,17 +379,17 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>Are you sure you want to uninstall {}?</source>
-      <translation>您确定要卸载 {0} 吗？</translation>
+      <translation>确定要卸载 {} 吗？</translation>
     </message>
     <message>
       <location line="+10"/>
       <source>Removing Addon</source>
-      <translation>移除附加组件</translation>
+      <translation>正在移除插件</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Removing {}</source>
-      <translation>正在删除 {}</translation>
+      <translation>正在移除 {}</translation>
     </message>
     <message>
       <location line="+25"/>
@@ -407,7 +409,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+23"/>
       <source>Could not find addon {} to remove it</source>
-      <translation type="unfinished"/>
+      <translation>找不到要移除的插件 {}</translation>
     </message>
     <message>
       <location line="+26"/>
@@ -422,12 +424,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+14"/>
       <source>Error while trying to remove extra installed file {}</source>
-      <translation>尝试删除额外安装的文件 {} 时出错</translation>
+      <translation>尝试移除额外安装的文件 {} 时出错</translation>
     </message>
     <message>
       <location line="+64"/>
       <source>Error while trying to remove macro file {}:</source>
-      <translation>尝试删除宏文件 {} 时出错</translation>
+      <translation>尝试移除宏文件 {} 时出错：</translation>
     </message>
     <message>
       <location filename="../../addonmanager_update_all_gui.py" line="+74"/>
@@ -454,30 +456,30 @@ Please restart to use the new version.</source>
       <location line="+1"/>
       <source>Installed Version</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>已安装版本</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Available Version</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>可用版本</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Update?</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>更新？</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Done</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>完成</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers_startup.py" line="+117"/>
+      <location filename="../../addonmanager_workers_startup.py" line="+116"/>
       <source>WARNING: Duplicate addon {} ignored</source>
-      <translation>警告：重复插件 {} 已忽略</translation>
+      <translation>警告：重复的插件 {} 已忽略</translation>
     </message>
     <message>
       <location line="+119"/>
@@ -488,17 +490,17 @@ Please restart to use the new version.</source>
     <message>
       <location line="+115"/>
       <source>Checking {} for update</source>
-      <translation type="unfinished"/>
+      <translation>正在检查 {} 的更新</translation>
     </message>
     <message>
       <location line="+55"/>
       <source>Unable to fetch Git updates for workbench {}</source>
-      <translation type="unfinished"/>
+      <translation>无法获取工作台 {} 的 Git 更新</translation>
     </message>
     <message>
       <location line="+13"/>
       <source>Git status failed for {}</source>
-      <translation type="unfinished"/>
+      <translation>{} 的 Git 状态获取失败</translation>
     </message>
     <message>
       <location line="+68"/>
@@ -511,116 +513,134 @@ Please restart to use the new version.</source>
       <translation>获取宏 &apos;{name}&apos; 代码失败</translation>
     </message>
     <message>
-      <location line="+61"/>
+      <location line="+67"/>
       <source>Failed to get addon statistics from {} -- only sorting alphabetically will be accurate
 </source>
-      <translation type="unfinished"/>
+      <translation>从 {} 获取插件统计信息失败 -- 仅按字母排序将准确</translation>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
       <translation type="unfinished"/>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
-      <translation type="unfinished"/>
+      <translation>正在检查缺失的依赖</translation>
     </message>
     <message>
       <location filename="../../addonmanager_workers_utility.py" line="+82"/>
       <source>Unable to read data from addons.freecad.org. The server may be down, or you may not be connected to the internet.</source>
-      <translation type="unfinished"/>
+      <translation>无法从 addons.freecad.org 读取数据。服务器可能已关闭，或者您可能未连接到互联网。</translation>
     </message>
     <message>
       <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
-      <translation type="unfinished"/>
+      <translation>工作进程 {} 停止时间过长……</translation>
     </message>
     <message>
       <location line="-86"/>
       <location line="+126"/>
       <source>Addon Manager</source>
-      <translation type="unfinished"/>
+      <translation>插件管理器</translation>
     </message>
     <message>
       <location line="-125"/>
       <source>version</source>
-      <translation type="unfinished"/>
+      <translation>版本</translation>
     </message>
     <message>
       <location line="+133"/>
       <source>Restart FreeCAD for changes to take effect</source>
-      <translation type="unfinished"/>
+      <translation>重启 FreeCAD 以使更改生效</translation>
     </message>
     <message>
       <location line="+9"/>
       <source>Restart Now</source>
-      <translation type="unfinished"/>
+      <translation>立即重启</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Restart Later</source>
-      <translation type="unfinished"/>
+      <translation>稍后重启</translation>
     </message>
     <message>
       <location line="+33"/>
       <source>Continuing startup</source>
-      <translation type="unfinished"/>
+      <translation>正在继续启动</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Creating addon list</source>
-      <translation type="unfinished"/>
+      <translation>正在创建插件列表</translation>
     </message>
     <message>
       <location line="+44"/>
       <location line="+35"/>
       <source>Checking for updates…</source>
-      <translation type="unfinished"/>
+      <translation>正在检查更新……</translation>
     </message>
     <message>
       <location line="+13"/>
       <source>Checking dependencies</source>
-      <translation type="unfinished"/>
+      <translation>正在检查依赖</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Fetching addon stats</source>
-      <translation type="unfinished"/>
+      <translation>正在获取插件统计</translation>
     </message>
     <message>
       <location line="+17"/>
       <source>Fetching addon score</source>
-      <translation type="unfinished"/>
+      <translation>正在获取插件评分</translation>
     </message>
     <message>
       <location line="+74"/>
       <location line="+27"/>
       <location line="+126"/>
       <source>Cannot launch a new installer until the previous one has finished</source>
-      <translation type="unfinished"/>
+      <translation>前一个安装程序完成前无法启动新的安装程序</translation>
     </message>
     <message>
       <location line="-66"/>
       <source>Some installed addons are missing dependencies. Would you like to install them now?</source>
-      <translation type="unfinished"/>
+      <translation>某些已安装的插件缺少依赖。是否立即安装它们？</translation>
     </message>
     <message>
       <location line="+51"/>
       <source>Temporary installation of macro failed</source>
-      <translation type="unfinished"/>
+      <translation>宏的临时安装失败</translation>
     </message>
     <message>
       <location line="+44"/>
       <source>The following auto-generated backups were found in your Mod directory:</source>
-      <translation type="unfinished"/>
+      <translation>在您的 Mod 目录中发现了以下自动生成的备份：</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>Delete them now?</source>
-      <translation type="unfinished"/>
+      <translation>立即删除它们？</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -635,7 +655,65 @@ Please restart to use the new version.</source>
       <translation>从不</translation>
     </message>
     <message>
-      <location filename="../../AddonManagerOptions.py" line="+250"/>
+      <location filename="../../AddonManagerOptions.py" line="+95"/>
+      <source>Proxy test timed out: no connection made.</source>
+      <translation>代理测试超时：未建立连接。</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Proxy test returned an error: no connection made.
+</source>
+      <translation>代理测试返回错误：未建立连接。</translation>
+    </message>
+    <message>
+      <location line="+16"/>
+      <source>Proxy test succeeded, connection established.</source>
+      <translation>代理测试成功，已建立连接。</translation>
+    </message>
+    <message>
+      <location line="+5"/>
+      <source>Proxy requires authentication. The Addon Manager does not support this.</source>
+      <translation>代理需要身份验证。插件管理器不支持此功能。</translation>
+    </message>
+    <message>
+      <location line="+0"/>
+      <source>Proxy connection failed with code {}: {}.</source>
+      <translation>代理连接失败，代码 {}：{}。</translation>
+    </message>
+    <message>
+      <location line="+102"/>
+      <source>Invalid hostname</source>
+      <translation>无效的主机名</translation>
+    </message>
+    <message>
+      <location line="+10"/>
+      <location line="+20"/>
+      <location line="+38"/>
+      <source>No proxy</source>
+      <translation>无代理</translation>
+    </message>
+    <message>
+      <location line="-57"/>
+      <source>n/a</source>
+      <translation>不适用</translation>
+    </message>
+    <message>
+      <location line="+5"/>
+      <source>proxy.example.com</source>
+      <translation>proxy.example.com</translation>
+    </message>
+    <message>
+      <location line="+34"/>
+      <source>System has no proxy</source>
+      <translation>系统无代理</translation>
+    </message>
+    <message>
+      <location line="+43"/>
+      <source>Testing proxy connection…</source>
+      <translation>正在测试代理连接……</translation>
+    </message>
+    <message>
+      <location line="+259"/>
       <source>Repository URL</source>
       <comment>Preferences header for custom repositories</comment>
       <translation>仓库的网址</translation>
@@ -647,22 +725,7 @@ Please restart to use the new version.</source>
       <translation>分支名称</translation>
     </message>
     <message>
-      <location filename="../../NetworkManager.py" line="+213"/>
-      <source>Failed to parse proxy URL &apos;{}&apos;</source>
-      <translation type="unfinished"/>
-    </message>
-    <message>
-      <location line="+32"/>
-      <source>Parameter error: mutually exclusive proxy options set. Resetting to default.</source>
-      <translation>参数错误：设置了相互排斥的代理选项。重置为默认值。</translation>
-    </message>
-    <message>
-      <location line="+15"/>
-      <source>Parameter error: user proxy indicated, but no proxy provided. Resetting to default.</source>
-      <translation>参数错误：用户代理已说明，但没有提供代理。重置为默认值。</translation>
-    </message>
-    <message>
-      <location line="+214"/>
+      <location filename="../../NetworkManager.py" line="+403"/>
       <source>Addon Manager: Unexpected {} response from server</source>
       <translation>附加组件管理器：服务器发生了未知响应： {}</translation>
     </message>
@@ -672,7 +735,7 @@ Please restart to use the new version.</source>
       <translation>加密连接错误</translation>
     </message>
     <message>
-      <location filename="../../package_list.py" line="+194"/>
+      <location filename="../../package_list.py" line="+193"/>
       <source>Click for details about package {}</source>
       <translation>点击获取软件包 {} 的详细信息</translation>
     </message>
@@ -692,44 +755,39 @@ Please restart to use the new version.</source>
       <translation>标签</translation>
     </message>
     <message>
-      <location line="+46"/>
-      <source>Maintainer</source>
+      <location line="+51"/>
+      <source>Maintainer(s)</source>
       <translation>维护者</translation>
     </message>
     <message>
-      <location line="+5"/>
-      <source>Maintainers:</source>
-      <translation>维护者：</translation>
-    </message>
-    <message>
-      <location line="+7"/>
+      <location line="+17"/>
       <source>Author</source>
       <translation>作者</translation>
     </message>
     <message>
       <location line="+21"/>
       <source>{} ★ on GitHub</source>
-      <translation>{} Github上的★数</translation>
+      <translation>{} ★ GitHub</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>No ★, or not on GitHub</source>
-      <translation>没有★，或者不在Github上</translation>
+      <translation>无星标，或不在 GitHub 上</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>Created </source>
-      <translation>创造日期 </translation>
+      <translation>已创建 </translation>
     </message>
     <message>
       <location line="+8"/>
       <source>Updated </source>
-      <translation>更新日期 </translation>
+      <translation>已更新 </translation>
     </message>
     <message>
       <location line="+3"/>
       <source>Score: </source>
-      <translation>评分: </translation>
+      <translation>评分：</translation>
     </message>
     <message>
       <location line="+20"/>
@@ -782,19 +840,19 @@ Please restart to use the new version.</source>
       <translation>可用版本</translation>
     </message>
     <message>
-      <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+170"/>
+      <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+169"/>
       <source>Install</source>
       <translation>安装</translation>
     </message>
     <message>
       <location line="+6"/>
       <source>Checking for Updates…</source>
-      <translation type="unfinished"/>
+      <translation>正在检查更新……</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Revert to Built-In</source>
-      <translation type="unfinished"/>
+      <translation>恢复为内置</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -809,12 +867,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="-5"/>
       <source>Switch to Branch</source>
-      <translation type="unfinished"/>
+      <translation>切换到分支</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Override Built-In</source>
-      <translation type="unfinished"/>
+      <translation>覆盖内置</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -834,17 +892,17 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>Return to Package List</source>
-      <translation type="unfinished"/>
+      <translation>返回包列表</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_filter_selector.py" line="-42"/>
       <source>Filter By…</source>
-      <translation type="unfinished"/>
+      <translation>过滤条件……</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>Addon Type</source>
-      <translation>附加组件类型</translation>
+      <translation>插件类型</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -865,17 +923,17 @@ Please restart to use the new version.</source>
     <message>
       <location line="+4"/>
       <source>Preference pack</source>
-      <translation type="unfinished"/>
+      <translation>偏好包</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Bundle</source>
-      <translation type="unfinished"/>
+      <translation>捆绑包</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Other</source>
-      <translation type="unfinished"/>
+      <translation>其他</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -895,17 +953,17 @@ Please restart to use the new version.</source>
     <message>
       <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="-3"/>
       <source>Update All Addons</source>
-      <translation type="unfinished"/>
+      <translation>更新所有插件</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Check for Updates</source>
-      <translation type="unfinished"/>
+      <translation>检查更新</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Open Python Dependencies</source>
-      <translation type="unfinished"/>
+      <translation>打开 Python 依赖</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -915,7 +973,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+8"/>
       <source>See %n Update(s)…</source>
-      <translation type="unfinished"/>
+      <translation>查看 %n 个更新……</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -930,12 +988,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+55"/>
       <source>This addon will be disabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>重启 FreeCAD 时此插件将被禁用</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>This addon will be enabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>重启 FreeCAD 时此插件将被启用</translation>
     </message>
     <message>
       <location line="+9"/>
@@ -945,12 +1003,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+12"/>
       <source>This addon has been updated. Restart FreeCAD to see changes.</source>
-      <translation type="unfinished"/>
+      <translation>此插件已更新。重启 FreeCAD 以查看更改。</translation>
     </message>
     <message>
       <location line="+12"/>
       <source>Disabled</source>
-      <translation>禁用</translation>
+      <translation>关闭</translation>
     </message>
     <message>
       <location line="+28"/>
@@ -980,17 +1038,17 @@ Please restart to use the new version.</source>
     <message>
       <location line="+10"/>
       <source>Currently on branch {}, name changed to {}</source>
-      <translation>目前在分支 {}，名称已更改为{}</translation>
+      <translation>当前在分支 {}，名称已更改为 {}</translation>
     </message>
     <message>
       <location line="+8"/>
       <source>Currently on branch {}, update available to version {}</source>
-      <translation>目前处于分支 {}, 更新到版本 {}</translation>
+      <translation>当前在分支 {}，有可用更新到版本 {}</translation>
     </message>
     <message>
       <location line="+6"/>
       <source>Update available to version {}</source>
-      <translation>可更新至版本 {}</translation>
+      <translation>有可用更新到版本 {}</translation>
     </message>
     <message>
       <location line="+6"/>
@@ -1020,7 +1078,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+13"/>
       <source>Search…</source>
-      <translation type="unfinished"/>
+      <translation>搜索……</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_view_control_bar.py" line="+144"/>
@@ -1032,30 +1090,30 @@ Please restart to use the new version.</source>
       <location line="+3"/>
       <source>Last updated</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>最后更新</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>Date created</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>创建日期</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>GitHub stars</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>GitHub 星标</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Score</source>
       <comment>Sort order</comment>
-      <translation>分数</translation>
+      <translation>评分</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_view_selector.py" line="+142"/>
       <source>Composite view</source>
-      <translation>复合视图</translation>
+      <translation>组合视图</translation>
     </message>
     <message>
       <location line="+1"/>
@@ -1065,7 +1123,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>Compact view</source>
-      <translation>精简视图</translation>
+      <translation>紧凑视图</translation>
     </message>
   </context>
   <context>
@@ -1076,28 +1134,28 @@ Please restart to use the new version.</source>
       <translation>图标</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;软件包名称&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>版本</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>描述</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>有可用的更新</translation>
     </message>
     <message>
       <source>&lt;b&gt;Package name&lt;/b&gt;</source>
-      <translation type="unfinished"/>
+      <translation>&lt;b&gt;包名&lt;/b&gt;</translation>
     </message>
     <message>
       <source>UpdateAvailable</source>
@@ -1122,11 +1180,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Required Python Modules</source>
-      <translation type="unfinished"/>
+      <translation>必需的 Python 模块</translation>
     </message>
     <message>
       <source>Optional Python Modules</source>
-      <translation type="unfinished"/>
+      <translation>可选 Python 模块</translation>
     </message>
   </context>
   <context>
@@ -1137,11 +1195,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Addon Manager Warning</source>
-      <translation type="unfinished"/>
+      <translation>插件管理器警告</translation>
     </message>
     <message>
       <source>The Addon Manager provides access to an extensive library of useful third-party FreeCAD extensions. No guarantees can be made regarding their safety or functionality.</source>
-      <translation type="unfinished"/>
+      <translation>插件管理器提供了访问大量有用的第三方 FreeCAD 扩展库的途径。无法对其安全性或功能提供任何保证。</translation>
     </message>
     <message>
       <source>Continue</source>
@@ -1153,27 +1211,27 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Updating Addons</source>
-      <translation type="unfinished"/>
+      <translation>正在更新插件</translation>
     </message>
     <message>
       <source>Updating Addons…</source>
-      <translation type="unfinished"/>
+      <translation>正在更新插件……</translation>
     </message>
     <message>
       <source>Update Addons</source>
-      <translation type="unfinished"/>
+      <translation>更新插件</translation>
     </message>
     <message>
       <source>Addons with available updates</source>
-      <translation type="unfinished"/>
+      <translation>有可用更新的插件</translation>
     </message>
     <message>
       <source>Update Selected Addons</source>
-      <translation type="unfinished"/>
+      <translation>更新所选插件</translation>
     </message>
     <message>
       <source>(Note that addon authors sometimes do not update the version number on each update, so the available and installed versions may appear the same.)</source>
-      <translation type="unfinished"/>
+      <translation>（注意：插件作者有时不会在每次更新时更新版本号，因此可用版本和已安装版本可能看起来相同。）</translation>
     </message>
   </context>
   <context>
@@ -1215,11 +1273,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>&lt;h1&gt;Package name&lt;/h1&gt;</source>
-      <translation type="unfinished"/>
+      <translation>&lt;h1&gt;包名&lt;/h1&gt;</translation>
     </message>
     <message>
       <source>labelSort</source>
-      <translation>标签排序</translation>
+      <translation>按标签排序</translation>
     </message>
     <message>
       <source>UpdateAvailable</source>
@@ -1230,54 +1288,86 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>Gui::Dialog::DlgSettingsAddonManager</name>
     <message>
       <source>Addon Manager Options</source>
-      <translation type="unfinished"/>
+      <translation>插件管理器选项</translation>
     </message>
     <message>
       <source>Hide addons without a license</source>
-      <translation type="unfinished"/>
+      <translation>隐藏无许可证的插件</translation>
     </message>
     <message>
       <source>Hide addons with non-FSF free/libre license</source>
-      <translation type="unfinished"/>
+      <translation>隐藏非 FSF 自由/开源许可证的插件</translation>
     </message>
     <message>
       <source>Hide addons with non-OSI-approved license</source>
-      <translation type="unfinished"/>
+      <translation>隐藏非 OSI 批准许可证的插件</translation>
     </message>
     <message>
       <source>Custom repositories</source>
       <translation>自定义仓库</translation>
     </message>
     <message>
-      <source>Proxy</source>
-      <translation>代理</translation>
-    </message>
-    <message>
-      <source>No proxy</source>
-      <translation>无代理</translation>
-    </message>
-    <message>
-      <source>User system proxy</source>
-      <translation>使用系统代理</translation>
-    </message>
-    <message>
-      <source>User-defined proxy</source>
-      <translation type="unfinished"/>
-    </message>
-    <message>
       <source>Score source URL</source>
-      <translation>源代码 URL</translation>
+      <translation>评分来源 URL</translation>
     </message>
     <message>
       <source>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</source>
+      <translation>插件评分数据的 URL（有关格式和托管详细信息，请参阅插件管理器 Wiki 页面）</translation>
+    </message>
+    <message>
+      <source>Use a proxy server for access to addon data</source>
+      <translation>使用代理服务器访问插件数据</translation>
+    </message>
+    <message>
+      <source>Proxy addon manager traffic</source>
+      <translation>代理插件管理器流量</translation>
+    </message>
+    <message>
+      <source>Use the system&apos;s proxy settings</source>
       <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>System</source>
+      <translation>系统</translation>
+    </message>
+    <message>
+      <source>Use custom proxy settings</source>
+      <translation>使用自定义代理设置</translation>
+    </message>
+    <message>
+      <source>Custom</source>
+      <translation>自定义</translation>
+    </message>
+    <message>
+      <source>Host</source>
+      <translation>主机</translation>
+    </message>
+    <message>
+      <source>:</source>
+      <translation>：</translation>
+    </message>
+    <message>
+      <source>Port</source>
+      <translation>端口</translation>
+    </message>
+    <message>
+      <source>Test these proxy settings</source>
+      <translation>测试这些代理设置</translation>
+    </message>
+    <message>
+      <source>Test Connection</source>
+      <translation>测试连接</translation>
+    </message>
+    <message>
+      <source>Connection Test</source>
+      <translation>连接测试</translation>
     </message>
   </context>
   <context>
     <name>PackageDetails</name>
     <message>
       <source>Installs a macro or workbench</source>
-      <translation type="unfinished"/>
+      <translation>安装宏或工作台</translation>
     </message>
     <message>
       <source>Install</source>
@@ -1297,7 +1387,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Change Branch</source>
-      <translation type="unfinished"/>
+      <translation>更改分支</translation>
     </message>
   </context>
   <context>
@@ -1308,11 +1398,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>The following Python packages have been installed locally by the Addon Manager to satisfy addon dependencies. Installation location</source>
-      <translation type="unfinished"/>
+      <translation>以下 Python 包已由插件管理器本地安装以满足插件依赖。安装位置</translation>
     </message>
     <message>
       <source>Update in progress…</source>
-      <translation type="unfinished"/>
+      <translation>正在更新……</translation>
     </message>
     <message>
       <source>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that &apos;Used by&apos; only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</source>
@@ -1320,7 +1410,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Update All</source>
-      <translation type="unfinished"/>
+      <translation>全部更新</translation>
     </message>
   </context>
   <context>
@@ -1336,12 +1426,12 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <message>
       <location line="+43"/>
       <source>&amp;Addon Manager</source>
-      <translation type="unfinished"/>
+      <translation>&amp;插件管理器</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Manages external workbenches, macros, and preference packs</source>
-      <translation type="unfinished"/>
+      <translation>管理外部工作台、宏和偏好包</translation>
     </message>
   </context>
   <context>
@@ -1356,7 +1446,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>add_toolbar_button_dialog</name>
     <message>
       <source>Add Button</source>
-      <translation type="unfinished"/>
+      <translation>添加按钮</translation>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>
@@ -1379,7 +1469,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>proxy_authentication</name>
     <message>
       <source>Proxy Login Required</source>
-      <translation type="unfinished"/>
+      <translation>需要代理登录</translation>
     </message>
     <message>
       <source>Proxy requires authentication</source>
@@ -1395,7 +1485,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Realm</source>
-      <translation type="unfinished"/>
+      <translation>领域</translation>
     </message>
     <message>
       <source>Placeholder for proxy realm</source>
@@ -1418,7 +1508,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Select a toolbar to add this macro to</source>
-      <translation type="unfinished"/>
+      <translation>选择要添加此宏的工具栏</translation>
     </message>
     <message>
       <source>Ask every time</source>
@@ -1429,7 +1519,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>toolbar_button</name>
     <message>
       <source>Add Button</source>
-      <translation type="unfinished"/>
+      <translation>添加按钮</translation>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>

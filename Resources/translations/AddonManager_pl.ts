@@ -580,7 +580,7 @@ sortowanie według wyniku nie powiedzie się.
 Serwer może być niedostępny lub nie masz połączenia z Internetem.</translation>
     </message>
     <message>
-      <location filename="../../AddonManager.py" line="+281"/>
+      <location filename="../../AddonManager.py" line="+282"/>
       <source>Worker process {} is taking a long time to stop…</source>
       <translation>Zatrzymanie działającego procesu {}
 zajmuje dużo czasu …</translation>

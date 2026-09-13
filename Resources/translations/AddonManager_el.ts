@@ -5,7 +5,7 @@
     <name>AddCustomRepositoryDialog</name>
     <message>
       <source>Custom Repository</source>
-      <translation type="unfinished"/>
+      <translation>Προσαρμοσμένο Αποθετήριο</translation>
     </message>
     <message>
       <source>Repository URL</source>
@@ -26,7 +26,7 @@
     <message>
       <location line="+14"/>
       <source>Failed to remove some files</source>
-      <translation>Αποτυχία κατάργησης μερικών αρχείων</translation>
+      <translation type="unfinished"/>
     </message>
   </context>
   <context>
@@ -40,9 +40,9 @@
   <context>
     <name>AddonsInstaller</name>
     <message>
-      <location filename="../../Addon.py" line="+392"/>
+      <location filename="../../Addon.py" line="+395"/>
       <source>{}: Unrecognized internal workbench &apos;{}&apos;</source>
-      <translation>{}: Μη αναγνωρισμένος εσωτερικός πάγκος εργασίας &apos;{}&apos;</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+33"/>
@@ -77,12 +77,12 @@
     <message>
       <location line="+25"/>
       <source>Installation of optional package failed</source>
-      <translation>Η εγκατάσταση του προαιρετικού πακέτου απέτυχε</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+19"/>
       <source>Installing required dependency {}</source>
-      <translation>Εγκατάσταση της απαιτούμενης εξάρτησης {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+10"/>
@@ -97,7 +97,7 @@
     <message>
       <location line="+8"/>
       <source>Backing up the original directory and re-cloning</source>
-      <translation>Δημιουργία αντιγράφων ασφαλείας του αρχικού καταλόγου και επανα-κλωνοποίηση</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+105"/>
@@ -107,12 +107,12 @@
     <message>
       <location line="+141"/>
       <source>Git branch rename failed with the following message:</source>
-      <translation>Η μετονομασία κλάδων Git απέτυχε με το ακόλουθο μήνυμα:</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location filename="../../addonmanager_installer_gui.py" line="+530"/>
       <source>This addon requires Python packages that are not installed, and cannot be installed automatically. To use this addon you must install the following Python packages manually:</source>
-      <translation>Αυτό το πρόσθετο απαιτεί Python πακέτα που δεν είναι εγκατεστημένα και δεν μπορούν να εγκατασταθούν αυτόματα. Για να χρησιμοποιήσετε αυτό το πρόσθετο πρέπει να εγκαταστήσετε τα ακόλουθα πακέτα Python χειροκίνητα:</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+12"/>
@@ -167,7 +167,7 @@
     <message>
       <location line="+46"/>
       <source>Incompatible Python version</source>
-      <translation>Μη συμβατή έκδοση Python</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+5"/>
@@ -204,7 +204,7 @@
     <message>
       <location line="-117"/>
       <source>Optional dependency on {} ignored because it is not in the allow-list</source>
-      <translation>Η προαιρετική εξάρτηση από {} αγνοήθηκε επειδή δεν είναι στη λίστα επιτρεπτών</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+55"/>
@@ -224,7 +224,7 @@
     <message>
       <location line="+6"/>
       <source>Failed to execute pip, which may be missing from your Python installation. Please ensure your system has pip installed and try again. The failed command was:</source>
-      <translation>Αποτυχία εκτέλεσης του pip, το οποίο μπορεί να λείπει από την εγκατάσταση της Python. Βεβαιωθείτε ότι το σύστημά σας έχει εγκατασταθεί το pip, προσπαθήστε ξανά. Η αποτυχημένη εντολή ήταν:</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+22"/>
@@ -255,17 +255,17 @@
     <message>
       <location line="+1"/>
       <source>{} was installed successfully</source>
-      <translation>εγκαταστάθηκε επιτυχώς</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+13"/>
       <source>Installation Failed</source>
-      <translation>Η εγκατάσταση απέτυχε</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+2"/>
       <source>Failed to install {}</source>
-      <translation>Αποτυχία εγκατάστασης</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+113"/>
@@ -286,18 +286,18 @@
     <message>
       <location filename="../../addonmanager_installer.py" line="+383"/>
       <source>Received {} response code from server</source>
-      <translation>Λήφθηκε κωδικός απόκρισης {} από το διακομιστή</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+184"/>
       <source>Failed to install macro {}</source>
-      <translation>Αποτυχία εγκατάστασης μακροεντολής {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+34"/>
       <source>Failed to create installation manifest file:
 </source>
-      <translation>Αποτυχία δημιουργίας αρχείου δήλωσης εγκατάστασης:</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location filename="../../addonmanager_macro.py" line="+164"/>
@@ -317,17 +317,17 @@
     <message>
       <location line="+32"/>
       <source>Unable to open macro code URL {}</source>
-      <translation>Αδυναμία άνοιγμα του URL κωδικού μακροεντολής {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
-      <location line="+137"/>
+      <location line="+136"/>
       <source>Unable to fetch macro-specified file {} from {}</source>
-      <translation>Αδύνατη η ανάκτηση του αρχείου που καθορίστηκε μακροεντολή {} από {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+8"/>
       <source>Could not locate macro-specified file {} (expected at {})</source>
-      <translation>Αδύνατος ο εντοπισμός του αρχείου {} (αναμένεται στις {})</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location filename="../../addonmanager_package_details_controller.py" line="+8"/>
@@ -339,7 +339,7 @@ Please restart to use the new version.</source>
       <translation type="unfinished"/>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+300"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
       <translation type="unfinished"/>
     </message>
@@ -401,12 +401,12 @@ Please restart to use the new version.</source>
     <message>
       <location filename="../../addonmanager_uninstaller.py" line="+111"/>
       <source>An unknown error occurred</source>
-      <translation>Η λειτουργία απέτυχε λόγω άγνωστου σφάλματος.</translation>
+      <translation>Η λειτουργία απέτυχε λόγω άγνωστου σφάλματος</translation>
     </message>
     <message>
       <location line="+23"/>
       <source>Could not find addon {} to remove it</source>
-      <translation type="unfinished"/>
+      <translation>Δεν ήταν δυνατή η εύρεση του πρόσθετου {} για την κατάργησή του</translation>
     </message>
     <message>
       <location line="+26"/>
@@ -421,7 +421,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+14"/>
       <source>Error while trying to remove extra installed file {}</source>
-      <translation>Σφάλμα κατά την προσπάθεια κατάργησης επιπλέον εγκατεστημένου αρχείου {}</translation>
+      <translation>Σφάλμα κατά την προσπάθεια κατάργησης του επιπλέον εγκατεστημένου αρχείου {}</translation>
     </message>
     <message>
       <location line="+64"/>
@@ -453,28 +453,28 @@ Please restart to use the new version.</source>
       <location line="+1"/>
       <source>Installed Version</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Εγκατεστημένη Έκδοση</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Available Version</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Διαθέσιμη Έκδοση</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Update?</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση;</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Done</source>
       <comment>Column header</comment>
-      <translation type="unfinished"/>
+      <translation>Ολοκληρώθηκε</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers_startup.py" line="+117"/>
+      <location filename="../../addonmanager_workers_startup.py" line="+116"/>
       <source>WARNING: Duplicate addon {} ignored</source>
       <translation>ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Το διπλό πρόσθετο {} αγνοήθηκε</translation>
     </message>
@@ -482,12 +482,13 @@ Please restart to use the new version.</source>
       <location line="+119"/>
       <source>WARNING: Custom addon &apos;{}&apos; is overriding the one in the official addon catalog
 </source>
-      <translation type="unfinished"/>
+      <translation>ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Το προσαρμοσμένο πρόσθετο &apos;{}&apos; αντικαθιστά αυτό που υπάρχει στον επίσημο κατάλογο πρόσθετων
+</translation>
     </message>
     <message>
       <location line="+115"/>
       <source>Checking {} for update</source>
-      <translation type="unfinished"/>
+      <translation>Έλεγχος {} για ενημέρωση</translation>
     </message>
     <message>
       <location line="+55"/>
@@ -510,19 +511,37 @@ Please restart to use the new version.</source>
       <translation>Αποτυχία λήψης κώδικα για μακροεντολή &apos;{name}&apos;</translation>
     </message>
     <message>
-      <location line="+61"/>
+      <location line="+67"/>
       <source>Failed to get addon statistics from {} -- only sorting alphabetically will be accurate
 </source>
       <translation type="unfinished"/>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
       <translation type="unfinished"/>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
       <translation type="unfinished"/>
@@ -541,27 +560,27 @@ Please restart to use the new version.</source>
       <location line="-86"/>
       <location line="+126"/>
       <source>Addon Manager</source>
-      <translation type="unfinished"/>
+      <translation>Διαχειριστής Πρόσθετων</translation>
     </message>
     <message>
       <location line="-125"/>
       <source>version</source>
-      <translation type="unfinished"/>
+      <translation>έκδοση</translation>
     </message>
     <message>
       <location line="+133"/>
       <source>Restart FreeCAD for changes to take effect</source>
-      <translation type="unfinished"/>
+      <translation>Επανεκκινήστε το FreeCAD για να εφαρμοστούν οι αλλαγές</translation>
     </message>
     <message>
       <location line="+9"/>
       <source>Restart Now</source>
-      <translation type="unfinished"/>
+      <translation>Επανεκκίνηση Τώρα</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Restart Later</source>
-      <translation type="unfinished"/>
+      <translation>Επανεκκίνηση Αργότερα</translation>
     </message>
     <message>
       <location line="+33"/>
@@ -571,13 +590,13 @@ Please restart to use the new version.</source>
     <message>
       <location line="+12"/>
       <source>Creating addon list</source>
-      <translation type="unfinished"/>
+      <translation>Δημιουργία λίστας πρόσθετων</translation>
     </message>
     <message>
       <location line="+44"/>
       <location line="+35"/>
       <source>Checking for updates…</source>
-      <translation type="unfinished"/>
+      <translation>Έλεγχος για ενημερώσεις…</translation>
     </message>
     <message>
       <location line="+13"/>
@@ -609,7 +628,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+51"/>
       <source>Temporary installation of macro failed</source>
-      <translation type="unfinished"/>
+      <translation>Η προσωρινή εγκατάσταση της μακροεντολής απέτυχε</translation>
     </message>
     <message>
       <location line="+44"/>
@@ -625,7 +644,7 @@ Please restart to use the new version.</source>
       <location line="+12"/>
       <source>Always</source>
       <comment>&apos;Always&apos; delete old backups</comment>
-      <translation type="unfinished"/>
+      <translation>Πάντοτε</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -634,7 +653,65 @@ Please restart to use the new version.</source>
       <translation>Ποτέ</translation>
     </message>
     <message>
-      <location filename="../../AddonManagerOptions.py" line="+250"/>
+      <location filename="../../AddonManagerOptions.py" line="+95"/>
+      <source>Proxy test timed out: no connection made.</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Proxy test returned an error: no connection made.
+</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+16"/>
+      <source>Proxy test succeeded, connection established.</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+5"/>
+      <source>Proxy requires authentication. The Addon Manager does not support this.</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+0"/>
+      <source>Proxy connection failed with code {}: {}.</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+102"/>
+      <source>Invalid hostname</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+10"/>
+      <location line="+20"/>
+      <location line="+38"/>
+      <source>No proxy</source>
+      <translation>Χωρίς διακομιστή</translation>
+    </message>
+    <message>
+      <location line="-57"/>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <location line="+5"/>
+      <source>proxy.example.com</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+34"/>
+      <source>System has no proxy</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+43"/>
+      <source>Testing proxy connection…</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <location line="+259"/>
       <source>Repository URL</source>
       <comment>Preferences header for custom repositories</comment>
       <translation>URL Χώρου Αποθήκευσης</translation>
@@ -643,25 +720,10 @@ Please restart to use the new version.</source>
       <location line="+6"/>
       <source>Branch name</source>
       <comment>Preferences header for custom repositories</comment>
-      <translation>Όνομα κλάδου</translation>
-    </message>
-    <message>
-      <location filename="../../NetworkManager.py" line="+213"/>
-      <source>Failed to parse proxy URL &apos;{}&apos;</source>
       <translation type="unfinished"/>
     </message>
     <message>
-      <location line="+32"/>
-      <source>Parameter error: mutually exclusive proxy options set. Resetting to default.</source>
-      <translation>Σφάλμα παραμέτρου: Ορίστηκαν αμοιβαία αποκλειστικές επιλογές διακομιστή μεσολάβησης. Επαναφορά στην προεπιλογή.</translation>
-    </message>
-    <message>
-      <location line="+15"/>
-      <source>Parameter error: user proxy indicated, but no proxy provided. Resetting to default.</source>
-      <translation>Σφάλμα παραμέτρων: υποδεικνύεται ο διαμεσολαβητής χρήστη, αλλά δεν παρέχεται διαμεσολαβητής. Επαναφορά στην προεπιλογή.</translation>
-    </message>
-    <message>
-      <location line="+214"/>
+      <location filename="../../NetworkManager.py" line="+403"/>
       <source>Addon Manager: Unexpected {} response from server</source>
       <translation>Διαχειριστής Πρόσθετων: Μη αναμενόμενη απάντηση {} από τον διακομιστή</translation>
     </message>
@@ -671,7 +733,7 @@ Please restart to use the new version.</source>
       <translation>Σφάλμα με κρυπτογραφημένη σύνδεση</translation>
     </message>
     <message>
-      <location filename="../../package_list.py" line="+194"/>
+      <location filename="../../package_list.py" line="+193"/>
       <source>Click for details about package {}</source>
       <translation>Κάντε κλικ για λεπτομέρειες σχετικά με το πακέτο {}</translation>
     </message>
@@ -691,29 +753,24 @@ Please restart to use the new version.</source>
       <translation>Ετικέτες</translation>
     </message>
     <message>
-      <location line="+46"/>
-      <source>Maintainer</source>
-      <translation>Συντηρητής</translation>
+      <location line="+51"/>
+      <source>Maintainer(s)</source>
+      <translation>Συντηρητές</translation>
     </message>
     <message>
-      <location line="+5"/>
-      <source>Maintainers:</source>
-      <translation>Συντηρητές:</translation>
-    </message>
-    <message>
-      <location line="+7"/>
+      <location line="+17"/>
       <source>Author</source>
       <translation>Συγγραφέας</translation>
     </message>
     <message>
       <location line="+21"/>
       <source>{} ★ on GitHub</source>
-      <translation type="unfinished"/>
+      <translation>{} ★ on GitHub</translation>
     </message>
     <message>
       <location line="+2"/>
       <source>No ★, or not on GitHub</source>
-      <translation>Όχι ★ ή όχι στο GitHub</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+5"/>
@@ -781,14 +838,14 @@ Please restart to use the new version.</source>
       <translation>Διαθέσιμη έκδοση</translation>
     </message>
     <message>
-      <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+170"/>
+      <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+169"/>
       <source>Install</source>
       <translation>Εγκατάσταση</translation>
     </message>
     <message>
       <location line="+6"/>
       <source>Checking for Updates…</source>
-      <translation type="unfinished"/>
+      <translation>Έλεγχος για ενημερώσεις…</translation>
     </message>
     <message>
       <location line="+2"/>
@@ -833,7 +890,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>Return to Package List</source>
-      <translation type="unfinished"/>
+      <translation>Επιστροφή στη Λίστα Πακέτων</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_filter_selector.py" line="-42"/>
@@ -864,7 +921,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+4"/>
       <source>Preference pack</source>
-      <translation type="unfinished"/>
+      <translation>Πακέτο Προτιμήσεων</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -874,7 +931,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+4"/>
       <source>Other</source>
-      <translation type="unfinished"/>
+      <translation>Άλλο</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -894,12 +951,12 @@ Please restart to use the new version.</source>
     <message>
       <location filename="../../Widgets/addonmanager_widget_global_buttons.py" line="-3"/>
       <source>Update All Addons</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση Όλων των Προσθέτων</translation>
     </message>
     <message>
       <location line="+1"/>
       <source>Check for Updates</source>
-      <translation type="unfinished"/>
+      <translation>Έλεγχος για Ενημερώσεις</translation>
     </message>
     <message>
       <location line="+1"/>
@@ -914,7 +971,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+8"/>
       <source>See %n Update(s)…</source>
-      <translation type="unfinished"/>
+      <translation>Προβολή %n ενημερώσεων…</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -929,12 +986,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+55"/>
       <source>This addon will be disabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>Αυτό το πρόσθετο θα απενεργοποιηθεί κατά την επανεκκίνηση του FreeCAD</translation>
     </message>
     <message>
       <location line="+5"/>
       <source>This addon will be enabled when restarting FreeCAD</source>
-      <translation type="unfinished"/>
+      <translation>Αυτό το πρόσθετο θα ενεργοποιηθεί μετά την επανεκκίνηση του FreeCAD</translation>
     </message>
     <message>
       <location line="+9"/>
@@ -979,22 +1036,22 @@ Please restart to use the new version.</source>
     <message>
       <location line="+10"/>
       <source>Currently on branch {}, name changed to {}</source>
-      <translation>Αυτή τη στιγμή στον κλάδο {}, το όνομα άλλαξε σε {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+8"/>
       <source>Currently on branch {}, update available to version {}</source>
-      <translation>Αυτή τη στιγμή στον κλάδο {}, διαθέσιμη ενημέρωση για την έκδοση {}</translation>
+      <translation>Βρίσκεστε στον κλάδο {}, υπάρχει διαθέσιμη ενημέρωση στην έκδοση {}</translation>
     </message>
     <message>
       <location line="+6"/>
       <source>Update available to version {}</source>
-      <translation>Διαθέσιμη ενημέρωση για την έκδοση {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+6"/>
       <source>This is the latest version available</source>
-      <translation>Αυτή είναι η τελευταία διαθέσιμη έκδοση</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+16"/>
@@ -1004,7 +1061,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>WARNING: This addon requires FreeCAD {}</source>
-      <translation>ΠΡΟΕΙΔΟΠΟΙΗΣΗ: Αυτό το πρόσθετο απαιτεί FreeCAD {}</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_search.py" line="+68"/>
@@ -1019,7 +1076,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+13"/>
       <source>Search…</source>
-      <translation type="unfinished"/>
+      <translation>Αναζήτηση…</translation>
     </message>
     <message>
       <location filename="../../Widgets/addonmanager_widget_view_control_bar.py" line="+144"/>
@@ -1031,13 +1088,13 @@ Please restart to use the new version.</source>
       <location line="+3"/>
       <source>Last updated</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Τελευταία ενημέρωση</translation>
     </message>
     <message>
       <location line="+3"/>
       <source>Date created</source>
       <comment>Sort order</comment>
-      <translation type="unfinished"/>
+      <translation>Ημερομηνία Δημιουργίας</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -1064,7 +1121,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+1"/>
       <source>Compact view</source>
-      <translation>Συνεπτυγμένη προβολή</translation>
+      <translation type="unfinished"/>
     </message>
   </context>
   <context>
@@ -1075,28 +1132,28 @@ Please restart to use the new version.</source>
       <translation>Εικονίδιο</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;Όνομα πακέτου&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>Έκδοση</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>Περιγραφή</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>Διαθέσιμη ενημέρωση</translation>
     </message>
     <message>
       <source>&lt;b&gt;Package name&lt;/b&gt;</source>
-      <translation type="unfinished"/>
+      <translation>&lt;h1&gt;Όνομα πακέτου&lt;/h1&gt;</translation>
     </message>
     <message>
       <source>UpdateAvailable</source>
@@ -1125,7 +1182,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Optional Python Modules</source>
-      <translation type="unfinished"/>
+      <translation>Προαιρετικές ενότητες Python</translation>
     </message>
   </context>
   <context>
@@ -1136,15 +1193,15 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Addon Manager Warning</source>
-      <translation type="unfinished"/>
+      <translation>Διαχείριση Πρόσθετων: Προειδοποίηση</translation>
     </message>
     <message>
       <source>The Addon Manager provides access to an extensive library of useful third-party FreeCAD extensions. No guarantees can be made regarding their safety or functionality.</source>
-      <translation type="unfinished"/>
+      <translation>Ο Διαχειριστής Προσθέτων παρέχει πρόσβαση σε μια εκτενή βιβλιοθήκη χρήσιμων επεκτάσεων τρίτων για το FreeCAD. Δεν παρέχεται καμία εγγύηση σχετικά με την ασφάλεια ή τη λειτουργικότητά τους.</translation>
     </message>
     <message>
       <source>Continue</source>
-      <translation>Συνεχίστε</translation>
+      <translation>Συνέχιση</translation>
     </message>
     <message>
       <source>Cancel</source>
@@ -1152,27 +1209,27 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Updating Addons</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση Πρόσθετων</translation>
     </message>
     <message>
       <source>Updating Addons…</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση Πρόσθετων…</translation>
     </message>
     <message>
       <source>Update Addons</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση Πρόσθετων</translation>
     </message>
     <message>
       <source>Addons with available updates</source>
-      <translation type="unfinished"/>
+      <translation>Πρόσθετα με διαθέσιμες ενημερώσεις</translation>
     </message>
     <message>
       <source>Update Selected Addons</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση Επιλεγμένων Πρόσθετων</translation>
     </message>
     <message>
       <source>(Note that addon authors sometimes do not update the version number on each update, so the available and installed versions may appear the same.)</source>
-      <translation type="unfinished"/>
+      <translation>(Σημειώστε ότι οι δημιουργοί των πρόσθετων μερικές φορές δεν ενημερώνουν τον αριθμό έκδοσης σε κάθε επικαιροποίηση, επομένως η διαθέσιμη και η εγκατεστημένη έκδοση ενδέχεται να εμφανίζονται ίδιες.)</translation>
     </message>
   </context>
   <context>
@@ -1214,11 +1271,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>&lt;h1&gt;Package name&lt;/h1&gt;</source>
-      <translation type="unfinished"/>
+      <translation>&lt;h1&gt;Όνομα πακέτου&lt;/h1&amp;gt˙</translation>
     </message>
     <message>
       <source>labelSort</source>
-      <translation>Ταξινόμηση</translation>
+      <translation>ταξινόμηση βάσει ετικέτας</translation>
     </message>
     <message>
       <source>UpdateAvailable</source>
@@ -1229,39 +1286,23 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>Gui::Dialog::DlgSettingsAddonManager</name>
     <message>
       <source>Addon Manager Options</source>
-      <translation type="unfinished"/>
+      <translation>Επιλογές Διαχειριστή Προσθέτων</translation>
     </message>
     <message>
       <source>Hide addons without a license</source>
-      <translation type="unfinished"/>
+      <translation>Απόκρυψη Πρόσθετων χωρίς άδεια χρήσης</translation>
     </message>
     <message>
       <source>Hide addons with non-FSF free/libre license</source>
-      <translation type="unfinished"/>
+      <translation>Απόκρυψη πρόσθετων με μη-ελεύθερη άδεια FSF</translation>
     </message>
     <message>
       <source>Hide addons with non-OSI-approved license</source>
-      <translation type="unfinished"/>
+      <translation>Απόκρυψη πρόσθετων με άδεια μη εγκεκριμένη από τον OSI</translation>
     </message>
     <message>
       <source>Custom repositories</source>
       <translation>Προσαρμοσμένα αποθετήρια</translation>
-    </message>
-    <message>
-      <source>Proxy</source>
-      <translation>Διακομιστής</translation>
-    </message>
-    <message>
-      <source>No proxy</source>
-      <translation>Χωρίς διακομιστή</translation>
-    </message>
-    <message>
-      <source>User system proxy</source>
-      <translation>Διακομιστής συστήματος χρήστη</translation>
-    </message>
-    <message>
-      <source>User-defined proxy</source>
-      <translation type="unfinished"/>
     </message>
     <message>
       <source>Score source URL</source>
@@ -1269,14 +1310,62 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</source>
-      <translation type="unfinished"/>
+      <translation>Το URL για τα δεδομένα βαθμολογίας των πρόσθετων (δείτε τη σελίδα wiki του Addon Manager για λεπτομέρειες σχετικά με τη μορφοποίηση και τη φιλοξενία)</translation>
+    </message>
+    <message>
+      <source>Use a proxy server for access to addon data</source>
+      <translation>Χρήση διαμεσολαβητή (proxy server) για την πρόσβαση στα δεδομένα των πρόσθετων</translation>
+    </message>
+    <message>
+      <source>Proxy addon manager traffic</source>
+      <translation>Δρομολόγηση της κίνησης του Διαχειριστή Προσθέτων μέσω διαμεσολαβητή (proxy)</translation>
+    </message>
+    <message>
+      <source>Use the system&apos;s proxy settings</source>
+      <translation>Χρήση των ρυθμίσεων &apos; διαμεσολαβητή (proxy) του συστήματος</translation>
+    </message>
+    <message>
+      <source>System</source>
+      <translation>Σύστημα</translation>
+    </message>
+    <message>
+      <source>Use custom proxy settings</source>
+      <translation>Χρήση προσαρμοσμένων ρυθμίσεων διαμεσολαβητή (proxy)</translation>
+    </message>
+    <message>
+      <source>Custom</source>
+      <translation>Επιλογή</translation>
+    </message>
+    <message>
+      <source>Host</source>
+      <translation>Διακομιστής</translation>
+    </message>
+    <message>
+      <source>:</source>
+      <translation>:</translation>
+    </message>
+    <message>
+      <source>Port</source>
+      <translation>Θύρα</translation>
+    </message>
+    <message>
+      <source>Test these proxy settings</source>
+      <translation>Δοκιμή αυτών των ρυθμίσεων διαμεσολαβητή (proxy)</translation>
+    </message>
+    <message>
+      <source>Test Connection</source>
+      <translation>Δοκιμή Σύνδεσης</translation>
+    </message>
+    <message>
+      <source>Connection Test</source>
+      <translation>Έλεγχος Σύνδεσης</translation>
     </message>
   </context>
   <context>
     <name>PackageDetails</name>
     <message>
       <source>Installs a macro or workbench</source>
-      <translation type="unfinished"/>
+      <translation>Εγκαθιστά μια μακροεντολή ή έναν πάγκο εργασίας</translation>
     </message>
     <message>
       <source>Install</source>
@@ -1296,7 +1385,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Change Branch</source>
-      <translation type="unfinished"/>
+      <translation>Αλλαγή Κλάδου</translation>
     </message>
   </context>
   <context>
@@ -1307,19 +1396,19 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>The following Python packages have been installed locally by the Addon Manager to satisfy addon dependencies. Installation location</source>
-      <translation type="unfinished"/>
+      <translation>Τα ακόλουθα πακέτα Python έχουν εγκατασταθεί τοπικά από τον Διαχειριστή Προσθέτων για την ικανοποίηση των εξαρτήσεων των πρόσθετων. Τοποθεσία εγκατάστασης</translation>
     </message>
     <message>
       <source>Update in progress…</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση σε εξέλιξη…</translation>
     </message>
     <message>
       <source>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that &apos;Used by&apos; only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</source>
-      <translation type="unfinished"/>
+      <translation>Ένας αστερίσκος (*) στη στήλη &quot;Χρησιμοποιείται από&quot; υποδηλώνει μια προαιρετική εξάρτηση. Σημειώστε ότι η ένδειξη &quot;Χρησιμοποιείται από&quot; καταγράφει μόνο τις άμεσες εισαγωγές στο πρόσθετο. Ενδέχεται να έχουν εγκατασταθεί και άλλα πακέτα Python, από τα οποία εξαρτώνται τα εν λόγω πακέτα.</translation>
     </message>
     <message>
       <source>Update All</source>
-      <translation type="unfinished"/>
+      <translation>Ενημέρωση Όλων</translation>
     </message>
   </context>
   <context>
@@ -1335,12 +1424,12 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <message>
       <location line="+43"/>
       <source>&amp;Addon Manager</source>
-      <translation type="unfinished"/>
+      <translation>&amp;Διαχειριστής Πρόσθετων</translation>
     </message>
     <message>
       <location line="+4"/>
       <source>Manages external workbenches, macros, and preference packs</source>
-      <translation type="unfinished"/>
+      <translation>Διαχείριση εξωτερικών πάγκων εργασίας, μακροεντολών και πακέτων προτιμήσεων</translation>
     </message>
   </context>
   <context>
@@ -1355,7 +1444,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>add_toolbar_button_dialog</name>
     <message>
       <source>Add Button</source>
-      <translation type="unfinished"/>
+      <translation>Προσθήκη Κουμπιού</translation>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>
@@ -1378,7 +1467,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>proxy_authentication</name>
     <message>
       <source>Proxy Login Required</source>
-      <translation type="unfinished"/>
+      <translation>Απαιτείται σύνδεση στον διαμεσολαβητή (proxy)</translation>
     </message>
     <message>
       <source>Proxy requires authentication</source>
@@ -1394,7 +1483,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Realm</source>
-      <translation type="unfinished"/>
+      <translation>Τομέας</translation>
     </message>
     <message>
       <source>Placeholder for proxy realm</source>
@@ -1417,7 +1506,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Select a toolbar to add this macro to</source>
-      <translation type="unfinished"/>
+      <translation>Επιλέξτε μια γραμμή εργαλείων για την προσθήκη αυτής της μακροεντολής</translation>
     </message>
     <message>
       <source>Ask every time</source>
@@ -1428,7 +1517,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>toolbar_button</name>
     <message>
       <source>Add Button</source>
-      <translation type="unfinished"/>
+      <translation>Προσθήκη Κουμπιού</translation>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>

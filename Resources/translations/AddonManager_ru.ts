@@ -5,7 +5,7 @@
     <name>AddCustomRepositoryDialog</name>
     <message>
       <source>Custom Repository</source>
-      <translation>Пользовательский репозиторий</translation>
+      <translation>Настраиваемый репозиторий</translation>
     </message>
     <message>
       <source>Repository URL</source>
@@ -40,14 +40,14 @@
   <context>
     <name>AddonsInstaller</name>
     <message>
-      <location filename="../../Addon.py" line="+392"/>
+      <location filename="../../Addon.py" line="+395"/>
       <source>{}: Unrecognized internal workbench &apos;{}&apos;</source>
-      <translation>{}: Нераспознанный внутренний верстак &apos;{}&apos;</translation>
+      <translation>{}: Нераспознанный встроенный верстак &apos;{}&apos;</translation>
     </message>
     <message>
       <location line="+33"/>
       <source>Addon Developer Warning: Repository URL set in package.xml file for addon {} ({}) does not match the URL it was fetched from ({})</source>
-      <translation>Предупреждение разработчика Дополнения: URL-адрес репозитория, заданный в файле package.xml для дополнения {} ({}), не соответствует URL-адресу, с которого он был получен ({})</translation>
+      <translation>Предупреждение разработчика Дополнения: URL-адрес репозитория, заданный в файле package.xml для дополнения {} ({}), не соответствует URL-адресу, с которого оно было получено ({})</translation>
     </message>
     <message>
       <location line="+8"/>
@@ -97,7 +97,7 @@
     <message>
       <location line="+8"/>
       <source>Backing up the original directory and re-cloning</source>
-      <translation>Делается резервная копия исходного каталога и обновляется повторно</translation>
+      <translation>Делается резервная копия исходной директории и повторное обновление</translation>
     </message>
     <message>
       <location line="+105"/>
@@ -107,12 +107,12 @@
     <message>
       <location line="+141"/>
       <source>Git branch rename failed with the following message:</source>
-      <translation>Переименование ветки Git не удалось со следующим сообщением:</translation>
+      <translation>Переименование Git ветки не удалось со следующим сообщением:</translation>
     </message>
     <message>
       <location filename="../../addonmanager_installer_gui.py" line="+530"/>
       <source>This addon requires Python packages that are not installed, and cannot be installed automatically. To use this addon you must install the following Python packages manually:</source>
-      <translation>Это дополнение требует неустановленные пакеты Python, которые не могут быть установлены автоматически. Для использования этого дополнения вы должны вручную установить следующие пакеты Python:</translation>
+      <translation>Это дополнение требует неустановленные пакеты Python, которые не могут быть установлены автоматически. Для использования этого дополнения вы должны вручную установить следующие Python пакеты:</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -137,7 +137,7 @@
     <message>
       <location line="+407"/>
       <source>These addons require Python packages that are not installed, and cannot be installed automatically. To use them you must install the following Python packages manually:</source>
-      <translation>Это дополнение требует неустановленные пакеты Python, которые не могут быть установлены автоматически. Для использования этого дополнения вы должны вручную установить следующие пакеты Python:</translation>
+      <translation>Это дополнение требует неустановленные пакеты Python, которые не могут быть установлены автоматически. Для использования этого дополнения вы должны вручную установить следующие Python пакеты:</translation>
     </message>
     <message>
       <location line="+12"/>
@@ -147,7 +147,7 @@
     <message>
       <location line="+27"/>
       <source>These addons require &apos;{}&apos;, which is not available in your copy of FreeCAD.</source>
-      <translation>Дополнению {} необходима зависимость &apos;{}&apos;, которая недоступна в этой копии FreeCAD.</translation>
+      <translation>Этим дополнениям необходима зависимость &apos;{}&apos;, которая недоступна в этой копии FreeCAD.</translation>
     </message>
     <message>
       <location line="+9"/>
@@ -157,7 +157,7 @@
     <message>
       <location line="+11"/>
       <source>These addons require the following workbenches, which are not available in your copy of FreeCAD:</source>
-      <translation>Дополнению {} необходимы следующие верстаки, недоступные в этой копии FreeCAD:</translation>
+      <translation>Этим дополнениям необходимы следующие верстаки, недоступные в этой копии FreeCAD:</translation>
     </message>
     <message>
       <location line="+7"/>
@@ -255,7 +255,7 @@
     <message>
       <location line="+1"/>
       <source>{} was installed successfully</source>
-      <translation>{0} успешно установлен</translation>
+      <translation>{0} успешно установлено</translation>
     </message>
     <message>
       <location line="+13"/>
@@ -321,7 +321,7 @@
       <translation>Не удаётся открыть URL {} кода макроса</translation>
     </message>
     <message>
-      <location line="+137"/>
+      <location line="+136"/>
       <source>Unable to fetch macro-specified file {} from {}</source>
       <translation>Не удалось загрузить файл {}, необходимый для макроса из {}</translation>
     </message>
@@ -344,7 +344,7 @@ Please restart to use the new version.</source>
 Пожалуйста перезапустите для использования новой версии.</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_python_deps.py" line="+300"/>
+      <location filename="../../addonmanager_python_deps.py" line="+304"/>
       <source>Package</source>
       <translation>Пакет</translation>
     </message>
@@ -421,7 +421,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+19"/>
       <source>Removed extra installed file {}</source>
-      <translation>Удален дополнительно установленный файл {}</translation>
+      <translation>Удалён дополнительно установленный файл {}</translation>
     </message>
     <message>
       <location line="+14"/>
@@ -479,7 +479,7 @@ Please restart to use the new version.</source>
       <translation>Готово</translation>
     </message>
     <message>
-      <location filename="../../addonmanager_workers_startup.py" line="+117"/>
+      <location filename="../../addonmanager_workers_startup.py" line="+116"/>
       <source>WARNING: Duplicate addon {} ignored</source>
       <translation>ВНИМАНИЕ: Повторяющееся дополнение {} игнорируется</translation>
     </message>
@@ -516,21 +516,42 @@ Please restart to use the new version.</source>
       <translation>Не удалось получить код для макроса &apos;{name}&apos;</translation>
     </message>
     <message>
-      <location line="+61"/>
+      <location line="+67"/>
       <source>Failed to get addon statistics from {} -- only sorting alphabetically will be accurate
 </source>
       <translation>Не удалось получить статистику дополнения из {}. Корректно будет работать только сортировка по алфавиту
 </translation>
     </message>
     <message>
-      <location line="+41"/>
+      <location line="+42"/>
       <source>Failed to get addon score from &apos;{}&apos; -- sorting by score will fail
 </source>
       <translation>Не удалось получить оценку дополнения из &apos;{}&apos; - сортировка по оценкам не будет работать
 </translation>
     </message>
     <message>
-      <location line="+42"/>
+      <location line="+11"/>
+      <source>Failed to decode addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Не удалось декодировать оценку дополнения из &apos;{}&apos; - сортировка по оценкам не будет работать
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to parse addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Не удалось разобрать оценку дополнения из &apos;{}&apos; - сортировка по оценкам не будет работать
+</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Failed to read addon score from &apos;{}&apos; -- sorting by score will fail
+</source>
+      <translation>Не удалось прочитать оценку дополнения из &apos;{}&apos; - сортировка по оценкам не будет работать
+</translation>
+    </message>
+    <message>
+      <location line="+39"/>
       <location line="+13"/>
       <source>Checking for missing dependencies</source>
       <translation>Проверка недостающих зависимостей</translation>
@@ -617,12 +638,12 @@ Please restart to use the new version.</source>
     <message>
       <location line="+51"/>
       <source>Temporary installation of macro failed</source>
-      <translation>Не удалось установить макрокоманду</translation>
+      <translation>Не удалось установить макрос</translation>
     </message>
     <message>
       <location line="+44"/>
       <source>The following auto-generated backups were found in your Mod directory:</source>
-      <translation>В вашем каталоге Mod обнаружены следующие автоматически сгенерированные резервные копии:</translation>
+      <translation>В вашей директории Mod обнаружены следующие автоматически сгенерированные резервные копии:</translation>
     </message>
     <message>
       <location line="+5"/>
@@ -642,7 +663,66 @@ Please restart to use the new version.</source>
       <translation>Никогда</translation>
     </message>
     <message>
-      <location filename="../../AddonManagerOptions.py" line="+250"/>
+      <location filename="../../AddonManagerOptions.py" line="+95"/>
+      <source>Proxy test timed out: no connection made.</source>
+      <translation>Время проверки прокси-сервера истекло: соединение не установлено.</translation>
+    </message>
+    <message>
+      <location line="+7"/>
+      <source>Proxy test returned an error: no connection made.
+</source>
+      <translation>Проверка прокси-сервера вернула ошибку: соединение не установлено.
+</translation>
+    </message>
+    <message>
+      <location line="+16"/>
+      <source>Proxy test succeeded, connection established.</source>
+      <translation>Проверка прокси-сервера прошла успешно, соединение установлено.</translation>
+    </message>
+    <message>
+      <location line="+5"/>
+      <source>Proxy requires authentication. The Addon Manager does not support this.</source>
+      <translation>Прокси требует аутентификацию. Менеджер дополнений не поддерживает её.</translation>
+    </message>
+    <message>
+      <location line="+0"/>
+      <source>Proxy connection failed with code {}: {}.</source>
+      <translation>Ошибка подключения к прокси-серверу с кодом ошибки {}: {}.</translation>
+    </message>
+    <message>
+      <location line="+102"/>
+      <source>Invalid hostname</source>
+      <translation>Неверное имя хоста</translation>
+    </message>
+    <message>
+      <location line="+10"/>
+      <location line="+20"/>
+      <location line="+38"/>
+      <source>No proxy</source>
+      <translation>Без прокси</translation>
+    </message>
+    <message>
+      <location line="-57"/>
+      <source>n/a</source>
+      <translation>отсутствует</translation>
+    </message>
+    <message>
+      <location line="+5"/>
+      <source>proxy.example.com</source>
+      <translation>proxy.example.com</translation>
+    </message>
+    <message>
+      <location line="+34"/>
+      <source>System has no proxy</source>
+      <translation>Системного прокси нет</translation>
+    </message>
+    <message>
+      <location line="+43"/>
+      <source>Testing proxy connection…</source>
+      <translation>Тестирование подключения через прокси сервер…</translation>
+    </message>
+    <message>
+      <location line="+259"/>
       <source>Repository URL</source>
       <comment>Preferences header for custom repositories</comment>
       <translation>URL репозитория</translation>
@@ -654,22 +734,7 @@ Please restart to use the new version.</source>
       <translation>Название ветки</translation>
     </message>
     <message>
-      <location filename="../../NetworkManager.py" line="+213"/>
-      <source>Failed to parse proxy URL &apos;{}&apos;</source>
-      <translation>Не удалось проанализировать URL-адрес прокси-сервера &apos;{}&apos;</translation>
-    </message>
-    <message>
-      <location line="+32"/>
-      <source>Parameter error: mutually exclusive proxy options set. Resetting to default.</source>
-      <translation>Ошибка параметров: введены взаимно исключающие параметры прокси. Используются параметры по умолчанию.</translation>
-    </message>
-    <message>
-      <location line="+15"/>
-      <source>Parameter error: user proxy indicated, but no proxy provided. Resetting to default.</source>
-      <translation>Ошибка параметров: выбран пользовательский прокси, но адрес прокси не введен. Используются параметры по умолчанию.</translation>
-    </message>
-    <message>
-      <location line="+214"/>
+      <location filename="../../NetworkManager.py" line="+403"/>
       <source>Addon Manager: Unexpected {} response from server</source>
       <translation>Менеджер дополнений: Неожиданный ответ сервера {}</translation>
     </message>
@@ -679,7 +744,7 @@ Please restart to use the new version.</source>
       <translation>Ошибка защищенного соединения</translation>
     </message>
     <message>
-      <location filename="../../package_list.py" line="+194"/>
+      <location filename="../../package_list.py" line="+193"/>
       <source>Click for details about package {}</source>
       <translation>Нажмите для подробностей о пакете {}</translation>
     </message>
@@ -699,17 +764,12 @@ Please restart to use the new version.</source>
       <translation>Теги</translation>
     </message>
     <message>
-      <location line="+46"/>
-      <source>Maintainer</source>
-      <translation>Поставщик ПО</translation>
+      <location line="+51"/>
+      <source>Maintainer(s)</source>
+      <translation>Разработчики</translation>
     </message>
     <message>
-      <location line="+5"/>
-      <source>Maintainers:</source>
-      <translation>Поставщики ПО:</translation>
-    </message>
-    <message>
-      <location line="+7"/>
+      <location line="+17"/>
       <source>Author</source>
       <translation>Автор</translation>
     </message>
@@ -789,7 +849,7 @@ Please restart to use the new version.</source>
       <translation>Доступная версия</translation>
     </message>
     <message>
-      <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+170"/>
+      <location filename="../../Widgets/addonmanager_widget_addon_buttons.py" line="+169"/>
       <source>Install</source>
       <translation>Установить</translation>
     </message>
@@ -867,7 +927,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+4"/>
       <source>Macro</source>
-      <translation>Макрос</translation>
+      <translation>Макрокоманда</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -957,7 +1017,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+12"/>
       <source>Disabled</source>
-      <translation>Отключено</translation>
+      <translation>Откл.</translation>
     </message>
     <message>
       <location line="+28"/>
@@ -982,7 +1042,7 @@ Please restart to use the new version.</source>
     <message>
       <location line="+7"/>
       <source>Git tag &apos;{}&apos; checked out, no updates possible</source>
-      <translation>Версия git тэг &apos;{}&apos; получена, обновления невозможны</translation>
+      <translation>Получена версия c git тэгом &apos;{}&apos;, обновления невозможны</translation>
     </message>
     <message>
       <location line="+10"/>
@@ -1051,7 +1111,7 @@ Please restart to use the new version.</source>
       <location line="+3"/>
       <source>GitHub stars</source>
       <comment>Sort order</comment>
-      <translation>звёзды на GitHub</translation>
+      <translation>Звёзд на GitHub</translation>
     </message>
     <message>
       <location line="+4"/>
@@ -1080,25 +1140,25 @@ Please restart to use the new version.</source>
     <message>
       <location filename="../../compact_view.py" line="+87"/>
       <source>Icon</source>
-      <translation>Иконка</translation>
+      <translation>Значок</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>&lt;b&gt;Package Name&lt;/b&gt;</source>
       <translation>&lt;b&gt;Название пакета&lt;/b&gt;</translation>
     </message>
     <message>
-      <location line="+1"/>
+      <location filename="../../compact_view.py" line="+1"/>
       <source>Version</source>
       <translation>Версия</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Description</source>
       <translation>Описание</translation>
     </message>
     <message>
-      <location line="+3"/>
+      <location filename="../../compact_view.py" line="+3"/>
       <source>Update available</source>
       <translation>Доступно обновление</translation>
     </message>
@@ -1115,7 +1175,7 @@ Please restart to use the new version.</source>
     <name>DependencyResolutionDialog</name>
     <message>
       <source>Resolve Dependencies</source>
-      <translation>Разрешить зависимости</translation>
+      <translation>Просчитать зависимости</translation>
     </message>
     <message>
       <source>This installation/update has the following required and optional dependencies.
@@ -1135,7 +1195,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Optional Python Modules</source>
-      <translation>Необязательные модули Python</translation>
+      <translation>Необязательные Python модули</translation>
     </message>
   </context>
   <context>
@@ -1190,7 +1250,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <message>
       <location filename="../../expanded_view.py" line="+136"/>
       <source>Icon</source>
-      <translation>Иконка</translation>
+      <translation>Значок</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -1215,7 +1275,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <message>
       <location line="+3"/>
       <source>Maintainer</source>
-      <translation>Поставщик ПО</translation>
+      <translation>Разработчик</translation>
     </message>
     <message>
       <location line="+3"/>
@@ -1251,35 +1311,67 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Hide addons with non-OSI-approved license</source>
-      <translation>Скрыть дополнения с лицензией, не одобренной OSI</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Custom repositories</source>
-      <translation>Пользовательские репозитории</translation>
-    </message>
-    <message>
-      <source>Proxy</source>
-      <translation>Прокси-сервер</translation>
-    </message>
-    <message>
-      <source>No proxy</source>
-      <translation>Без прокси</translation>
-    </message>
-    <message>
-      <source>User system proxy</source>
-      <translation>Использовать системный прокси</translation>
-    </message>
-    <message>
-      <source>User-defined proxy</source>
-      <translation>Заданный пользователем прокси-сервер</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Score source URL</source>
-      <translation>URL-адрес источника оценки</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>The URL for the addon score data (see Addon Manager wiki page for formatting and hosting details)</source>
-      <translation>URL-адрес для данных о баллах дополнений (подробности о форматировании и хостинге см. на вики странице менеджера дополнений)</translation>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Use a proxy server for access to addon data</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Proxy addon manager traffic</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Use the system&apos;s proxy settings</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>System</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Use custom proxy settings</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Custom</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Host</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>:</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Port</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Test these proxy settings</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Test Connection</source>
+      <translation type="unfinished"/>
+    </message>
+    <message>
+      <source>Connection Test</source>
+      <translation type="unfinished"/>
     </message>
   </context>
   <context>
@@ -1306,30 +1398,30 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Change Branch</source>
-      <translation>Изменить ветку</translation>
+      <translation type="unfinished"/>
     </message>
   </context>
   <context>
     <name>PythonDependencyUpdateDialog</name>
     <message>
       <source>Manage Python Dependencies</source>
-      <translation>Управление зависимостями Python</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>The following Python packages have been installed locally by the Addon Manager to satisfy addon dependencies. Installation location</source>
-      <translation>Следующие Python пакеты были установлены локально Менеджером дополнений для удовлетворения зависимостей. Место установки</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Update in progress…</source>
-      <translation>Выполняется обновление…</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>An asterisk (*) in the &quot;Used by&quot; column indicates an optional dependency. Note that &apos;Used by&apos; only records direct imports in the addon. Other Python packages that those packages depend upon may have been installed as well.</source>
-      <translation>Знак (*) в столбце &quot;Используется в&quot; указывает на необязательную зависимость. Заметьте, что в столбце &apos;Используется в&apos; показаны прямо импортированные пакеты. Также могут быть установлены другие Python пакеты, необходимые для этих пакетов.</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Update All</source>
-      <translation>Обновить все</translation>
+      <translation type="unfinished"/>
     </message>
   </context>
   <context>
@@ -1345,7 +1437,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <message>
       <location line="+43"/>
       <source>&amp;Addon Manager</source>
-      <translation>&amp;Менеджер дополнений</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <location line="+4"/>
@@ -1365,7 +1457,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>add_toolbar_button_dialog</name>
     <message>
       <source>Add Button</source>
-      <translation>Добавить кнопку</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>
@@ -1388,15 +1480,15 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>proxy_authentication</name>
     <message>
       <source>Proxy Login Required</source>
-      <translation>Требуется вход на прокси</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Proxy requires authentication</source>
-      <translation>Для прокси сервера требуется авторизация</translation>
+      <translation>Для прокси сервера требуется аутентификация</translation>
     </message>
     <message>
       <source>Proxy</source>
-      <translation>Прокси-сервер</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Placeholder for proxy address</source>
@@ -1404,11 +1496,11 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     </message>
     <message>
       <source>Realm</source>
-      <translation>Домен</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Placeholder for proxy realm</source>
-      <translation>Введите сюда proxy realm</translation>
+      <translation>Введите сюда realm (домен) прокси-сервера</translation>
     </message>
     <message>
       <source>Username</source>
@@ -1438,7 +1530,7 @@ Do you want the Addon Manager to install them automatically? Choose &quot;Ignore
     <name>toolbar_button</name>
     <message>
       <source>Add Button</source>
-      <translation>Добавить кнопку</translation>
+      <translation type="unfinished"/>
     </message>
     <message>
       <source>Add a toolbar button for this macro?</source>

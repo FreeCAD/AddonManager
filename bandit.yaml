@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileNotice: Part of the AddonManager.
+
+# Configuration for Bandit static security analysis. Run locally with:
+#   bandit -c bandit.yaml -r .
+#
+# Directories that hold third-party addon sources, local cache output, virtual
+# environments, or git worktrees are not part of the Addon Manager and are
+# skipped. Any finding in the remaining code must either be fixed or carry an
+# audited "nosec" marker explaining why it is safe.
+#
+# Bandit also treats each entry as a plain substring of the file path, so the
+# patterns are anchored with path separators: a bare "CatalogCache" would
+# silently exclude AddonCatalogCacheCreator.py.
+
+exclude_dirs:
+  - "*/.venv/*"
+  - "*/.worktree/*"
+  - "*/CatalogCache/*"
+  - "*/FreeCAD-macros/*"
