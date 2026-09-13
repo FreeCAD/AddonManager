@@ -506,9 +506,8 @@ class CacheWriter:
             try:
                 response = requests.get(catalog_entry.zip_url, timeout=10.0)
             except requests.exceptions.RequestException as e:
-                last_error_message = (
-                    f"Network error fetching {catalog_entry.zip_url}: {e}\n{traceback.format_exc()}"
-                )
+                last_error_message = f"Network error fetching {catalog_entry.zip_url}: {e}"
+                print(traceback.format_exc(), flush=True)
                 response = None
             else:
                 if response.status_code == 200:
@@ -524,7 +523,7 @@ class CacheWriter:
 
         if response is None:
             error_message = f"{last_error_message}\nafter {MAX_ATTEMPTS} attempts"
-            print(f"ERROR: {error_message}")
+            print(f"ERROR: {error_message}", flush=True)
             self.clone_errors[extract_to_dir] = error_message
             return
 
@@ -543,11 +542,10 @@ class CacheWriter:
                 zip_file.extractall(path=extract_to_dir)
         except (zipfile.BadZipFile, OSError) as e:
             error_message = (
-                f"Downloaded zip data for {addon_id} from {catalog_entry.zip_url} is invalid: "
-                f"{e}\n{traceback.format_exc()}"
+                f"Downloaded zip data for {addon_id} from {catalog_entry.zip_url} is invalid"
             )
-            print(f"ERROR: {error_message}")
-            self.clone_errors[extract_to_dir] = error_message
+            print(f"ERROR: {error_message}: {e}\n{traceback.format_exc()}", flush=True)
+            self.clone_errors[extract_to_dir] = f"{error_message}: {e}"
 
     @staticmethod
     def _tail(text: object, limit: int = 2000) -> str:
