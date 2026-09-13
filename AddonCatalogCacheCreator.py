@@ -23,40 +23,42 @@
 Intended to be run by a server-side systemd timer to generate a file that is then loaded by the
 Addon Manager in each FreeCAD installation."""
 
-import base64
 import datetime
+import shutil
+import sys
+from dataclasses import is_dataclass, fields
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import base64
 import enum
 import hashlib
 import io
 import json
 import os
 import re
-import shutil
+import requests
 
 # Audited: all subprocess calls in this module are fixed git argument lists run with no shell;
 # the variable arguments (url, branch, name) come from the addon index this tool exists to
 # process (added nosec B404, and B603/B607 at the call sites)
 import subprocess  # nosec B404
-import sys
 import time
 import traceback
 import zipfile
-from dataclasses import fields, is_dataclass
-from types import SimpleNamespace
-from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Audited: only the exception class is imported, for catching errors raised by defusedxml,
 # which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
 from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
 
-import requests
 from defusedxml import DefusedXmlException
-from scour import scour
 
 import AddonCatalog
 import addonmanager_icon_utilities as icon_utils
 import addonmanager_metadata
 import addonmanager_utilities as utils
+
+from scour import scour
+from types import SimpleNamespace
 
 ADDON_CATALOG_URL = "https://raw.githubusercontent.com/FreeCAD/Addons/main/Data/Index.json"
 BASE_DIRECTORY = "./CatalogCache"
