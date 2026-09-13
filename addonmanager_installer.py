@@ -26,7 +26,6 @@ import json
 from datetime import datetime, timezone
 from enum import IntEnum, auto
 import os
-import re
 import shutil
 from typing import List, Optional
 import tempfile
@@ -120,9 +119,8 @@ class AddonInstaller(QtCore.QObject):
     # Signal: progress_message
     # In GUI mode this signal is emitted during an installation whose progress is reported as text
     # rather than as a byte count, which is how git reports what it is doing. The string is a
-    # human-readable description of the work in progress, and the integer is how far through that
-    # work we are, as a percentage, or -1 when the report did not include one.
-    progress_message = QtCore.Signal(str, int)
+    # human-readable description of the work in progress.
+    progress_message = QtCore.Signal(str)
 
     # Signals: success and failure
     # Emitted when the installation process is complete. The object emitted is the object that the
@@ -160,13 +158,19 @@ class AddonInstaller(QtCore.QObject):
         self.macro_installation_path = fci.DataPaths().macro_dir
         self.zip_download_index = None
 
-    def run(self, install_method: InstallationMethod = InstallationMethod.ANY) -> bool:
+        # The method the next run() uses when run() is given no argument.
+        self.install_method = InstallationMethod.ANY
+
+    def run(self, install_method: Optional[InstallationMethod] = None) -> bool:
         """Install an addon. Returns True if the addon was installed, or False if not. Emits
-        either success or failure prior to returning."""
+        either success or failure prior to returning. The installation method may be passed in
+        here, or set on install_method beforehand by callers that start the run via a signal."""
+        if install_method is not None:
+            self.install_method = install_method
         success = False
         try:
             addon_url = self.addon_to_install.url.replace(os.path.sep, "/")
-            method_to_use = self._determine_install_method(addon_url, install_method)
+            method_to_use = self._determine_install_method(addon_url, self.install_method)
             fci.Console.PrintMessage(
                 f"Installing addon {self.addon_to_install.name} using {method_to_use}\n"
             )
@@ -188,6 +192,7 @@ class AddonInstaller(QtCore.QObject):
             pass
         except Exception as e:
             fci.Console.PrintLog(str(e) + "\n")
+            self.failure.emit(self.addon_to_install, str(e))
             success = False
         if success:
             if (
@@ -200,12 +205,13 @@ class AddonInstaller(QtCore.QObject):
         self.finished.emit()
         return success
 
-    def will_use_git(self, install_method: InstallationMethod = InstallationMethod.ANY) -> bool:
+    def will_use_git(self, install_method: Optional[InstallationMethod] = None) -> bool:
         """Whether running this installer will use git, so that callers can say so before the
-        installation starts."""
+        installation starts. With no argument, answers for the stored install_method."""
 
+        method = install_method if install_method is not None else self.install_method
         addon_url = self.addon_to_install.url.replace(os.path.sep, "/")
-        return self._determine_install_method(addon_url, install_method) == InstallationMethod.GIT
+        return self._determine_install_method(addon_url, method) == InstallationMethod.GIT
 
     def _determine_install_method(
         self, addon_url: str, install_method: InstallationMethod
@@ -316,14 +322,10 @@ class AddonInstaller(QtCore.QObject):
         return True
 
     def _report_git_progress(self, line: str) -> None:
-        """Pass a line of git's progress report on to whatever is displaying it. This is basically
-        all we can do to not appear stalled out when using git to install, there's no way of giving
-        a "real" progress bar. The percentage is sort of a lie here, but it's all we've got."""
+        """Pass a line of git's progress report on to whatever is displaying it."""
         line = line.strip()
-        if not line:
-            return
-        percentage = re.search(r"(\d{1,3})%", line)
-        self.progress_message.emit(line, int(percentage.group(1)) if percentage else -1)
+        if line:
+            self.progress_message.emit(line)
 
     def _install_by_zip(self) -> bool:
         """Installs the specified url by downloading the file (if it is remote) and unzipping it
@@ -365,7 +367,7 @@ class AddonInstaller(QtCore.QObject):
         """Called periodically when downloading a zip file, emits a signal to display the
         download progress."""
         if index == self.zip_download_index:
-            self.progress_update.emit(bytes_read, data_size)
+            self.progress_update.emit(bytes_read, max(data_size, 0))
 
     def _finish_zip(self, index: int, response_code: int, filename: str):
         """Once the zip download is finished, unzip it into the correct location. Only called if
