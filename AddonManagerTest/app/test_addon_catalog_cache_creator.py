@@ -573,9 +573,7 @@ class TestCacheWriterGitUpdate(TestCase):
             ],
             self.issued_commands(mock_run),
         )
-        warnings = [
-            call.args[0] for call in mock_print.call_args_list if "WARNING" in call.args[0]
-        ]
+        warnings = [call.args[0] for call in mock_print.call_args_list if "WARNING" in call.args[0]]
         self.assertTrue(
             any(
                 "https://old.url/repo.git" in w and "https://new.url/repo.git" in w
