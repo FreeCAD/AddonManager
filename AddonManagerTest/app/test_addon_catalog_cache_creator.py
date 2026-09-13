@@ -459,19 +459,23 @@ class TestCacheWriterGitUpdate(TestCase):
         return [call.args[0] for call in mock_run.call_args_list]
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
     @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
-    def test_fetch_and_reset_with_branch(self, mock_ref_type, mock_run):
-        """A branch is reset onto the remote tracking branch, not merged."""
+    def test_fetch_and_reset_with_branch(self, mock_ref_type, mock_sync_remote_url, mock_run):
+        """A branch is reset onto the remote tracking branch, not merged, after the origin remote
+        is synced to the catalog's current url (see the sync_remote_url tests)."""
         mock_ref_type.return_value = accc.GitRefType.BRANCH
         mock_run.return_value.returncode = 0
         accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+        mock_sync_remote_url.assert_called_once_with("TestMod", "https://some.url")
         commands = self.issued_commands(mock_run)
         self.assertEqual(["git", "fetch", "--force"], commands[0])
         self.assertIn(["git", "reset", "--hard", "origin/main", "--quiet"], commands)
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
     @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
-    def test_fetch_and_reset_with_tag(self, mock_ref_type, mock_run):
+    def test_fetch_and_reset_with_tag(self, mock_ref_type, mock_sync_remote_url, mock_run):
         """A tag is reset onto the tag itself, which has no remote tracking equivalent."""
         mock_ref_type.return_value = accc.GitRefType.TAG
         mock_run.return_value.returncode = 0
@@ -482,8 +486,9 @@ class TestCacheWriterGitUpdate(TestCase):
         )
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
     @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
-    def test_fetch_and_reset_with_hash(self, mock_ref_type, mock_run):
+    def test_fetch_and_reset_with_hash(self, mock_ref_type, mock_sync_remote_url, mock_run):
         """A hash is reset onto the hash itself."""
         mock_ref_type.return_value = accc.GitRefType.HASH
         mock_run.return_value.returncode = 0
@@ -494,8 +499,11 @@ class TestCacheWriterGitUpdate(TestCase):
         )
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
     @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
-    def test_fetch_and_reset_does_not_merge_or_pull(self, mock_ref_type, mock_run):
+    def test_fetch_and_reset_does_not_merge_or_pull(
+        self, mock_ref_type, mock_sync_remote_url, mock_run
+    ):
         """Neither pull nor merge is used, so a force push on the remote cannot fail the update."""
         mock_ref_type.return_value = accc.GitRefType.BRANCH
         mock_run.return_value.returncode = 0
@@ -505,8 +513,11 @@ class TestCacheWriterGitUpdate(TestCase):
             self.assertNotIn("merge", command)
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
     @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
-    def test_fetch_and_reset_removes_untracked_files(self, mock_ref_type, mock_run):
+    def test_fetch_and_reset_removes_untracked_files(
+        self, mock_ref_type, mock_sync_remote_url, mock_run
+    ):
         """Files left over from a previous run are removed."""
         mock_ref_type.return_value = accc.GitRefType.BRANCH
         mock_run.return_value.returncode = 0
@@ -517,27 +528,60 @@ class TestCacheWriterGitUpdate(TestCase):
         )
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
-    def test_fetch_and_reset_raises_when_fetch_fails(self, mock_run):
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
+    def test_fetch_and_reset_raises_when_fetch_fails(self, mock_sync_remote_url, mock_run):
         """A failed fetch is reported as a RuntimeError so that the caller can re-clone."""
         mock_run.return_value.returncode = 1
         with self.assertRaises(RuntimeError):
             accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
-    def test_fetch_and_reset_raises_when_fetch_times_out(self, mock_run):
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
+    def test_fetch_and_reset_raises_when_fetch_times_out(self, mock_sync_remote_url, mock_run):
         """A timed-out fetch is reported as a RuntimeError so that the caller can re-clone."""
         mock_run.side_effect = accc.subprocess.TimeoutExpired("git fetch", 1)
         with self.assertRaises(RuntimeError):
             accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
 
     @patch("AddonCatalogCacheCreator.subprocess.run")
+    @patch("AddonCatalogCacheCreator.CacheWriter.sync_remote_url")
     @patch("AddonCatalogCacheCreator.CacheWriter.determine_git_ref_type")
-    def test_fetch_and_reset_raises_when_reset_fails(self, mock_ref_type, mock_run):
+    def test_fetch_and_reset_raises_when_reset_fails(
+        self, mock_ref_type, mock_sync_remote_url, mock_run
+    ):
         """A failed reset is reported as a RuntimeError so that the caller can re-clone."""
         mock_ref_type.return_value = accc.GitRefType.BRANCH
         mock_run.side_effect = [MagicMock(returncode=0), MagicMock(returncode=1)]
         with self.assertRaises(RuntimeError):
             accc.CacheWriter.fetch_and_reset("TestMod", "https://some.url", "main")
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    def test_sync_remote_url_updates_and_warns_when_changed(self, mock_run):
+        """A repository that moved since the local clone was made (renamed, transferred to a new
+        owner, etc.) gets its origin remote repointed, with a warning logged so an operator can
+        tell from the build logs that this happened."""
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="https://old.url/repo.git\n"),
+            MagicMock(returncode=0),
+        ]
+        with patch("builtins.print") as mock_print:
+            accc.CacheWriter.sync_remote_url("TestMod", "https://new.url/repo.git")
+        self.assertEqual(
+            [
+                ["git", "remote", "get-url", "origin"],
+                ["git", "remote", "set-url", "origin", "https://new.url/repo.git"],
+            ],
+            self.issued_commands(mock_run),
+        )
+        warnings = [
+            call.args[0] for call in mock_print.call_args_list if "WARNING" in call.args[0]
+        ]
+        self.assertTrue(
+            any(
+                "https://old.url/repo.git" in w and "https://new.url/repo.git" in w
+                for w in warnings
+            )
+        )
 
     @patch("AddonCatalogCacheCreator.time.sleep")
     @patch("AddonCatalogCacheCreator.subprocess.run")

@@ -728,10 +728,44 @@ class CacheWriter:
         return addonmanager_metadata.get_icon_from_metadata(metadata)
 
     @staticmethod
+    def sync_remote_url(name: str, url: str) -> None:
+        """If the "origin" remote of the git clone in the current working directory no longer
+        matches "url", set the remote to "url"."""
+
+        completed_process = subprocess.run(  # nosec B603 B607
+            ["git", "remote", "get-url", "origin"], capture_output=True, text=True
+        )
+        if completed_process.returncode != 0:
+            raise RuntimeError(
+                f"git remote get-url failed for {name}. "
+                f"{CacheWriter._tail(completed_process.stderr)}".strip()
+            )
+        previous_url = completed_process.stdout.strip()
+        if previous_url == url:
+            return
+
+        print(
+            f"WARNING: Remote URL for {name} changed from {previous_url} to {url}",
+            flush=True,
+        )
+
+        completed_process = subprocess.run(  # nosec B603 B607
+            ["git", "remote", "set-url", "origin", url], capture_output=True, text=True
+        )
+        if completed_process.returncode != 0:
+            raise RuntimeError(
+                f"git remote set-url failed for {name}. "
+                f"{CacheWriter._tail(completed_process.stderr)}".strip()
+            )
+
+    @staticmethod
     def fetch_and_reset(name: str, url: str, branch: str) -> None:
         """Update the git clone in the current working directory by fetching from its remote and
-        hard resetting onto the requested ref, discarding any local state. A RuntimeError, with
-        git's own stderr appended if any was captured, is raised if any of the git calls fails."""
+        hard resetting onto the requested ref, discarding any local state. The origin remote is
+        first synced to "url" (see sync_remote_url), so a repository that moved since the local
+        clone was made is kept in sync."""
+
+        CacheWriter.sync_remote_url(name, url)
 
         try:
             completed_process = subprocess.run(  # nosec B603 B607
