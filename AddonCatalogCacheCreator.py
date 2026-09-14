@@ -35,6 +35,7 @@ import hashlib
 import io
 import json
 import os
+import posixpath
 import re
 import requests
 
@@ -561,7 +562,7 @@ class CacheWriter:
                     ["git", "config", "core.sparsecheckout", "true"], check=True
                 )
                 with open(".git/info/sparse-checkout", "w") as f:
-                    f.write("\n".join(files))
+                    f.write("\n".join(self.sparse_checkout_patterns(files)))
                     f.write("\n")  # So we are safe appending later
                 subprocess.run(  # nosec B603 B607
                     ["git", "fetch", "--depth=1", "origin", branch],
@@ -601,7 +602,7 @@ class CacheWriter:
         clone_path = os.path.join(cwd, name)
         os.chdir(clone_path)
         with open(".git/info/sparse-checkout", "a") as f:
-            f.write("\n".join(files))
+            f.write("\n".join(self.sparse_checkout_patterns(files)))
             f.write("\n")  # So we are safe appending later
         try:
             subprocess.run(["git", "read-tree", "-m", "-u", "HEAD"], check=True)  # nosec B603 B607
@@ -610,6 +611,13 @@ class CacheWriter:
             print(f"ERROR: {e}")
         os.chdir(cwd)
 
+    @staticmethod
+    def sparse_checkout_patterns(files: List[str]) -> List[str]:
+        """Convert paths relative to the top of a repository into sparse checkout patterns that
+        match only that exact path. Without a leading slash git matches a bare filename in every
+        subdirectory, pulling in unrelated files such as docs/requirements.txt. See #489."""
+        return ["/" + posixpath.normpath(file.replace("\\", "/")).lstrip("/") for file in files]
+
     def find_file(
         self,
         filename: str,
@@ -617,13 +625,13 @@ class CacheWriter:
         index: int,
         catalog_entry: AddonCatalog.AddonCatalogEntry,
     ) -> Optional[str]:
-        """Find a given file in the downloaded cache for this addon. Returns None if the file does
-        not exist."""
-        start_dir = os.path.join(self.cwd, self.get_directory_name(addon_id, index, catalog_entry))
-        for dirpath, _, filenames in os.walk(start_dir):
-            if filename in filenames:
-                return os.path.join(dirpath, filename)
-        return None
+        """Find a given file at the top level of the downloaded cache for this addon. Files of the
+        same name in subdirectories are not addon metadata, and are ignored. Returns None if the
+        file does not exist."""
+        path = os.path.join(
+            self.cwd, self.get_directory_name(addon_id, index, catalog_entry), filename
+        )
+        return path if os.path.isfile(path) else None
 
     @staticmethod
     def get_icon_from_metadata(metadata: addonmanager_metadata.Metadata) -> Optional[str]:
