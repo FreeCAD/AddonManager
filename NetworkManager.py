@@ -138,7 +138,7 @@ class NetworkManager(QtCore.QObject):
 
         # We support an arbitrary number of threads using synchronous GET calls:
         self.synchronous_lock = threading.Lock()
-        self.synchronous_complete: Dict[int, bool] = {}
+        self.synchronous_complete: Dict[int, threading.Event] = {}
         self.synchronous_result_data: Dict[int, QtCore.QByteArray] = {}
         self.synchronous_quiet: Set[int] = set()  # Indices whose failures are not reported
 
@@ -368,8 +368,9 @@ class NetworkManager(QtCore.QObject):
         """
 
         current_index = next(self.counting_iterator)  # A thread-safe counter
+        completion = threading.Event()
         with self.synchronous_lock:
-            self.synchronous_complete[current_index] = False
+            self.synchronous_complete[current_index] = completion
             if quiet:
                 self.synchronous_quiet.add(current_index)
 
@@ -381,13 +382,9 @@ class NetworkManager(QtCore.QObject):
             )
         )
         self.__request_queued.emit()
-        while True:
+        while not completion.wait(0.1):
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return None
-            QtCore.QCoreApplication.processEvents()
-            with self.synchronous_lock:
-                if self.synchronous_complete[current_index]:
-                    break
 
         with self.synchronous_lock:
             self.synchronous_complete.pop(current_index)
@@ -423,7 +420,7 @@ class NetworkManager(QtCore.QObject):
                         ).format(code)
                         + "\n"
                     )
-                self.synchronous_complete[index] = True
+                self.synchronous_complete[index].set()
 
     @staticmethod
     def __create_get_request(
