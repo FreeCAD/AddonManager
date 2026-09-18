@@ -19,8 +19,8 @@
 #                                                                              #
 ################################################################################
 
+import time
 import unittest
-import os
 from unittest.mock import MagicMock, patch
 
 from addonmanager_workers_utility import ConnectionChecker
@@ -33,53 +33,106 @@ except ImportError:
     except ImportError:
         from PySide2 import QtCore
 
-import NetworkManager
+import addonmanager_freecad_interface as fci
+
+from AddonManagerTest.gui.gui_mocks import FakeNetworkManager
+
+WORKER_TIMEOUT_MS = 5000
 
 
-class TestWorkersUtility(unittest.TestCase):
+class TestConnectionChecker(unittest.TestCase):
+    """The connection checker runs in a thread of its own, so it is driven here the way the Addon
+    Manager drives it: start the worker, then service the main thread until it reports a result."""
 
-    MODULE = "test_workers_utility"  # file name without extension
-
-    @unittest.skip("Test is slow and uses the network: refactor!")
     def setUp(self):
-        self.test_dir = os.path.join(os.path.dirname(__file__), "..", "data")
-        self.last_result = None
+        self.network_manager = FakeNetworkManager()
+        network_patch = patch("NetworkManager.AM_NETWORK_MANAGER", self.network_manager)
+        network_patch.start()
+        self.addCleanup(network_patch.stop)
 
-        url = "https://api.github.com/zen"
-        NetworkManager.InitializeNetworkManager()
-        result = NetworkManager.AM_NETWORK_MANAGER.blocking_get(url)
-        if result is None:
-            self.skipTest("No active internet connection detected")
+        self.result = None
+        self.worker = ConnectionChecker()
+        self.worker.success.connect(self._record_success)
+        self.worker.failure.connect(self._record_failure)
+        self.addCleanup(self._stop_worker)
 
-    def test_connection_checker_basic(self):
-        """Tests the connection checking worker's basic operation: does not exit until worker thread completes"""
-        worker = ConnectionChecker()
-        worker.success.connect(self.connection_succeeded)
-        worker.failure.connect(self.connection_failed)
-        self.last_result = None
-        worker.start()
-        while worker.isRunning():
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        self.assertEqual(self.last_result, "SUCCESS")
+    def _record_success(self):
+        self.result = "SUCCESS"
 
-    def test_connection_checker_thread_interrupt(self):
-        worker = ConnectionChecker()
-        worker.success.connect(self.connection_succeeded)
-        worker.failure.connect(self.connection_failed)
-        self.last_result = None
-        worker.start()
-        worker.requestInterruption()
-        while worker.isRunning():
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 50)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        self.assertIsNone(self.last_result, "Requesting interruption of thread failed to interrupt")
+    def _record_failure(self, _message: str):
+        self.result = "FAILURE"
 
-    def connection_succeeded(self):
-        self.last_result = "SUCCESS"
+    def _stop_worker(self):
+        if self.worker.isRunning():
+            self.worker.requestInterruption()
+            self.worker.wait(WORKER_TIMEOUT_MS)
 
-    def connection_failed(self):
-        self.last_result = "FAILURE"
+    def _run_until(self, condition, answer_requests: bool = True) -> bool:
+        """Process events on this thread while the worker runs on its own, answering its request
+        once it has been submitted. Returns whether the condition was met before the timeout."""
+        deadline = time.monotonic() + WORKER_TIMEOUT_MS / 1000
+        while not condition() and time.monotonic() < deadline:
+            if answer_requests and self.worker.request_id is not None:
+                self.network_manager.answer_pending_requests()
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, 10)
+        return condition()
+
+    def _run_until_finished(self, answer_requests: bool = True) -> bool:
+        return self._run_until(lambda: not self.worker.isRunning(), answer_requests)
+
+    def test_reachable_server_reports_success(self):
+        self.worker.start()
+
+        self.assertTrue(self._run_until(lambda: self.result is not None))
+        self.assertEqual("SUCCESS", self.result)
+
+    def test_server_is_asked_for_the_status_url(self):
+        self.worker.start()
+        self._run_until(lambda: self.result is not None)
+
+        self.assertEqual(
+            [fci.Preferences().get("status_test_url")], self.network_manager.requested_urls
+        )
+
+    def test_error_response_reports_failure(self):
+        self.network_manager.status = 404
+
+        self.worker.start()
+
+        self.assertTrue(self._run_until(lambda: self.result is not None))
+        self.assertEqual("FAILURE", self.result)
+
+    def test_worker_exits_when_its_check_is_done(self):
+        self.worker.start()
+        self._run_until(lambda: self.result is not None)
+
+        self.assertTrue(self._run_until_finished())
+
+    def test_interrupted_check_reports_nothing(self):
+        self.worker.start()
+        self.worker.requestInterruption()
+
+        self.assertTrue(self._run_until_finished(answer_requests=False))
+        self.assertIsNone(self.result)
+
+    def test_interrupted_check_abandons_its_request(self):
+        self.worker.start()
+        self._run_until(lambda: self.worker.request_id is not None, answer_requests=False)
+        self.worker.requestInterruption()
+
+        self.assertTrue(self._run_until_finished(answer_requests=False))
+        self.assertEqual([self.worker.request_id], self.network_manager.aborted_requests)
+
+    def test_worker_stops_listening_once_its_check_is_over(self):
+        """A response that arrives after the check has finished must not be handed to a worker
+        whose thread has already exited."""
+        self.worker.start()
+        self._run_until(lambda: self.result is not None)
+        self._run_until_finished()
+
+        self.network_manager.completed.emit(self.worker.request_id, 200, QtCore.QByteArray(b"LATE"))
+
+        self.assertEqual(b"OK", self.worker.data)
 
 
 class TestConnectionCheckerRun(unittest.TestCase):
