@@ -21,6 +21,8 @@
 
 import unittest
 import os
+from unittest.mock import MagicMock, patch
+
 from addonmanager_workers_utility import ConnectionChecker
 
 try:
@@ -78,3 +80,54 @@ class TestWorkersUtility(unittest.TestCase):
 
     def connection_failed(self):
         self.last_result = "FAILURE"
+
+
+class TestConnectionCheckerRun(unittest.TestCase):
+    """The Addon Manager checks the connection every time it is opened, so a worker may be asked
+    to run more than once in a FreeCAD session."""
+
+    def setUp(self):
+        network_patch = patch("NetworkManager.AM_NETWORK_MANAGER", MagicMock())
+        self.mock_network_manager = network_patch.start()
+        self.addCleanup(network_patch.stop)
+        self.checker = ConnectionChecker()
+
+    def _respond_with(self, data):
+        """Complete the request as soon as it is submitted, recording what the worker knew at
+        that moment."""
+        self.data_when_submitted = []
+
+        def submit(url, timeout_ms=30000, disable_cache=False):
+            self.data_when_submitted.append(self.checker.data)
+            self.checker.data = data
+            self.checker.response_received.set()
+            return 7
+
+        self.mock_network_manager.submit_unmonitored_get.side_effect = submit
+
+    def test_response_from_a_previous_check_is_discarded(self):
+        """A response held over from an earlier check must not stand in for one that never
+        arrived."""
+        self.checker.data = b"OK\n"
+        self._respond_with(None)
+        failures = []
+        self.checker.failure.connect(failures.append)
+
+        self.checker.run()
+
+        self.assertEqual([None], self.data_when_submitted)
+        self.assertEqual(1, len(failures))
+
+    def test_response_to_a_previous_request_is_not_accepted(self):
+        """The worker listens again before it has an id for its new request, so a late response
+        to the request made by an earlier check can arrive in between."""
+        self.checker.request_id = 7
+        id_when_listening_resumed = []
+        self.mock_network_manager.completed.connect.side_effect = (
+            lambda slot: id_when_listening_resumed.append(self.checker.request_id)
+        )
+        self._respond_with(b"OK\n")
+
+        self.checker.run()
+
+        self.assertEqual([None], id_when_listening_resumed)
