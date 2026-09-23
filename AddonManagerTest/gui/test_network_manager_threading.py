@@ -91,10 +91,13 @@ class CallFromAnotherThread(QtCore.QThread):
 class NetworkManagerTestCase(unittest.TestCase):
     """Builds a NetworkManager whose QNetworkAccessManager is replaced by a fake, so that no
     request ever reaches the network. Proxy setup is skipped: outside FreeCAD it prompts on the
-    command line."""
+    command line. It is replaced with a plain function, not a mock: PySide6 6.10 crashes when it
+    builds the meta-object of a QObject class that holds a MagicMock."""
 
     def setUp(self):
-        proxy_patch = patch.object(NetworkManager.NetworkManager, "_setup_proxy")
+        proxy_patch = patch.object(
+            NetworkManager.NetworkManager, "_setup_proxy", lambda _manager: None
+        )
         proxy_patch.start()
         self.addCleanup(proxy_patch.stop)
 
