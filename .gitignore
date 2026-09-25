@@ -2,6 +2,7 @@
 # SPDX-FileNotice: Part of the AddonManager.
 
 .idea
+.vscode
 __pycache*
 .DS_Store
 
