@@ -30,7 +30,7 @@ except ImportError:
         from PySide2 import QtCore
 
 import NetworkManager
-import time
+import threading
 
 import addonmanager_freecad_interface as fci
 
@@ -48,7 +48,7 @@ class ConnectionChecker(QtCore.QThread):
     def __init__(self):
         QtCore.QThread.__init__(self)
         self.setObjectName("ConnectionChecker")
-        self.done = False
+        self.response_received = threading.Event()
         self.request_id = None
         self.data = None
 
@@ -58,19 +58,19 @@ class ConnectionChecker(QtCore.QThread):
 
         fci.Console.PrintLog("Checking network connection...\n")
         url = fci.Preferences().get("status_test_url")
-        self.done = False
+        self.data = None
+        self.request_id = None
+        self.response_received.clear()
         NetworkManager.AM_NETWORK_MANAGER.completed.connect(self.connection_data_received)
         self.request_id = NetworkManager.AM_NETWORK_MANAGER.submit_unmonitored_get(
             url, timeout_ms=30000, disable_cache=True
         )
-        while not self.done:
+        while not self.response_received.wait(0.1):
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 fci.Console.PrintLog("Connection check cancelled\n")
                 NetworkManager.AM_NETWORK_MANAGER.abort(self.request_id)
                 self.disconnect_network_manager()
                 return
-            QtCore.QCoreApplication.processEvents()
-            time.sleep(0.1)
         if not self.data:
             self.failure.emit(
                 translate(
@@ -91,7 +91,7 @@ class ConnectionChecker(QtCore.QThread):
             else:
                 fci.Console.PrintWarning(f"No data received: status returned was {status}\n")
                 self.data = None
-            self.done = True
+            self.response_received.set()
 
     def disconnect_network_manager(self):
         NetworkManager.AM_NETWORK_MANAGER.completed.disconnect(self.connection_data_received)

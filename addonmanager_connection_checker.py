@@ -42,7 +42,8 @@ class ConnectionCheckerGUI(QtCore.QObject):
         super().__init__()
 
         # Check the connection in a new thread, so FreeCAD stays responsive
-        self.connection_checker = ConnectionChecker()
+        self.connection_checker = None
+        self.retired_checkers = []
         self.signals_connected = False
 
         self.connection_message_timer = None
@@ -50,6 +51,8 @@ class ConnectionCheckerGUI(QtCore.QObject):
 
     def start(self):
         """Start the connection check"""
+        self._retire_current_checker()
+        self.connection_checker = ConnectionChecker()
         self.connection_checker.success.connect(self._check_succeeded)
         self.connection_checker.failure.connect(self._network_connection_failed)
         self.signals_connected = True
@@ -57,6 +60,21 @@ class ConnectionCheckerGUI(QtCore.QObject):
 
         # If it takes longer than a half second to check the connection, show a message:
         QtCore.QTimer.singleShot(500, self._show_connection_check_message)
+
+    def _retire_current_checker(self):
+        """Set the worker from the previous check aside. A QThread cannot be restarted, and a
+        cancelled check may still be winding down, so one that is still running is asked to stop
+        and is kept alive until it has."""
+        self.retired_checkers = [
+            checker for checker in self.retired_checkers if not checker.isFinished()
+        ]
+        if self.connection_checker is None:
+            return
+        self._disconnect_signals()
+        if self.connection_checker.isRunning():
+            self.connection_checker.requestInterruption()
+            self.retired_checkers.append(self.connection_checker)
+        self.connection_checker = None
 
     def _show_connection_check_message(self):
         """Display a message informing the user that the check is in process"""
