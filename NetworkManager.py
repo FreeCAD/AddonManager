@@ -48,7 +48,9 @@
 # A secondary blocking interface is also provided, for very short network
 # accesses: the blocking_get() function blocks until the network transmission
 # is complete, directly returning a QByteArray object with the received data.
-# Do not run on the main GUI thread!
+# Do not run on the main GUI thread: a request made there can only be launched
+# once control returns to the event loop, so blocking there would deadlock, and
+# is refused.
 """
 
 import threading
@@ -125,6 +127,8 @@ class NetworkManager(QtCore.QObject):
     progress_complete = QtCore.Signal(int, int, os.PathLike)  # Index, http response code, filename
 
     __request_queued = QtCore.Signal()
+    __abort_requested = QtCore.Signal(int)
+    __abort_all_requested = QtCore.Signal()
 
     def __init__(self):
         super().__init__()
@@ -138,7 +142,7 @@ class NetworkManager(QtCore.QObject):
 
         # We support an arbitrary number of threads using synchronous GET calls:
         self.synchronous_lock = threading.Lock()
-        self.synchronous_complete: Dict[int, bool] = {}
+        self.synchronous_complete: Dict[int, threading.Event] = {}
         self.synchronous_result_data: Dict[int, QtCore.QByteArray] = {}
         self.synchronous_quiet: Set[int] = set()  # Indices whose failures are not reported
 
@@ -167,8 +171,52 @@ class NetworkManager(QtCore.QObject):
         # A helper connection for our blocking interface
         self.completed.connect(self.__complete_synchronous_request)
 
-        # Set up our worker connection
-        self.__request_queued.connect(self.__setup_network_request)
+        queued = QtCore.Qt.ConnectionType.QueuedConnection
+        self.__request_queued.connect(self.__setup_network_request, queued)
+        self.__abort_requested.connect(self._abort_request, queued)
+        self.__abort_all_requested.connect(self._abort_all_requests, queued)
+
+        self._move_to_application_thread()
+
+    def _move_to_application_thread(self):
+        """Put this object, and the QNetworkAccessManager it owns, on the thread running the
+        application. Whichever thread asks for the manager first is the one that constructs it,
+        and that may be a worker (which would later die)."""
+        application = QtCore.QCoreApplication.instance()
+        if application is None or self.thread() == application.thread():
+            return
+        fci.Console.PrintWarning(
+            translate(
+                "AddonsInstaller",
+                "The Addon Manager network manager was created on a worker thread: moving it to"
+                " the main thread",
+            )
+            + "\n"
+        )
+        if self.diskCache.parent() is None:
+            self.diskCache.moveToThread(application.thread())
+        self.QNAM.moveToThread(application.thread())
+        self.moveToThread(application.thread())
+
+    def _on_owning_thread(self) -> bool:
+        """Whether the caller is running on the thread that owns the QNetworkAccessManager."""
+        return QtCore.QThread.currentThread() == self.thread()
+
+    def _refuse_blocking_request(self) -> bool:
+        """Whether a blocking request has to be turned away. One made on the owning thread stops
+        that thread from ever launching it, so it would wait forever."""
+        if not self._on_owning_thread():
+            return False
+        fci.Console.PrintError(
+            translate(
+                "AddonsInstaller",
+                "Addon Manager internal error: a blocking network request was made on the thread"
+                " that owns the network manager, where it could never complete. The request was"
+                " refused.",
+            )
+            + "\n"
+        )
+        return True
 
     def _setup_proxy(self):
         """Set up the proxy based on user preferences or prompts on command line"""
@@ -221,8 +269,10 @@ class NetworkManager(QtCore.QObject):
     def __aboutToQuit(self):
         """Called when the application is about to quit. Not currently used."""
 
+    @QtCore.Slot()
     def __setup_network_request(self):
-        """Get the next request off the queue and launch it."""
+        """Get the next request off the queue and launch it. Runs on the thread that owns the
+        QNetworkAccessManager, whichever thread queued the request."""
         try:
             item = self.queue.get_nowait()
             if item:
@@ -283,7 +333,7 @@ class NetworkManager(QtCore.QObject):
         is not called until the data transfer has finished and the connection is closed."""
 
         current_index = next(self.counting_iterator)  # A thread-safe counter
-        # Use a queue because we can only put things on the QNAM from the main event loop thread
+        # Use a queue because the QNAM may only be used from the thread that owns it
         self.queue.put(
             QueueItem(
                 current_index,
@@ -305,7 +355,7 @@ class NetworkManager(QtCore.QObject):
         file when done with it (or move it into its final place, etc.)."""
 
         current_index = next(self.counting_iterator)  # A thread-safe counter
-        # Use a queue because we can only put things on the QNAM from the main event loop thread
+        # Use a queue because the QNAM may only be used from the thread that owns it
         self.queue.put(
             QueueItem(
                 current_index,
@@ -338,6 +388,8 @@ class NetworkManager(QtCore.QObject):
             raise ValueError("max_attempts must be greater than 0")
         if timeout_ms < 1:
             raise ValueError("timeout_ms must be greater than 0")
+        if self._refuse_blocking_request():
+            return None
         attempt = 0
         while True:
             attempt += 1
@@ -366,10 +418,13 @@ class NetworkManager(QtCore.QObject):
         :quiet: Do not report a failed request to the user: the file is allowed to be missing
         :returns: The response data, or None if the request failed after max_attempts attempts.
         """
+        if self._refuse_blocking_request():
+            return None
 
         current_index = next(self.counting_iterator)  # A thread-safe counter
+        completion = threading.Event()
         with self.synchronous_lock:
-            self.synchronous_complete[current_index] = False
+            self.synchronous_complete[current_index] = completion
             if quiet:
                 self.synchronous_quiet.add(current_index)
 
@@ -381,13 +436,9 @@ class NetworkManager(QtCore.QObject):
             )
         )
         self.__request_queued.emit()
-        while True:
+        while not completion.wait(0.1):
             if QtCore.QThread.currentThread().isInterruptionRequested():
                 return None
-            QtCore.QCoreApplication.processEvents()
-            with self.synchronous_lock:
-                if self.synchronous_complete[current_index]:
-                    break
 
         with self.synchronous_lock:
             self.synchronous_complete.pop(current_index)
@@ -423,7 +474,7 @@ class NetworkManager(QtCore.QObject):
                         ).format(code)
                         + "\n"
                     )
-                self.synchronous_complete[index] = True
+                self.synchronous_complete[index].set()
 
     @staticmethod
     def __create_get_request(
@@ -460,18 +511,32 @@ class NetworkManager(QtCore.QObject):
 
     def abort_all(self):
         """Abort ALL network calls in progress, including clearing the queue"""
+        if self._on_owning_thread():
+            self._abort_all_requests()
+        else:
+            self.__abort_all_requested.emit()
+
+    @QtCore.Slot()
+    def _abort_all_requests(self):
         for reply in self.replies.values():
             if reply.isRunning():
                 reply.abort()
         while True:
             try:
-                self.queue.get()
+                self.queue.get_nowait()
                 self.queue.task_done()
             except queue.Empty:
                 break
 
     def abort(self, index: int):
         """Abort a specific request"""
+        if self._on_owning_thread():
+            self._abort_request(index)
+        else:
+            self.__abort_requested.emit(index)
+
+    @QtCore.Slot(int)
+    def _abort_request(self, index: int):
         if index in self.replies and self.replies[index].isRunning():
             self.replies[index].abort()
         elif index < self.__last_started_index:

@@ -50,7 +50,7 @@ class SynchronousRequests:
 
     def await_response(self, index: int, quiet: bool) -> None:
         """Set up the state that blocking_get() creates while it waits for a response."""
-        self.synchronous_complete[index] = False
+        self.synchronous_complete[index] = threading.Event()
         if quiet:
             self.synchronous_quiet.add(index)
 
@@ -87,7 +87,7 @@ class TestSynchronousCompletion(unittest.TestCase):
 
         self.requests.complete_request(1, 404, None)
 
-        self.assertTrue(self.requests.synchronous_complete[1])
+        self.assertTrue(self.requests.synchronous_complete[1].is_set())
 
     def test_quiet_does_not_affect_other_requests(self):
         """Marking one request quiet does not suppress the reporting of any other request."""

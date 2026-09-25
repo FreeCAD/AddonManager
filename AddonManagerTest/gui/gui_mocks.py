@@ -201,3 +201,41 @@ class MockNetworkManagerGuiUp:
 
     def abort(self, index: int):
         pass
+
+
+class FakeNetworkManager(QtCore.QObject):
+    """A stand-in for the NetworkManager singleton that never touches the network.
+
+    Requests are recorded and answered by whichever thread calls answer_pending_requests(), so a
+    test decides when a worker sees its response. The completed signal is a real Qt signal, and is
+    therefore delivered across threads exactly as the real one is."""
+
+    completed = QtCore.Signal(int, int, QtCore.QByteArray)
+
+    def __init__(self, status: int = 200, response: bytes = b"OK"):
+        super().__init__()
+        self.status = status
+        self.response = response
+        self.requested_urls = []
+        self.pending_requests = []
+        self.aborted_requests = []
+        self.next_index = 0
+
+    def submit_unmonitored_get(
+        self, url: str, timeout_ms: int = 30000, disable_cache: bool = False
+    ) -> int:
+        index = self.next_index
+        self.next_index += 1
+        self.requested_urls.append(url)
+        self.pending_requests.append(index)
+        return index
+
+    def answer_pending_requests(self) -> None:
+        """Complete every request that has been submitted and not yet answered or aborted."""
+        while self.pending_requests:
+            index = self.pending_requests.pop(0)
+            self.completed.emit(index, self.status, QtCore.QByteArray(self.response))
+
+    def abort(self, index: int) -> None:
+        self.aborted_requests.append(index)
+        self.pending_requests = [pending for pending in self.pending_requests if pending != index]
