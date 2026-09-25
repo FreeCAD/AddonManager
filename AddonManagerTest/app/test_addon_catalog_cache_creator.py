@@ -144,7 +144,7 @@ class TestCacheWriter(TestCase):
         self.assertTrue(result.startswith(os.path.join("test_addon", "99")))
 
     def test_find_file_with_existing_file(self):
-        """Find file locates the first occurrence of a given file"""
+        """Find file locates a given file at the top level of the addon"""
         ace = AddonCatalog.AddonCatalogEntry({"git_ref": "main"})
         file_path = os.path.abspath(
             os.path.join("home", "cache", "TestMod", "1-main", "some_fake_file.txt")
@@ -162,6 +162,18 @@ class TestCacheWriter(TestCase):
         writer.cwd = os.path.abspath(os.path.join("home", "cache"))
         self.fake_fs().create_dir(os.path.join("home", "cache", "TestMod", "1-main"))
         result = writer.find_file("some_other_fake_file.txt", "TestMod", 1, ace)
+        self.assertIsNone(result)
+
+    def test_find_file_ignores_files_in_subdirectories(self):
+        """A file of the same name in a subdirectory, such as docs/requirements.txt, is not found"""
+        ace = AddonCatalog.AddonCatalogEntry({"git_ref": "main"})
+        self.fake_fs().create_file(
+            os.path.join("home", "cache", "TestMod", "1-main", "docs", "requirements.txt"),
+            contents="sphinx",
+        )
+        writer = accc.CacheWriter()
+        writer.cwd = os.path.abspath(os.path.join("home", "cache"))
+        result = writer.find_file("requirements.txt", "TestMod", 1, ace)
         self.assertIsNone(result)
 
     def test_generate_cache_entry_from_package_xml_bad_metadata(self):
@@ -537,4 +549,36 @@ class TestCacheWriterGitUpdate(TestCase):
         commands = self.issued_commands(mock_run)
         self.assertEqual([["git", "read-tree", "-m", "-u", "HEAD"]], commands)
         with open(sparse_file, encoding="utf-8") as f:
-            self.assertEqual("package.xml\nicon.svg\n", f.read())
+            self.assertEqual("package.xml\n/icon.svg\n", f.read())
+
+    @patch("AddonCatalogCacheCreator.subprocess.run")
+    def test_new_sparse_clone_checks_out_only_top_level_files(self, mock_run):
+        """The sparse checkout patterns of a new clone are anchored to the top of the repository,
+        so a docs/requirements.txt file is not mistaken for the addon's requirements.txt."""
+
+        def fake_run(command, **_):
+            if command[:2] == ["git", "init"]:
+                os.makedirs(os.path.join(".git", "info"))
+            return MagicMock(returncode=0)
+
+        mock_run.side_effect = fake_run
+        writer = accc.CacheWriter()
+        writer.sparse_clone("TestMod", "https://some.url", "main", ["package.xml", "metadata.txt"])
+        sparse_file = os.path.join(os.getcwd(), "TestMod", ".git", "info", "sparse-checkout")
+        with open(sparse_file, encoding="utf-8") as f:
+            self.assertEqual("/package.xml\n/metadata.txt\n", f.read())
+        self.assertEqual({}, writer.clone_errors)
+
+    def test_sparse_checkout_patterns_are_anchored_and_normalized(self):
+        """Relative paths in any common spelling become a single anchored sparse checkout pattern."""
+        self.assertEqual(
+            ["/package.xml", "/Resources/icon.svg", "/Resources/icon.svg", "/Resources/icon.svg"],
+            accc.CacheWriter.sparse_checkout_patterns(
+                [
+                    "package.xml",
+                    "./Resources/icon.svg",
+                    "Resources\\icon.svg",
+                    "/Resources/icon.svg",
+                ]
+            ),
+        )
