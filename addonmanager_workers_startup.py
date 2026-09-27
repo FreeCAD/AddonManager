@@ -51,6 +51,7 @@ from addonmanager_metadata import (
     get_branch_from_metadata,
     get_icon_from_metadata,
 )
+from addonmanager_python_constraints import get_constraints
 import addonmanager_utilities as utils
 import addonmanager_freecad_interface as fci
 
@@ -949,3 +950,11 @@ class CheckForMissingDependenciesWorker(QtCore.QThread):
         else:
             fci.Console.PrintLog(message)
         fci.Console.PrintLog(details)
+
+
+class LoadPythonConstraintsWorker(QtCore.QThread):
+    """A worker class to fetch the vetted Python package constraints. This uses a blocking network
+    fetch, so cannot run on the main GUI thread."""
+
+    def run(self):
+        get_constraints().reload()
