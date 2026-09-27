@@ -27,7 +27,7 @@ import datetime
 import shutil
 import sys
 from dataclasses import is_dataclass, fields
-from typing import Any, List, Optional, Dict, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import base64
 import enum
@@ -43,19 +43,20 @@ import requests
 # the variable arguments (url, branch, name) come from the addon index this tool exists to
 # process (added nosec B404, and B603/B607 at the call sites)
 import subprocess  # nosec B404
-from typing import List
+import time
+import traceback
+import zipfile
 
 # Audited: only the exception class is imported, for catching errors raised by defusedxml,
 # which re-exports this same class. All parsing is done by defusedxml. (added nosec B405)
 from xml.etree.ElementTree import ParseError as XmlParseError  # nosec B405
 
 from defusedxml import DefusedXmlException
-import zipfile
 
 import AddonCatalog
+import addonmanager_icon_utilities as icon_utils
 import addonmanager_metadata
 import addonmanager_utilities as utils
-import addonmanager_icon_utilities as icon_utils
 
 from scour import scour
 from types import SimpleNamespace
@@ -66,6 +67,8 @@ MAX_COUNT = 10000  # Do at most this many repos (for testing purposes this can b
 CLONE_TIMEOUT = (
     300  # Seconds: repos that take longer than this are assumed to be too large to index
 )
+MAX_ATTEMPTS = 3  # Attempts before giving up on a single git or HTTP operation
+RETRY_DELAY_SECONDS = 5  # Delay between retry attempts of a failed git or HTTP operation
 
 
 def recursive_serialize(obj: Any):
@@ -128,6 +131,20 @@ class CacheWriter:
         self._cache = {}
         self._sanitize_counter = 0
         self._directory_name_cache: Dict[str, str] = {}
+        self._previously_failed_addon_ids: Set[str] = set()
+
+    def _load_previously_failed_addon_ids(self) -> Set[str]:
+        """If any previous clone errors are found, return the set of addon IDs
+        that failed to clone/update or download."""
+        path = os.path.join(self.cwd, "clone_errors.json")
+        if not os.path.isfile(path):
+            return set()
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                previous_errors = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return set()
+        return {dirname.split(os.sep, 1)[0] for dirname in previous_errors}
 
     def write(self, addon_id: Optional[str] = None) -> None:
         original_working_directory = os.getcwd()
@@ -135,6 +152,7 @@ class CacheWriter:
         os.chdir(self.cwd)
 
         try:
+            self._previously_failed_addon_ids = self._load_previously_failed_addon_ids()
             fetcher = CatalogFetcher()
             self.catalog = fetcher.catalog
 
@@ -203,8 +221,12 @@ class CacheWriter:
             os.chdir(original_working_directory)
 
     def create_local_copy_of_addons(self):
+        # Addons that failed last run are retried first, so a rate-limit-induced failure doesn't
+        # always strand the same addons at the tail end of a fixed processing order.
+        catalog_items = list(self.catalog.get_catalog().items())
+        catalog_items.sort(key=lambda item: item[0] not in self._previously_failed_addon_ids)
         counter = 0
-        for addon_id, catalog_entries in self.catalog.get_catalog().items():
+        for addon_id, catalog_entries in catalog_items:
             self.create_local_copy_of_single_addon(addon_id, catalog_entries)
             counter += 1
             if counter >= MAX_COUNT:
@@ -229,6 +251,9 @@ class CacheWriter:
                     "Neither git info nor zip info was specified."
                 )
                 continue
+            dirname = self.get_directory_name(addon_id, index, catalog_entry)
+            if dirname in self.clone_errors:
+                self.catalog.add_cache_error_to_entry(addon_id, index, self.clone_errors[dirname])
             metadata = self.generate_cache_entry(addon_id, index, catalog_entry)
             self.catalog.add_metadata_to_entry(addon_id, index, metadata)
             git_hash, git_tag = self.get_git_info(addon_id, index, catalog_entry)
@@ -477,64 +502,134 @@ class CacheWriter:
     def create_local_copy_of_single_addon_with_zip(
         self, addon_id: str, index: int, catalog_entry: AddonCatalog.AddonCatalogEntry
     ):
-        response = requests.get(catalog_entry.zip_url, timeout=10.0)
-        if response.status_code != 200:
-            print(f"ERROR: Failed to fetch zip data for {addon_id} from {catalog_entry.zip_url}.")
-            return
         extract_to_dir = self.get_directory_name(addon_id, index, catalog_entry)
+        response = None
+        last_error_message = "unknown error"
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                response = requests.get(catalog_entry.zip_url, timeout=10.0)
+            except requests.exceptions.RequestException as e:
+                last_error_message = f"Network error fetching {catalog_entry.zip_url}: {e}"
+                print(traceback.format_exc(), flush=True)
+                response = None
+            else:
+                if response.status_code == 200:
+                    break
+                last_error_message = (
+                    f"Failed to fetch zip data for {addon_id} from {catalog_entry.zip_url}: "
+                    f"HTTP {response.status_code}"
+                )
+                response = None
+            print(f"WARNING: {last_error_message} (attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
+            if attempt < MAX_ATTEMPTS:
+                time.sleep(RETRY_DELAY_SECONDS)
+
+        if response is None:
+            error_message = f"{last_error_message}\nafter {MAX_ATTEMPTS} attempts"
+            print(f"ERROR: {error_message}", flush=True)
+            self.clone_errors[extract_to_dir] = error_message
+            return
+
         if os.path.exists(extract_to_dir):
             utils.rmdir(extract_to_dir)
         os.makedirs(extract_to_dir, exist_ok=True)
 
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
-            latest = max(
-                (info.date_time for info in zip_file.infolist() if not info.is_dir()), default=None
+        try:
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+                latest = max(
+                    (info.date_time for info in zip_file.infolist() if not info.is_dir()),
+                    default=None,
+                )
+                if latest is not None:
+                    catalog_entry.last_update_time = datetime.datetime(*latest).isoformat()
+                zip_file.extractall(path=extract_to_dir)
+        except (zipfile.BadZipFile, OSError) as e:
+            error_message = (
+                f"Downloaded zip data for {addon_id} from {catalog_entry.zip_url} is invalid"
             )
-            if latest is not None:
-                catalog_entry.last_update_time = datetime.datetime(*latest).isoformat()
-            zip_file.extractall(path=extract_to_dir)
+            print(f"ERROR: {error_message}: {e}\n{traceback.format_exc()}", flush=True)
+            self.clone_errors[extract_to_dir] = f"{error_message}: {e}"
+
+    @staticmethod
+    def _tail(text: object, limit: int = 2000) -> str:
+        """Return the trailing portion of some text so that one addon's error can't
+        bloat the shipped cache. The end of the text is kept because that's where
+        git and pip put their actual "fatal: ..." error line."""
+        if not isinstance(text, str) or not text.strip():
+            return ""
+        stripped = text.strip()
+        return stripped if len(stripped) <= limit else "…" + stripped[-limit:]
+
+    def clone_with_retries(self, url: str, branch: str, target_dir: str) -> None:
+        """Attempt a shallow 'git clone' of url/branch into target_dir, retrying up to
+        MAX_ATTEMPTS times."""
+        # Shallow, but do include the last commit on each branch and tag
+        command = ["git", "clone", "--depth", "1", "--branch", branch, url, target_dir]
+        last_error_message = "unknown error"
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            if os.path.exists(target_dir):
+                utils.rmdir(target_dir)
+            print(f"Cloning {url} to {target_dir}", flush=True)
+            try:
+                completed_process = subprocess.run(  # nosec B603
+                    command, timeout=CLONE_TIMEOUT, capture_output=True, text=True
+                )
+            except subprocess.TimeoutExpired as e:
+                summary = f"Clone of {url} timed out after {CLONE_TIMEOUT} seconds"
+                detail = self._tail(e.stderr)
+            else:
+                if completed_process.returncode == 0:
+                    return
+                summary = f"Failed to clone {url}: git exited with {completed_process.returncode}"
+                detail = self._tail(completed_process.stderr)
+            last_error_message = f"{summary}\n{detail}" if detail else summary
+            print(f"WARNING: {last_error_message} (attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
+            if attempt < MAX_ATTEMPTS:
+                time.sleep(RETRY_DELAY_SECONDS)
+        if os.path.exists(target_dir):
+            utils.rmdir(target_dir)
+        raise RuntimeError(f"{last_error_message}\nafter {MAX_ATTEMPTS} attempts")
 
     def clone_or_update(self, name: str, url: str, branch: str) -> None:
         """If a directory called "name" exists, and it contains a subdirectory called .git,
         then the local copy is fetched and hard reset onto the requested ref; otherwise we use
-        'git clone' to make a shallow copy of the repo."""
+        'git clone' to make a shallow copy of the repo. Transient failures are retried before
+        giving up. If updating an existing copy fails every attempt, it is left untouched (not
+        deleted), so this cycle's cache generation still finds whatever good data it already
+        had from a previous run."""
 
         if not os.path.exists(os.path.join(os.getcwd(), name, ".git")):
-            print(f"Cloning {url} to {name}", flush=True)
-            # Shallow, but do include the last commit on each branch and tag
-            command = [
-                "git",
-                "clone",
-                "--depth",
-                "1",
-                "--branch",
-                branch,
-                url,
-                name,
-            ]
             try:
-                completed_process = subprocess.run(command, timeout=CLONE_TIMEOUT)  # nosec B603
-            except subprocess.TimeoutExpired:
-                self.clone_errors[name] = f"Timed out after {CLONE_TIMEOUT} seconds."
-                raise RuntimeError(f"Clone of {url} timed out.")
-                # TODO: Automatically fall back to a sparse clone
-            if completed_process.returncode != 0:
-                self.clone_errors[name] = f"Failed to clone {url}: {completed_process.returncode}"
-                raise RuntimeError(f"Clone failed for {url}")
-        else:
-            print(f"Updating {name}", flush=True)
-            old_dir = os.getcwd()
-            os.chdir(os.path.join(old_dir, name))
-            try:
-                CacheWriter.fetch_and_reset(name, url, branch)
+                self.clone_with_retries(url, branch, name)
             except RuntimeError as e:
-                # In the event of basically ANY error, delete the original and re-clone.
-                print(e)
-                print("Deleting and re-cloning the original repo")
-                os.chdir(old_dir)
-                utils.rmdir(os.path.join(old_dir, name))
-                self.clone_or_update(name, url, branch)
+                self.clone_errors[name] = str(e)
+                raise
+            return
+
+        print(f"Updating {name}", flush=True)
+        old_dir = os.getcwd()
+        os.chdir(os.path.join(old_dir, name))
+        last_error: Optional[RuntimeError] = None
+        try:
+            for attempt in range(1, MAX_ATTEMPTS + 1):
+                try:
+                    CacheWriter.fetch_and_reset(name, url, branch)
+                    last_error = None
+                    break
+                except RuntimeError as e:
+                    last_error = e
+                    print(
+                        f"WARNING: Update attempt {attempt}/{MAX_ATTEMPTS} failed for {name}: {e}",
+                        flush=True,
+                    )
+                    if attempt < MAX_ATTEMPTS:
+                        time.sleep(RETRY_DELAY_SECONDS)
+        finally:
             os.chdir(old_dir)
+
+        if last_error is not None:
+            self.clone_errors[name] = str(last_error)
+            raise last_error
 
     def sparse_clone(self, name: str, url: str, branch: str, files: List[str]) -> None:
         """Perform a sparse clone of a git repo, including only the specified files. Overwrite any
@@ -641,34 +736,78 @@ class CacheWriter:
         return addonmanager_metadata.get_icon_from_metadata(metadata)
 
     @staticmethod
+    def sync_remote_url(name: str, url: str) -> None:
+        """If the "origin" remote of the git clone in the current working directory no longer
+        matches "url", set the remote to "url"."""
+
+        completed_process = subprocess.run(  # nosec B603 B607
+            ["git", "remote", "get-url", "origin"], capture_output=True, text=True
+        )
+        if completed_process.returncode != 0:
+            raise RuntimeError(
+                f"git remote get-url failed for {name}. "
+                f"{CacheWriter._tail(completed_process.stderr)}".strip()
+            )
+        previous_url = completed_process.stdout.strip()
+        if previous_url == url:
+            return
+
+        print(
+            f"WARNING: Remote URL for {name} changed from {previous_url} to {url}",
+            flush=True,
+        )
+
+        completed_process = subprocess.run(  # nosec B603 B607
+            ["git", "remote", "set-url", "origin", url], capture_output=True, text=True
+        )
+        if completed_process.returncode != 0:
+            raise RuntimeError(
+                f"git remote set-url failed for {name}. "
+                f"{CacheWriter._tail(completed_process.stderr)}".strip()
+            )
+
+    @staticmethod
     def fetch_and_reset(name: str, url: str, branch: str) -> None:
         """Update the git clone in the current working directory by fetching from its remote and
-        hard resetting onto the requested ref, discarding any local state. A RuntimeError is raised
-        if any of the git calls fails."""
+        hard resetting onto the requested ref, discarding any local state. The origin remote is
+        first synced to "url" (see sync_remote_url), so a repository that moved since the local
+        clone was made is kept in sync."""
+
+        CacheWriter.sync_remote_url(name, url)
 
         try:
             completed_process = subprocess.run(  # nosec B603 B607
-                ["git", "fetch", "--force"], timeout=CLONE_TIMEOUT
+                ["git", "fetch", "--force"], timeout=CLONE_TIMEOUT, capture_output=True, text=True
             )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(f"git fetch for {name} timed out after {CLONE_TIMEOUT} seconds")
+        except subprocess.TimeoutExpired as e:
+            raise RuntimeError(
+                f"git fetch for {name} timed out after {CLONE_TIMEOUT} seconds. "
+                f"{CacheWriter._tail(e.stderr)}".strip()
+            )
         if completed_process.returncode != 0:
-            raise RuntimeError(f"git fetch failed for {name}")
+            raise RuntimeError(
+                f"git fetch failed for {name}. {CacheWriter._tail(completed_process.stderr)}".strip()
+            )
 
         git_ref_type = CacheWriter.determine_git_ref_type(name, url, branch)
         reset_target = f"origin/{branch}" if git_ref_type == GitRefType.BRANCH else branch
 
         completed_process = subprocess.run(  # nosec B603 B607
-            ["git", "reset", "--hard", reset_target, "--quiet"]
+            ["git", "reset", "--hard", reset_target, "--quiet"], capture_output=True, text=True
         )
         if completed_process.returncode != 0:
-            raise RuntimeError(f"git reset failed for {name} ref {reset_target}")
+            raise RuntimeError(
+                f"git reset failed for {name} ref {reset_target}. "
+                f"{CacheWriter._tail(completed_process.stderr)}".strip()
+            )
 
         completed_process = subprocess.run(  # nosec B603 B607
-            ["git", "clean", "-x", "-f", "-d", "--quiet"]
+            ["git", "clean", "-x", "-f", "-d", "--quiet"], capture_output=True, text=True
         )
         if completed_process.returncode != 0:
-            raise RuntimeError(f"git clean failed for {name}")
+            raise RuntimeError(
+                f"git clean failed for {name}. {CacheWriter._tail(completed_process.stderr)}".strip()
+            )
 
     @staticmethod
     def determine_git_ref_type(name: str, _url: str, branch: str) -> GitRefType:
