@@ -35,6 +35,7 @@ from addonmanager_workers_startup import (
     GetBasicAddonStatsWorker,
     GetAddonScoreWorker,
     CheckForMissingDependenciesWorker,
+    LoadPythonConstraintsWorker,
 )
 from addonmanager_installer_gui import (
     AddonInstallerGUI,
@@ -108,6 +109,7 @@ class CommandAddonManager(QtCore.QObject):
         "get_basic_addon_stats_worker",
         "get_addon_score_worker",
         "check_missing_dependencies_worker",
+        "load_python_constraints_worker",
     ]
 
     lock = threading.Lock()
@@ -144,6 +146,7 @@ class CommandAddonManager(QtCore.QObject):
         self.get_addon_score_worker = None
         self.get_basic_addon_stats_worker = None
         self.check_missing_dependencies_worker = None
+        self.load_python_constraints_worker = None
 
         self.manage_python_packages_dialog = None
         self.missing_dependency_installer = None
@@ -350,6 +353,7 @@ class CommandAddonManager(QtCore.QObject):
         # self.do_next_startup_phase if it is not launching a worker
         self.startup_sequence = [
             self.populate_packages_table,
+            self.load_python_constraints,
             self.activate_table_widgets,
             self.check_updates,
             self.check_missing_dependencies,
@@ -384,6 +388,14 @@ class CommandAddonManager(QtCore.QObject):
         self.create_addon_list_worker.finished.connect(self.do_next_startup_phase)  # Link to step 2
         self.create_addon_list_worker.progress_made.connect(self.update_progress_bar)
         self.create_addon_list_worker.start()
+
+    def load_python_constraints(self) -> None:
+        self.load_python_constraints_worker = LoadPythonConstraintsWorker()
+        self.update_progress_bar(
+            translate("AddonsInstaller", "Loading Python package constraints"), 0, 100
+        )
+        self.load_python_constraints_worker.finished.connect(self.do_next_startup_phase)
+        self.load_python_constraints_worker.start()
 
     def activate_table_widgets(self) -> None:
         self.composite_view.package_list.setEnabled(True)
