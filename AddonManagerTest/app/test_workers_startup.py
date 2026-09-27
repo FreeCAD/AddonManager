@@ -775,3 +775,13 @@ class TestCustomAddons(unittest.TestCase):
 
         self.assertEqual("My Custom Addon", addon.display_name)
         self.assertFalse(addon.icon_data)
+
+
+class TestLoadPythonConstraintsWorker(unittest.TestCase):
+
+    @patch("addonmanager_workers_startup.get_constraints")
+    def test_run_reloads_the_shared_constraints(self, mock_get_constraints):
+        """Running the worker fetches the constraints, so later GUI-thread users find them loaded."""
+        addonmanager_workers_startup.LoadPythonConstraintsWorker().run()
+
+        mock_get_constraints.return_value.reload.assert_called_once_with()
