@@ -215,7 +215,7 @@ def restart_freecad():
             # -n: allow to launch a second instance of FreeCAD. This allows to
             # launch the app while the old one is closing. Or else, open is too
             # fast and will "open" the already open app (which then quits).
-            if app and QtCore.QProcess.startDetached("/usr/bin/open", [app, '-n', '--args', *args]):
+            if app and QtCore.QProcess.startDetached("/usr/bin/open", [app, "-n", "--args", *args]):
                 return
         QtCore.QProcess.startDetached(QtWidgets.QApplication.applicationFilePath(), args)
 
@@ -226,9 +226,9 @@ def macos_app_bundle_dir():
     par = QtCore.QDir(par.canonicalPath())
     while par.cdUp():
         inf = QtCore.QFileInfo(par.canonicalPath())
-        if inf.exists() and inf.isBundle() and par.dirName().endswith('.app'):
+        if inf.exists() and inf.isBundle() and par.dirName().endswith(".app"):
             return par.canonicalPath()
-    return ''
+    return ""
 
 
 @dataclass(frozen=True)
