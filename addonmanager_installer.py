@@ -196,10 +196,11 @@ class AddonInstaller(QtCore.QObject):
             self.failure.emit(self.addon_to_install, str(e))
             success = False
         if success:
+            install_dir = os.path.join(self.installation_path, self.addon_to_install.name)
             if (
                 hasattr(self.addon_to_install, "contains_workbench")
                 and self.addon_to_install.contains_workbench()
-            ):
+            ) or self._has_startup_hooks(install_dir):
                 self.addon_to_install.set_status(Addon.Status.PENDING_RESTART)
             else:
                 self.addon_to_install.set_status(Addon.Status.NO_UPDATE_AVAILABLE)
@@ -520,6 +521,27 @@ class AddonInstaller(QtCore.QObject):
             raise RuntimeError(
                 "Provided object does not provide a name, url, and/or branch attribute"
             )
+
+    @staticmethod
+    def _has_startup_hooks(directory: str) -> bool:
+        """Check whether the installed addon contains startup files that FreeCAD
+        executes on launch."""
+        for candidate in ("InitGui.py", "Init.py"):
+            if os.path.isfile(os.path.join(directory, candidate)):
+                return True
+        fc_dir = os.path.join(directory, "freecad")
+        if os.path.isdir(fc_dir):
+            try:
+                for entry in os.listdir(fc_dir):
+                    entry_dir = os.path.join(fc_dir, entry)
+                    if os.path.isdir(entry_dir):
+                        if os.path.isfile(os.path.join(entry_dir, "init_gui.py")) or os.path.isfile(
+                            os.path.join(entry_dir, "init.py")
+                        ):
+                            return True
+            except OSError:
+                pass
+        return False
 
 
 class MacroInstaller(QtCore.QObject):
