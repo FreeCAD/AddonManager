@@ -498,6 +498,112 @@ class TestAddonInstaller(unittest.TestCase):
                 "FCMacro file was not copied to macro installation location",
             )
 
+    def test_startup_hooks_detection(self):
+        """Verify detection of startup files that require a FreeCAD restart."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            addon_dir = os.path.join(temp_dir, "TestAddon")
+            os.mkdir(addon_dir)
+
+            # Clean directory: no startup hooks
+            self.assertFalse(AddonInstaller._has_startup_hooks(addon_dir))
+
+            # Root InitGui.py
+            init_gui = os.path.join(addon_dir, "InitGui.py")
+            with open(init_gui, "w", encoding="utf-8") as f:
+                f.write("# startup hook")
+            self.assertTrue(AddonInstaller._has_startup_hooks(addon_dir))
+            os.remove(init_gui)
+
+            # Root Init.py
+            init_py = os.path.join(addon_dir, "Init.py")
+            with open(init_py, "w", encoding="utf-8") as f:
+                f.write("# startup hook")
+            self.assertTrue(AddonInstaller._has_startup_hooks(addon_dir))
+            os.remove(init_py)
+
+            # Namespace package: freecad/<pkg>/init_gui.py
+            pkg_dir = os.path.join(addon_dir, "freecad", "sample_pkg")
+            os.makedirs(pkg_dir)
+            ns_init_gui = os.path.join(pkg_dir, "init_gui.py")
+            with open(ns_init_gui, "w", encoding="utf-8") as f:
+                f.write("# namespace startup hook")
+            self.assertTrue(AddonInstaller._has_startup_hooks(addon_dir))
+            os.remove(ns_init_gui)
+
+            # Namespace package: freecad/<pkg>/init.py
+            ns_init_py = os.path.join(pkg_dir, "init.py")
+            with open(ns_init_py, "w", encoding="utf-8") as f:
+                f.write("# namespace secondary startup hook")
+            self.assertTrue(AddonInstaller._has_startup_hooks(addon_dir))
+            os.remove(ns_init_py)
+
+            # Deeply nested or non-matching files do not trigger
+            deep_dir = os.path.join(addon_dir, "freecad", "sub", "deep")
+            os.makedirs(deep_dir)
+            with open(os.path.join(deep_dir, "init_gui.py"), "w", encoding="utf-8") as f:
+                f.write("# too deep")
+            with open(os.path.join(addon_dir, "other.py"), "w", encoding="utf-8") as f:
+                f.write("# not a startup hook")
+            self.assertFalse(AddonInstaller._has_startup_hooks(addon_dir))
+
+    @patch("addonmanager_installer.InstallationManifest")
+    def test_run_non_workbench_with_startup_hooks_sets_pending_restart(self, _mock_manifest):
+        """A non-workbench addon with startup hooks sets PENDING_RESTART and does not call
+        enable_workbench."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            addon = MockAddon()
+            addon.name = "HookAddon"
+            addon.contains_workbench = Mock(return_value=False)
+            addon.enable_workbench = Mock()
+
+            installer = AddonInstaller(addon, [])
+            installer.installation_path = temp_dir
+            installed_pkg_dir = os.path.join(temp_dir, addon.name, "freecad", "hook_pkg")
+            os.makedirs(installed_pkg_dir)
+            with open(os.path.join(installed_pkg_dir, "init_gui.py"), "w", encoding="utf-8") as f:
+                f.write("# hook")
+
+            with (
+                patch.object(
+                    installer, "_determine_install_method", return_value=InstallationMethod.COPY
+                ),
+                patch.object(installer, "_install_by_copy", return_value=True),
+            ):
+                success = installer.run()
+
+            self.assertTrue(success)
+            self.assertEqual(addon.update_status, Addon.Status.PENDING_RESTART)
+            addon.enable_workbench.assert_not_called()
+
+    @patch("addonmanager_installer.InstallationManifest")
+    def test_run_non_workbench_without_startup_hooks_no_restart(self, _mock_manifest):
+        """A non-workbench addon without startup hooks sets NO_UPDATE_AVAILABLE and does not call
+        enable_workbench."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            addon = MockAddon()
+            addon.name = "PlainAddon"
+            addon.contains_workbench = Mock(return_value=False)
+            addon.enable_workbench = Mock()
+
+            installer = AddonInstaller(addon, [])
+            installer.installation_path = temp_dir
+            installed_dir = os.path.join(temp_dir, addon.name)
+            os.makedirs(installed_dir)
+            with open(os.path.join(installed_dir, "README.md"), "w", encoding="utf-8") as f:
+                f.write("# Documentation only")
+
+            with (
+                patch.object(
+                    installer, "_determine_install_method", return_value=InstallationMethod.COPY
+                ),
+                patch.object(installer, "_install_by_copy", return_value=True),
+            ):
+                success = installer.run()
+
+            self.assertTrue(success)
+            self.assertEqual(addon.update_status, Addon.Status.NO_UPDATE_AVAILABLE)
+            addon.enable_workbench.assert_not_called()
+
 
 class TestMacroInstaller(unittest.TestCase):
     MODULE = "test_installer"  # file name without extension
