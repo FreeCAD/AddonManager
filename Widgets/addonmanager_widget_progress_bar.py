@@ -144,6 +144,10 @@ class WidgetProgressBar(QtWidgets.QWidget):
         self.stop_button = QtWidgets.QToolButton(self)
         self.progress_bar.setMaximum(_TOTAL_INCREMENTS)
         self.stop_button.clicked.connect(self.stop_clicked)
+        # Icon-only button: name it for screen readers and give it a tooltip
+        self.stop_button.setAccessibleName(translate("AddonsInstaller", "Stop loading"))
+        self.stop_button.setToolTip(translate("AddonsInstaller", "Stop loading"))
+        self.progress_bar.setAccessibleName(translate("AddonsInstaller", "Loading progress"))
         icon_path = os.path.join(os.path.dirname(__file__), "..", "Resources", "icons")
         self.stop_button.setIcon(
             QtGui.QIcon.fromTheme("stop", QtGui.QIcon(os.path.join(icon_path, "debug-stop.svg")))

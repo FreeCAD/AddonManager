@@ -94,6 +94,9 @@ class WidgetGlobalButtonBar(QtWidgets.QWidget):
         self.addons_folder.setText(translate("AddonsFolder", "Open Addons Folder"))
         self.close.setText(translate("AddonsInstaller", "Close"))
         self.gear_tools.setText("Gear Tools…")  # This text should never be user-visible
+        # ...but it is what screen readers announce, so give the button a real, translated name
+        self.gear_tools.setAccessibleName(translate("AddonsInstaller", "More tools"))
+        self.gear_tools.setToolTip(translate("AddonsInstaller", "More tools"))
 
     def set_number_of_available_updates(self, updates: int):
         if updates > 0:
