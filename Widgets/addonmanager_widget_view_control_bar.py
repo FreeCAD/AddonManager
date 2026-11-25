@@ -102,6 +102,13 @@ class WidgetViewControlBar(QtWidgets.QWidget):
 
     def _set_sort_order_icon(self):
         icon_path = os.path.join(os.path.dirname(__file__), "..", "Resources", "icons")
+        # Icon-only button: describe its current state for screen readers and in a tooltip
+        if self.sort_order == QtCore.Qt.AscendingOrder:
+            label = translate("AddonsInstaller", "Sort order: ascending")
+        else:
+            label = translate("AddonsInstaller", "Sort order: descending")
+        self.sort_order_button.setAccessibleName(label)
+        self.sort_order_button.setToolTip(label)
         if self.sort_order == QtCore.Qt.AscendingOrder:
             self.sort_order_button.setIcon(
                 QtGui.QIcon.fromTheme(
@@ -137,6 +144,10 @@ class WidgetViewControlBar(QtWidgets.QWidget):
         self.sort_order_changed.emit(self.sort_order)
 
     def retranslateUi(self, _=None):
+        self.sort_selector.setAccessibleName(translate("AddonsInstaller", "Sort by"))
+        self.filter_selector.setAccessibleName(translate("AddonsInstaller", "Filter"))
+        if hasattr(self, "sort_order"):  # Not yet set during __init__
+            self._set_sort_order_icon()
         self.sort_selector.clear()
         self.sort_selector.addItem(
             translate("AddonsInstaller", "Alphabetical", "Sort order"), SortOptions.Alphabetical

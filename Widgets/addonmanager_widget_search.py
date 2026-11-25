@@ -64,6 +64,9 @@ class WidgetSearch(QtWidgets.QWidget):
                 self.filter_validity_label.setToolTip(
                     translate("AddonsInstaller", "Filter is valid")
                 )
+                self.filter_validity_label.setAccessibleName(
+                    translate("AddonsInstaller", "Filter is valid")
+                )
                 icon = QtGui.QIcon.fromTheme(
                     "ok", QtGui.QIcon(os.path.join(icon_path, "regex_ok.svg"))
                 )
@@ -71,6 +74,9 @@ class WidgetSearch(QtWidgets.QWidget):
                 self.search_changed.emit(text_filter)
             else:
                 self.filter_validity_label.setToolTip(
+                    translate("AddonsInstaller", "Filter regular expression is invalid")
+                )
+                self.filter_validity_label.setAccessibleName(
                     translate("AddonsInstaller", "Filter regular expression is invalid")
                 )
                 icon = QtGui.QIcon.fromTheme(
@@ -85,4 +91,8 @@ class WidgetSearch(QtWidgets.QWidget):
     def retranslateUi(self, _):
         self.filter_line_edit.setPlaceholderText(
             QtCore.QCoreApplication.translate("AddonsInstaller", "Search…", None)
+        )
+        # Placeholder text disappears once typing starts and is not a reliable label
+        self.filter_line_edit.setAccessibleName(
+            QtCore.QCoreApplication.translate("AddonsInstaller", "Search addons", None)
         )

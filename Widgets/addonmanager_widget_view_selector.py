@@ -140,3 +140,7 @@ class WidgetViewSelector(QtWidgets.QWidget):
         self.composite_button.setToolTip(translate("AddonsInstaller", "Shows the composite view"))
         self.expanded_button.setToolTip(translate("AddonsInstaller", "Shows the expanded view"))
         self.compact_button.setToolTip(translate("AddonsInstaller", "Shows the compact view"))
+        # Icon-only buttons: provide a name for screen readers
+        self.composite_button.setAccessibleName(translate("AddonsInstaller", "Composite view"))
+        self.expanded_button.setAccessibleName(translate("AddonsInstaller", "Expanded view"))
+        self.compact_button.setAccessibleName(translate("AddonsInstaller", "Compact view"))

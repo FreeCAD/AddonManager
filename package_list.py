@@ -63,6 +63,8 @@ class PackageList(QtWidgets.QWidget):
         self.ui.listPackages.setItemDelegate(self.item_delegate)
 
         self.ui.listPackages.clicked.connect(self.on_listPackages_clicked)
+        # Keyboard users must be able to open an addon too (Enter/Return key)
+        self.ui.listPackages.keyboard_activated.connect(self.on_listPackages_clicked)
         self.ui.view_bar.filter_changed.connect(self.update_status_filter)
         self.ui.view_bar.search_changed.connect(self.item_filter.setFilterRegularExpression)
         self.ui.view_bar.sort_changed.connect(self.item_filter.setSortRole)
@@ -204,6 +206,14 @@ class PackageListItemModel(QtCore.QAbstractListModel):
         if role == PackageListItemModel.DataAccessRole:
             return self.repos[row]
 
+        # Text for assistive technologies (screen readers such as NVDA or Orca) and for
+        # keyboard type-ahead search. The delegate does its own painting and ignores
+        # DisplayRole, so providing it does not change the visual appearance.
+        if role in (QtCore.Qt.DisplayRole, QtCore.Qt.AccessibleTextRole):
+            return self.accessible_text(self.repos[row])
+        if role == QtCore.Qt.AccessibleDescriptionRole:
+            return self.accessible_description(self.repos[row])
+
         # Sorting
         if role == SortOptions.Alphabetical:
             return self.repos[row].display_name
@@ -225,6 +235,41 @@ class PackageListItemModel(QtCore.QAbstractListModel):
 
         # Anything else:
         return None
+
+    @staticmethod
+    def accessible_text(addon: Addon) -> str:
+        """Plain-text summary of an addon, read by screen readers when the item gets focus:
+        name, kind, and installation status."""
+        parts = [addon.display_name]
+        if addon.repo_type == Addon.Kind.WORKBENCH:
+            parts.append(translate("AddonsInstaller", "workbench"))
+        elif addon.repo_type == Addon.Kind.MACRO:
+            parts.append(translate("AddonsInstaller", "macro"))
+        elif addon.repo_type == Addon.Kind.PACKAGE:
+            parts.append(translate("AddonsInstaller", "package"))
+        status = addon.status()
+        if status == Addon.Status.NOT_INSTALLED:
+            parts.append(translate("AddonsInstaller", "not installed"))
+        elif status == Addon.Status.UNCHECKED:
+            parts.append(translate("AddonsInstaller", "installed"))
+        elif status == Addon.Status.NO_UPDATE_AVAILABLE:
+            parts.append(translate("AddonsInstaller", "installed, up-to-date"))
+        elif status == Addon.Status.UPDATE_AVAILABLE:
+            parts.append(translate("AddonsInstaller", "installed, update available"))
+        elif status == Addon.Status.PENDING_RESTART:
+            parts.append(translate("AddonsInstaller", "pending restart"))
+        if addon.is_disabled():
+            parts.append(translate("AddonsInstaller", "disabled"))
+        return ", ".join(parts)
+
+    @staticmethod
+    def accessible_description(addon: Addon) -> str:
+        """Plain-text description of an addon, exposed to assistive technologies."""
+        if addon.metadata and addon.metadata.description:
+            return addon.metadata.description
+        if addon.macro and addon.macro.comment:
+            return addon.macro.comment
+        return ""
 
     def headerData(self, _unused1, _unused2, _role=QtCore.Qt.DisplayRole):
         """No header in this implementation: always returns None."""
@@ -561,7 +606,8 @@ class PackageListItemDelegate(QtWidgets.QStyledItemDelegate):
         _: QtCore.QModelIndex,
     ):
         """Main paint function: renders this widget into a given rectangle,
-        successively drawing all of its children."""
+        successively drawing all of its children, then draws a visible indicator around
+        the current/selected item so keyboard users can see where they are."""
         painter.save()
         self.widget.resize(option.rect.size())
         painter.translate(option.rect.topLeft())
@@ -569,6 +615,14 @@ class PackageListItemDelegate(QtWidgets.QStyledItemDelegate):
             painter, QtCore.QPoint(), QtGui.QRegion(), QtWidgets.QWidget.DrawChildren
         )
         painter.restore()
+        if option.state & (QtWidgets.QStyle.State_Selected | QtWidgets.QStyle.State_HasFocus):
+            painter.save()
+            pen = QtGui.QPen(option.palette.color(QtGui.QPalette.Highlight))
+            pen.setWidth(2)
+            painter.setPen(pen)
+            painter.setBrush(QtCore.Qt.NoBrush)
+            painter.drawRect(option.rect.adjusted(1, 1, -1, -1))
+            painter.restore()
 
 
 class PackageListFilter(QtCore.QSortFilterProxyModel):
@@ -724,6 +778,25 @@ class PackageListFilter(QtCore.QSortFilterProxyModel):
 # pylint: disable=attribute-defined-outside-init, missing-function-docstring
 
 
+class PackageListView(QtWidgets.QListView):
+    """A QListView that also lets keyboard users open the current item with Enter/Return.
+
+    QListView's own ``activated`` signal is not used because, depending on the platform style,
+    it is also emitted by a mouse click or double-click, which would duplicate the ``clicked``
+    signal already used for mouse users."""
+
+    keyboard_activated = QtCore.Signal(QtCore.QModelIndex)
+
+    def keyPressEvent(self, event: QtGui.QKeyEvent) -> None:
+        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+            index = self.currentIndex()
+            if index.isValid():
+                self.keyboard_activated.emit(index)
+                event.accept()
+                return
+        super().keyPressEvent(event)
+
+
 class Ui_PackageList:
     """The contents of the PackageList widget"""
 
@@ -741,11 +814,14 @@ class Ui_PackageList:
 
         self.verticalLayout.addLayout(self.horizontalLayout_6)
 
-        self.listPackages = QtWidgets.QListView(form)
+        self.listPackages = PackageListView(form)
         self.listPackages.setObjectName("listPackages")
         self.listPackages.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.listPackages.setProperty("showDropIndicator", False)
-        self.listPackages.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        # Single selection: screen readers announce the selected item, and the delegate draws a
+        # visible indicator around it.
+        self.listPackages.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.listPackages.setAccessibleName(translate("AddonsInstaller", "Addons"))
         self.listPackages.setResizeMode(QtWidgets.QListView.Adjust)
         self.listPackages.setUniformItemSizes(False)
         self.listPackages.setAlternatingRowColors(True)

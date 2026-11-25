@@ -140,6 +140,9 @@ class CompositeView(QtWidgets.QWidget):
             self.package_list.hide()
             self.package_details.show()
             self.package_details.button_bar.set_show_back_button(True)
+            # The list had keyboard focus and is now hidden: move focus into the details view
+            # so keyboard and screen-reader users are not left on a hidden widget.
+            self.package_details.button_bar.back.setFocus()
 
     def _back_button_clicked(self):
         if self.display_style != AddonManagerDisplayStyle.COMPOSITE:
@@ -152,6 +155,8 @@ class CompositeView(QtWidgets.QWidget):
                     self.scroll_position
                 ),
             )
+            # Return keyboard focus to the list, on the item that was opened
+            self.package_list.ui.listPackages.setFocus()
 
     def _splitter_moved(self, _1: int, _2: int) -> None:
         self._save_splitter_state()
