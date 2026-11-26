@@ -277,7 +277,7 @@ def rename_locale_to_two_letter_code():
         # Crowdin code in the QM catalog, and FreeCAD cannot load the generic language catalog.
         ts_tag = re.search(r"<TS\b[^>]*>", contents)
         if ts_tag:
-            language = re.search(r'''(\blanguage=["'])([^"']+)(["'])''', ts_tag.group())
+            language = re.search(r"""(\blanguage=["'])([^"']+)(["'])""", ts_tag.group())
             if language and language.group(2) != base_code:
                 updated_tag = (
                     ts_tag.group()[: language.start(2)]
