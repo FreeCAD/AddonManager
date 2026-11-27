@@ -253,23 +253,41 @@ def rename_locale_to_two_letter_code():
     base_path = os.path.join(temp_folder, CROWDIN_PROJECT_NAME)
     ts_files = sorted(os.listdir(base_path))
 
-    # All files are named AddonManager_<locale>.ts, where locale consists of a 2- or 3-letter
-    # language code, followed by a dash, followed by a two-letter country code. Don't bother with
-    # a regex, just figure out the lengths of the parts we're interested in.
+    # All files are named AddonManager_<locale>.ts. Don't bother with a regex; use the known
+    # filename prefix and extension to get the complete locale code.
     prefix_len = len(CROWDIN_PROJECT_NAME) + 1
-    suffix_len = len("-xx.ts")
+    suffix_len = len(".ts")
     codes_only = [f[prefix_len:-suffix_len] for f in ts_files]
-    codes_that_need_disambiguation = []
-    locale_frequency = collections.Counter(codes_only)
-    for code in codes_only:
-        if code not in codes_that_need_disambiguation and locale_frequency[code] > 1:
-            codes_that_need_disambiguation.append(code)
+    base_codes = [code.split("-", maxsplit=1)[0] for code in codes_only]
+    locale_frequency = collections.Counter(base_codes)
 
     for ts_file in ts_files:
         code = ts_file[prefix_len:-suffix_len]
-        if code not in codes_that_need_disambiguation:
-            new_name = CROWDIN_PROJECT_NAME + "_" + code + ".ts"
-            os.rename(os.path.join(base_path, ts_file), os.path.join(base_path, new_name))
+        base_code = code.split("-", maxsplit=1)[0]
+        if "-" not in code or locale_frequency[base_code] > 1:
+            continue
+
+        source_path = os.path.join(base_path, ts_file)
+        new_path = os.path.join(base_path, CROWDIN_PROJECT_NAME + "_" + base_code + ".ts")
+        with open(source_path, "r", encoding="utf-8") as translation_file:
+            contents = translation_file.read()
+
+        # Keep the TS metadata in sync with the filename. Otherwise lrelease embeds the regional
+        # Crowdin code in the QM catalog, and FreeCAD cannot load the generic language catalog.
+        ts_tag = re.search(r"<TS\b[^>]*>", contents)
+        if ts_tag:
+            language = re.search(r"""(\blanguage=["'])([^"']+)(["'])""", ts_tag.group())
+            if language and language.group(2) != base_code:
+                updated_tag = (
+                    ts_tag.group()[: language.start(2)]
+                    + base_code
+                    + ts_tag.group()[language.end(2) :]
+                )
+                contents = contents[: ts_tag.start()] + updated_tag + contents[ts_tag.end() :]
+                with open(source_path, "w", encoding="utf-8") as translation_file:
+                    translation_file.write(contents)
+
+        os.rename(source_path, new_path)
 
 
 def remove_translations_for_language(language_file: str):
