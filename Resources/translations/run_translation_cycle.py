@@ -253,11 +253,10 @@ def rename_locale_to_two_letter_code():
     base_path = os.path.join(temp_folder, CROWDIN_PROJECT_NAME)
     ts_files = sorted(os.listdir(base_path))
 
-    # All files are named AddonManager_<locale>.ts, where locale consists of a 2- or 3-letter
-    # language code, followed by a dash, followed by a two-letter country code. Don't bother with
-    # a regex, just figure out the lengths of the parts we're interested in.
+    # All files are named AddonManager_<locale>.ts. Don't bother with a regex; use the known
+    # filename prefix and extension to get the complete locale code.
     prefix_len = len(CROWDIN_PROJECT_NAME) + 1
-    suffix_len = len("-xx.ts")
+    suffix_len = len(".ts")
     codes_only = [f[prefix_len:-suffix_len] for f in ts_files]
     base_codes = [code.split("-", maxsplit=1)[0] for code in codes_only]
     locale_frequency = collections.Counter(base_codes)

@@ -29,8 +29,9 @@ def load_script():
     return module
 
 
-def write_ts_file(path: str, translated: int, unfinished: int):
-    lines = ["<TS>"]
+def write_ts_file(path: str, translated: int, unfinished: int, language: str = ""):
+    language_attribute = f' language="{language}"' if language else ""
+    lines = [f"<TS{language_attribute}>"]
     for index in range(translated):
         lines += [f"<source>s{index}</source>", f"<translation>t{index}</translation>"]
     for index in range(unfinished):
@@ -159,6 +160,31 @@ class TestRunTranslationCycle(TestCase):
 
         with self.assertRaises(RuntimeError):
             self.script.update_cmake_translation_list()
+
+    def test_locale_rename_updates_metadata_and_preserves_ambiguous_codes(self):
+        write_ts_file(
+            os.path.join(self.crowdin_directory, "AddonManager_sv-SE.ts"), 1, 0, "sv-SE"
+        )
+        write_ts_file(
+            os.path.join(self.crowdin_directory, "AddonManager_pt-BR.ts"), 1, 0, "pt-BR"
+        )
+        write_ts_file(
+            os.path.join(self.crowdin_directory, "AddonManager_pt-PT.ts"), 1, 0, "pt-PT"
+        )
+
+        self.script.rename_locale_to_two_letter_code()
+
+        swedish_path = os.path.join(self.crowdin_directory, "AddonManager_sv.ts")
+        self.assertTrue(os.path.exists(swedish_path))
+        with open(swedish_path, "r", encoding="utf-8") as f:
+            self.assertIn('<TS language="sv">', f.read())
+        for code in ("pt-BR", "pt-PT"):
+            with self.subTest(code=code):
+                self.assertTrue(
+                    os.path.exists(
+                        os.path.join(self.crowdin_directory, f"AddonManager_{code}.ts")
+                    )
+                )
 
 
 if __name__ == "__main__":
