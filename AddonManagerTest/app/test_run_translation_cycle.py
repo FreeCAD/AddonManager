@@ -162,15 +162,9 @@ class TestRunTranslationCycle(TestCase):
             self.script.update_cmake_translation_list()
 
     def test_locale_rename_updates_metadata_and_preserves_ambiguous_codes(self):
-        write_ts_file(
-            os.path.join(self.crowdin_directory, "AddonManager_sv-SE.ts"), 1, 0, "sv-SE"
-        )
-        write_ts_file(
-            os.path.join(self.crowdin_directory, "AddonManager_pt-BR.ts"), 1, 0, "pt-BR"
-        )
-        write_ts_file(
-            os.path.join(self.crowdin_directory, "AddonManager_pt-PT.ts"), 1, 0, "pt-PT"
-        )
+        write_ts_file(os.path.join(self.crowdin_directory, "AddonManager_sv-SE.ts"), 1, 0, "sv-SE")
+        write_ts_file(os.path.join(self.crowdin_directory, "AddonManager_pt-BR.ts"), 1, 0, "pt-BR")
+        write_ts_file(os.path.join(self.crowdin_directory, "AddonManager_pt-PT.ts"), 1, 0, "pt-PT")
 
         self.script.rename_locale_to_two_letter_code()
 
@@ -181,9 +175,7 @@ class TestRunTranslationCycle(TestCase):
         for code in ("pt-BR", "pt-PT"):
             with self.subTest(code=code):
                 self.assertTrue(
-                    os.path.exists(
-                        os.path.join(self.crowdin_directory, f"AddonManager_{code}.ts")
-                    )
+                    os.path.exists(os.path.join(self.crowdin_directory, f"AddonManager_{code}.ts"))
                 )
 
 
